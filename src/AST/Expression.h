@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-
+#include <memory>
 
 //#define LINK_TO_PARENT
 //#define VTABLE_VISITOR
@@ -51,6 +51,7 @@ public:
     PARENT(Expression* parent = nullptr;)
 };
 
+//typedef std::unique_ptr<Expression> Expr;
 typedef Expression* Expr;
 
 class Add: public Expression{

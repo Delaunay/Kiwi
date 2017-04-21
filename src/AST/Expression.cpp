@@ -12,4 +12,6 @@ void Value::visit(DynamicVisitor* v){
 void Placeholder::visit(DynamicVisitor* v){
     v->placeholder(this);
 }
-)}
+)
+
+}

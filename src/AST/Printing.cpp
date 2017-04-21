@@ -58,12 +58,41 @@ public:
     const Context& ctx;
 };
 
+
+class FreeMemory: public StaticVisitor<FreeMemory, void>{
+public:
+    FreeMemory() = default;
+
+    static void run(Expr expr){
+        FreeMemory eval;
+        return eval.traverse(expr);
+    }
+
+    void add(Add* x){
+        traverse(x->lhs);
+        delete x->lhs;
+
+        traverse(x->rhs);
+        delete x->rhs;
+
+        return;
+    }
+
+    void value      (Value* x)      {   return;}
+    void placeholder(Placeholder* x){   return;}
+};
+
+
 void print(std::ostream& out, Expression* expr){
     return Printing::run(out, expr);
 }
 
 double full_eval(const Context& ctx, Expression* expr){
     return FullEval::run(ctx, expr);
+}
+
+void free(Expression* expr){
+    return FreeMemory::run(expr);
 }
 
 }

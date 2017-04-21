@@ -15,6 +15,8 @@ TEST(AST, Printing)
 
     print(std::cout, f);
     std::cout << std::endl;
+
+    free(f);
 }
 
 TEST(AST, Eval)
@@ -28,6 +30,8 @@ TEST(AST, Eval)
         ctx["x"] = 2;
 
     EXPECT_FLOAT_EQ(full_eval(ctx, f), 4);
+
+    free(f);
 }
 
 

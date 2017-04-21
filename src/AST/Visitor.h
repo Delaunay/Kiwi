@@ -33,20 +33,20 @@ public:
     }
 };
 
-VTABLEV(class Dummy{};)
-
 #ifdef VTABLE_VISITOR
-#   define KIWI_DV_INHERIT Dummy
+#   define KIWI_DV_INHERIT
 #else
-#   define KIWI_DV_INHERIT StaticVisitor<DynamicVisitor, void>
+#   define KIWI_DV_INHERIT : public StaticVisitor<DynamicVisitor, void>
 #endif
 
 /*
- * DynamicVisitor is a standard visitor. It can rely on vtables
+ * DynamicVisitor is a standard visitor. It can rely on Expression's vtables
  * if their usage is activated
  */
-class DynamicVisitor: public KIWI_DV_INHERIT{
+class DynamicVisitor KIWI_DV_INHERIT{
 public:
+
+    virtual ~DynamicVisitor() {}
 
     VTABLEV(
     void traverse(Expr x){
