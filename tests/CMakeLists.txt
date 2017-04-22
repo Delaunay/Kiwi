@@ -27,10 +27,11 @@ INCLUDE_DIRECTORIES(../src)
 SET(TEST_SRC
     ASTTest.h
     LexerTest.h
+    ParserTest.h
 )
 
 ADD_EXECUTABLE(kiwi_test gtest_main.cpp ${TEST_SRC})
-TARGET_LINK_LIBRARIES(kiwi_test ast lexer gtest -pthread)
+TARGET_LINK_LIBRARIES(kiwi_test ast parsing gtest -pthread)
 SET_PROPERTY(TARGET kiwi_test PROPERTY CXX_STANDARD 14)
 
 

@@ -36,7 +36,7 @@ std::string align_center(const std::string& name, uint8 col){
     if (name.size() == col)
         return name;
 
-    uint8 n = col - name.size();
+    uint32 n = uint32(col - name.size());
     n = (n + n % 2)/ 2;
 
     return std::string(n, ' ') + name + std::string(n, ' ');
@@ -45,7 +45,7 @@ std::string align_center(const std::string& name, uint8 col){
 template<typename T>
 std::string to_string(T nb, int32 b){
 
-    int32 n = std::log10(nb) + 1;
+    int32 n = int32(std::log10(nb)) + 1;
 
     if (nb == 0)
         n = 1;
@@ -58,7 +58,7 @@ std::string to_string(T nb, int32 b){
 
 inline
 std::string to_string(float32 nb, int32 b){
-    int32 n = std::log10(nb) + 2;
+    int32 n = int32(std::log10(nb)) + 2;
     n = b - n;
     if (n > 0)
         return std::string(n, ' ') + std::to_string(nb);
@@ -67,7 +67,7 @@ std::string to_string(float32 nb, int32 b){
 
 inline
 std::string to_string(float64 nb, int32 b){
-    int32 n = std::log10(nb) + 2;
+    int32 n = int32(std::log10(nb)) + 2;
     n = b - n;
     if (n > 0)
         return std::string(n, ' ') + std::to_string(nb);

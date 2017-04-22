@@ -92,8 +92,6 @@ public:
     void placeholder(Placeholder* x){   return;}
 };
 
-/*
- */
 class Copy: public StaticVisitor<Copy, Expression*>{
 public:
     Copy(bool keep_borrowed):
@@ -109,9 +107,8 @@ public:
     }
 
     Expression* add(Add* x){
-        DummyRoot l = traverse(x->lhs);
-        DummyRoot r = traverse(x->rhs);
-        return Builder<DummyRoot>::add(l, r);
+        return Builder<DummyRoot>::add(traverse(x->lhs),
+                                       traverse(x->rhs));
     }
 
     Expression* value(Value* x){

@@ -1,14 +1,12 @@
 #pragma once
 
+//#include <iostream>
+
 #include <ostream>
+#include <cctype>
 
 #include "Buffer.h"
 #include "Tokens.h"
-#include "../Types.h"
-
-#include <cctype>
-
-#include <iostream>
 
 /*
  *  Lexer is a stream of tokens
@@ -18,7 +16,7 @@
 
 namespace kiwi{
 
-class Lexer
+class Lexer: public Stream<Lexer, Token>
 {
 public:
 
@@ -31,14 +29,9 @@ public:
     uint32 line()      {    return _reader.line();      }
     uint32 col()       {    return _reader.col();       }
     uint32 indent()    {    return _reader.indent();    }
-    void   consume()   {    return _reader.consume();   }
-    char   peek()      {    return _reader.peek();      }
+
     bool   empty_line(){    return _reader.empty_line();}
-    Token& token()     {    return _token;              }
-    char   nextc(){
-        _reader.consume();
-        return _reader.peek();
-    }
+
 
     // what characters are allowed in identifiers
     bool is_identifier(char c){
@@ -48,14 +41,23 @@ public:
     }
 
 
+    Token peek(){
+        return _token;
+    }
+
+    void consume(){
+        next_token();
+    }
+
+
     Token next_token(){
-        char c = peek();
+        char c = peekc();
 
         // newline
         if (c == '\n'){
             _oindent = _cindent;
             _cindent = 0;
-            consume();
+            consumec();
             return make_token(tok_newline);
         }
 
@@ -70,7 +72,7 @@ public:
                 k++;
 
                 if (k == LYTHON_INDENT && c == ' '){
-                    consume();
+                    consumec();
                     break;
                 }
             } while(c == ' ');
@@ -97,16 +99,7 @@ public:
 
         // Identifiers
         if (isalpha(c)){
-            std::string ident;
-            ident.push_back(c);
-
-            while(is_identifier(c = nextc())){
-                ident.push_back(c);
-            }
-
-            TokenType t = keywords()[ident];
-            if (t)  return make_token(t);
-            return make_token(tok_identifier, ident);
+            return read_identifier(c);
         }
 
         // Arrow
@@ -114,8 +107,7 @@ public:
             c = nextc();
 
             if (c == '>'){
-                consume();
-
+                consumec();
                 return make_token(tok_arrow);
             }
 
@@ -124,70 +116,91 @@ public:
 
         // Numbers
         if (std::isdigit(c)){
-            std::string num;
-            TokenType ntype = tok_int;
-
-            while(c != ' ' && c != EOF && c != '\n')
-            {
-                num.push_back(c);
-
-                // if it is not a digit
-                if (!std::isdigit(c) && c != ' '){
-                    if (c == '.'){
-                        if (ntype == tok_int)
-                            ntype = tok_float;
-                        else
-                            ntype = tok_incorrect;    // 12.12.12 is an incorrect token
-                    }
-                    else  // 0x for hex is okay
-                          // bx is not  since it would be a correct identifier
-                          // 0b ?
-                        ntype = tok_incorrect;        // 1abc is an incorrect token
-                }
-
-                c = nextc();
-            }
-
-            return make_token(ntype, num);
+            return read_num(c);
         }
 
         // strings
         if (c == '"'){
-            std::string str;
-
-            while((c = nextc()) != '"'){
-                str.push_back(c);
-            }
-
-            /* Check for doc string
-            if (c == '"'){
-                c = nextc();
-                if (c == '"'){
-                    int k = 0;
-                    c = nextc();
-                    while(k != 3){
-                        if (c == '"'){
-                            k += 1;
-                        }
-                        else {
-                            k = 0;
-                            str.push_back(c);
-                            c = nextc();
-                        }
-                    }
-                    c = nextc();
-                    return make_token(tok_docstring, str);
-                }
-            }*/
-
-            consume();
-            return make_token(tok_string, str);
+            return read_string(c);
         }
 
         // get next char
-        c = peek();
-        consume();
+        c = peekc();
+        consumec();
         return make_token(c);
+    }
+
+    Token read_identifier(char c){
+        std::string ident;
+        ident.push_back(c);
+
+        while(is_identifier(c = nextc())){
+            ident.push_back(c);
+        }
+
+        TokenType t = keywords()[ident];
+        if (t)  return make_token(t);
+        return make_token(tok_identifier, ident);
+    }
+
+    Token read_num(char c){
+        std::string num;
+        TokenType ntype = tok_int;
+
+        while(c != ' ' && c != EOF && c != '\n')
+        {
+            num.push_back(c);
+
+            // if it is not a digit
+            if (!std::isdigit(c) && c != ' '){
+                if (c == '.'){
+                    if (ntype == tok_int)
+                        ntype = tok_float;
+                    else
+                        ntype = tok_incorrect;    // 12.12.12 is an incorrect token
+                }
+                else  // 0x for hex is okay
+                      // bx is not  since it would be a correct identifier
+                      // 0b ?
+                    ntype = tok_incorrect;        // 1abc is an incorrect token
+            }
+
+            c = nextc();
+        }
+
+        return make_token(ntype, num);
+    }
+
+    Token read_string(char c){
+        std::string str;
+
+        while((c = nextc()) != '"'){
+            str.push_back(c);
+        }
+
+        /* Check for doc string
+        if (c == '"'){
+            c = nextc();
+            if (c == '"'){
+                int k = 0;
+                c = nextc();
+                while(k != 3){
+                    if (c == '"'){
+                        k += 1;
+                    }
+                    else {
+                        k = 0;
+                        str.push_back(c);
+                        c = nextc();
+                    }
+                }
+                c = nextc();
+                return make_token(tok_docstring, str);
+            }
+        }*/
+
+        consumec();
+        return make_token(tok_string, str);
     }
 
     Token make_token(int8 t){
@@ -227,6 +240,16 @@ public:
 
         v.push_back(t); // push eof token
         return v;
+    }
+
+private:
+    // helpers
+    void   consumec() {    return _reader.consume();}
+    char   peekc()    {    return _reader.peek();   }
+    Token& token()    {    return _token;           }
+    char   nextc(){
+        _reader.consume();
+        return _reader.peek();
     }
 };
 

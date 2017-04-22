@@ -71,7 +71,7 @@ public:
     uint32 col()    {   return _col;    }
 
     int32 end_line()   {	return col();}
-    int32 begin_line() {    return col() - identifier().size(); }
+    int32 begin_line() {    return int32(col() - identifier().size()); }
 
     std::string& identifier() { return _identifier; }
     float64      as_float()   { return std::stod(_identifier); }

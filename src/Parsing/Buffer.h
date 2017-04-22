@@ -2,7 +2,9 @@
 
 #include <cstdio>
 #include <string>
+
 #include "../Types.h"
+#include "Stream.h"
 
 /*
  *  Buffers are special reader that keep track of current line/col and indent level
@@ -12,9 +14,11 @@
  *  the eval option and macro gen)
  *
  *  FileBuffer is the usual reader
+ *
+ *  Stream of bytes
  */
 namespace kiwi{
-class AbstractBuffer
+class AbstractBuffer: public Stream<AbstractBuffer, char>
 {
 public:
 

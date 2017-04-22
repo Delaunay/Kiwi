@@ -31,7 +31,7 @@ uint8 tok_name_size()
     for (auto& i:v)
         max = std::max(i.size(), max);
 
-    return max;
+    return uint8(max);
 }
 
 std::ostream& Token::debug_print(std::ostream& out){

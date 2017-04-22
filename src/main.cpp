@@ -4,11 +4,27 @@
 #include "AST/Builder.h"
 #include "AST/TreeOperations.h"
 
+#include "Parsing/Parsing.h"
 
 using namespace kiwi;
 
 int main()
 {
+    std::string code =
+            "1 + 1";
+
+    StringBuffer reader(code);
+
+    Parser parser(reader);
+
+    Root op = parser.parse();
+
+    std::cout << "Parsed expr: ";
+    print(std::cout, op);
+
+    std::cout << std::endl;
+
+    /*
     Root v = Builder<>::value(2);
     Root w = Builder<>::value(3);
     Root x = Builder<>::placeholder("x");
@@ -21,7 +37,7 @@ int main()
     std::cout << std::endl;
 
     print(std::cout, g);
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     return 0;
 }

@@ -2,6 +2,12 @@
 
 #include <cstdlib>
 
+//#define freeprint(x) std::cout << "Freeing: "; print(std::cout, x); \
+                       std::cout << std::endl;
+
+
+#define freeprint(x)
+
 namespace kiwi {
 
 class Expression;
@@ -32,8 +38,21 @@ public:
         r.take_ownership();
     }
 
+    Root& operator= (const Root& r){
+        if (_root == nullptr){
+            _owned = false;
+            _root = r.take_ownership();
+        }
+        else{
+            // FIXME
+            std::cout << "Root already owning a node\n";
+        }
+        return *this;
+    }
+
     ~Root(){
         if (!_owned){
+            freeprint(_root);
             free(_root);
         }
     }

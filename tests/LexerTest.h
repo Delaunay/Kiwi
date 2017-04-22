@@ -1,6 +1,6 @@
+#pragma once
 #include <gtest/gtest.h>
-
-#include "Lexer/Lexer.h"
+#include "Parsing/Lexer.h"
 
 using namespace kiwi;
 
