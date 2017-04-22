@@ -5,6 +5,7 @@
 
 //#define printd(x) std::cout << x << std::endl
 //#define dumptok(tol) tok.debug_print(std::cout) << std::endl;
+#undef printd
 #define printd(x)
 #define dumptok(tol)
 
@@ -32,6 +33,9 @@ public:
         else if (tok.type() == tok_int)
             lhs = parse_value(tok.as_integer());
 
+        else if (tok.type() == tok_identifier)
+            lhs = parse_identifier(tok.identifier());
+
         _lexer.consume();
         tok = _lexer.peek();
 
@@ -55,9 +59,14 @@ public:
         return Builder<>::value(val);
     }
 
+    Root parse_identifier(std::string name){
+        printd("parse_identifier");
+        return Builder<>::placeholder(name);
+    }
 
 private:
     Lexer _lexer;
 };
 
 }
+

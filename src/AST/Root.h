@@ -7,6 +7,8 @@
 
 
 #define freeprint(x)
+#define printd(x) std::cout << x << std::endl;
+#define printdt(x, y) std::cout << x; print(std::cout, y); std::cout << std::endl;
 
 namespace kiwi {
 
@@ -29,16 +31,14 @@ public:
     {}
 
     Root(const Root& r):
-        _root(r._root), _owned(true)
+        _root(r.take_ownership()), _owned(false)
     {}
 
     Root(const Root&& r):
-        _root(r._root), _owned(false)
-    {
-        r.take_ownership();
-    }
+        _root(r.take_ownership()), _owned(false)
+    {}
 
-    Root& operator= (const Root& r){
+    Root& operator= (const Root&& r){
         if (_root == nullptr){
             _owned = false;
             _root = r.take_ownership();
@@ -64,7 +64,7 @@ public:
     Expression* take_ownership() const{
         if (_owned){
             // FIXME
-            std::cout << "Node already owned, copying subtree\n";
+            printdt("Node already owned, copying subtree: ", _root);
             return copy(_root);
         }
 
