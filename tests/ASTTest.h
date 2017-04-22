@@ -2,36 +2,37 @@
 #include <iostream>
 
 #include "AST/Builder.h"
-#include "AST/Printing.h"
+#include "AST/TreeOperations.h"
 
 using namespace kiwi;
 
 TEST(AST, Printing)
 {
-    Expr v = Builder::value(2);
-    Expr x = Builder::placeholder("x");
+    Root v = Builder::value(2);
+    Root x = Builder::placeholder("x");
 
-    Expr f = Builder::add(v, x);
+    Root f = Builder::add(v, x);
 
     print(std::cout, f);
     std::cout << std::endl;
 
-    free(f);
+    //free(f);
 }
 
 TEST(AST, Eval)
 {
-    Expr v = Builder::value(2);
-    Expr x = Builder::placeholder("x");
+    Root v = Builder::value(2);
+    Root x = Builder::placeholder("x");
 
-    Expr f = Builder::add(v, x);
+    Root f = Builder::add(v, x);
 
     std::unordered_map<std::string, double> ctx;
         ctx["x"] = 2;
 
-    EXPECT_FLOAT_EQ(full_eval(ctx, f), 4);
+    EXPECT_DOUBLE_EQ(full_eval(ctx, f), 4.0);
 
-    free(f);
+    // v and x are owned by f so we dont need to free them
+    //free(f);
 }
 
 

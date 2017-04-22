@@ -1,12 +1,13 @@
 
 SET(AST_SRC
+    AST.h
     Expression.h
     Expression.cpp
     Builder.h
     Builder.cpp
     Visitor.h
-    Printing.h
-    Printing.cpp)
+    TreeOperations.h
+    TreeOperations.cpp)
 
 SET(${CXX_STANDARD_REQUIRED} ON)
 ADD_LIBRARY(ast ${AST_SRC})

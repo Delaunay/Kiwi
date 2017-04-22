@@ -1,5 +1,6 @@
 #include "Visitor.h"
-#include "Printing.h"
+#include "TreeOperations.h"
+#include "Builder.h"
 
 namespace kiwi{
 
@@ -9,7 +10,7 @@ public:
         out(out)
     {}
 
-    static void run(std::ostream& out, Expr expr){
+    static void run(std::ostream& out, Expression* expr){
         Printing eval(out);
         return eval.traverse(expr);
     }
@@ -38,7 +39,7 @@ public:
         ctx(ctx)
     {}
 
-    static double run(const Context& ctx, Expr expr){
+    static double run(const Context& ctx, Expression* expr){
         FullEval eval(ctx);
         return eval.traverse(expr);
     }
@@ -63,7 +64,10 @@ class FreeMemory: public StaticVisitor<FreeMemory, void>{
 public:
     FreeMemory() = default;
 
-    static void run(Expr expr){
+    static void run(Expression* expr){
+        if (expr == nullptr)
+            return;
+
         FreeMemory eval;
         return eval.traverse(expr);
     }
@@ -81,6 +85,38 @@ public:
     void value      (Value* x)      {   return;}
     void placeholder(Placeholder* x){   return;}
 };
+
+
+class Copy: public StaticVisitor<Copy, Expression*>{
+public:
+    Copy() = default;
+
+    static Expression* run(Expression* expr){
+        if (expr == nullptr)
+            return nullptr;
+
+        Copy eval;
+        return eval.traverse(expr);
+    }
+
+    Expression* add(Add* x){
+        Root l = traverse(x->lhs);
+        Root r = traverse(x->rhs);
+        return Builder::add(l, r);
+    }
+
+    Expression* value(Value* x){
+        return Builder::value(x->value);
+    }
+    Expression* placeholder(Placeholder* x){
+        return Builder::placeholder(x->name);
+    }
+};
+
+
+Expression* copy(Expression* expr){
+    return Copy::run(expr);
+}
 
 
 void print(std::ostream& out, Expression* expr){

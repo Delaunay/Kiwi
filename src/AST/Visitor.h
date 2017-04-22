@@ -12,7 +12,7 @@ namespace kiwi{
 template<typename Visitor, typename RetType>
 class StaticVisitor{
 public:
-    RetType traverse(Expr x){
+    RetType traverse(Expression* x){
         switch(x->tag){
         case NodeTag::add:{
             Add* exp = static_cast<Add*>(x);

@@ -1,7 +1,8 @@
 #pragma once
 
+#include <iostream>
 #include <string>
-#include <memory>
+//#include <memory>
 
 //#define LINK_TO_PARENT
 //#define VTABLE_VISITOR
@@ -52,18 +53,19 @@ public:
 };
 
 //typedef std::unique_ptr<Expression> Expr;
-typedef Expression* Expr;
+//typedef Expression* Expr;
+
 
 class Add: public Expression{
 public:
-    Add(Expr lhs, Expr rhs):
+    Add(Expression* lhs, Expression* rhs):
         Expression(NodeTag::add), lhs(lhs), rhs(rhs)
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
 
-    Expr lhs;
-    Expr rhs;
+    Expression* lhs;
+    Expression* rhs;
 };
 
 class Value: public Expression{
