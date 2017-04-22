@@ -26,10 +26,19 @@ public:
             Placeholder* exp = static_cast<Placeholder*>(x);
             return static_cast<Visitor&>(*this).placeholder(exp);
         }
+        case NodeTag::borrow:{
+            Borrow* exp = static_cast<Borrow*>(x);
+            return static_cast<Visitor&>(*this).borrow(exp);
+        }
         default:
             KIWI_UNREACHABLE();
             return RetType();
         }
+    }
+
+    // default behavior is: Borrows are ignored
+    RetType borrow(Borrow* b){
+        return traverse(b->expr);
     }
 };
 

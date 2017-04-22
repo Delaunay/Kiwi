@@ -69,7 +69,9 @@ public:
             return;
 
         FreeMemory eval;
-        return eval.traverse(expr);
+        eval.traverse(expr);
+        delete expr;
+        return;
     }
 
     void add(Add* x){
@@ -82,42 +84,57 @@ public:
         return;
     }
 
+    void borrow(Borrow*){
+        // nothing to do. Borrow will be deleted by its parent
+    }
+
     void value      (Value* x)      {   return;}
     void placeholder(Placeholder* x){   return;}
 };
 
-
+/*
+ */
 class Copy: public StaticVisitor<Copy, Expression*>{
 public:
-    Copy() = default;
+    Copy(bool keep_borrowed):
+        keep_borrowed(keep_borrowed)
+    {}
 
-    static Expression* run(Expression* expr){
+    static Expression* run(Expression* expr, bool keep_borrowed=false){
         if (expr == nullptr)
             return nullptr;
 
-        Copy eval;
+        Copy eval(keep_borrowed);
         return eval.traverse(expr);
     }
 
     Expression* add(Add* x){
-        Root l = traverse(x->lhs);
-        Root r = traverse(x->rhs);
-        return Builder::add(l, r);
+        DummyRoot l = traverse(x->lhs);
+        DummyRoot r = traverse(x->rhs);
+        return Builder<DummyRoot>::add(l, r);
     }
 
     Expression* value(Value* x){
-        return Builder::value(x->value);
+        return Builder<DummyRoot>::value(x->value);
     }
+
     Expression* placeholder(Placeholder* x){
-        return Builder::placeholder(x->name);
+        return Builder<DummyRoot>::placeholder(x->name);
     }
+
+    Expression* borrow(Borrow* b){
+        if (keep_borrowed)
+            return b;
+        return traverse(b->expr);
+    }
+
+    bool keep_borrowed;
 };
 
 
-Expression* copy(Expression* expr){
-    return Copy::run(expr);
+Expression* copy(Expression* expr, bool keep_borrowed){
+    return Copy::run(expr, keep_borrowed);
 }
-
 
 void print(std::ostream& out, Expression* expr){
     return Printing::run(out, expr);

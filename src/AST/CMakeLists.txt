@@ -1,6 +1,7 @@
 
 SET(AST_SRC
     AST.h
+    Root.h
     Expression.h
     Expression.cpp
     Builder.h

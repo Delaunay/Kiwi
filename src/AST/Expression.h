@@ -38,6 +38,7 @@ enum class NodeTag{
     value,
     placeholder,
     add,
+    borrow
 };
 
 class Expression{
@@ -88,6 +89,19 @@ public:
     VTABLEV(void visit(class DynamicVisitor* v) override;)
 
     std::string name;
+};
+
+/* Borrow is a dummy Node which only exists to help
+ * memory management. A Borrowed node is a node owned
+ * by another tree. i.e we don't need to free it
+ */
+class Borrow: public Expression{
+public:
+    Borrow(Expression* expr):
+        Expression(NodeTag::borrow), expr(expr)
+    {}
+
+    Expression* expr;
 };
 
 
