@@ -1,5 +1,10 @@
 #pragma once
 
+#undef printd
+#undef printdt
+#undef dumptok
+#undef freeprint
+
 #ifdef KIWI_DEBUG
 #   include <iostream>
 #   define printd(x)     std::cout << x << std::endl
