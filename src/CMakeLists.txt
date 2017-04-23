@@ -3,9 +3,11 @@ ADD_SUBDIRECTORY(AST)
 ADD_SUBDIRECTORY(Logging)
 
 SET(SRC_LIST
-    main.cpp
+    Debug.h
     Format.h
-    Types.h)
+    Types.h
+    main.cpp
+)
 
 SET(${CXX_STANDARD_REQUIRED} ON)
 ADD_EXECUTABLE(dummy ${SRC_LIST})

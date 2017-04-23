@@ -20,6 +20,6 @@ double full_eval(const Context& ctx, Expression* expr);
 void free(Expression* expr);
 
 // Copy a tree
-Expression* copy(Expression* expr, bool keep_borrowed=false);
+Expression* copy(Expression* expr, bool keep_borrowed = false);
 
 }

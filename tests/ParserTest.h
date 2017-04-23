@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <sstream>
 
 #include "Parsing/Parsing.h"
 #include "AST/TreeOperations.h"
@@ -9,17 +10,17 @@ using namespace kiwi;
 
 TEST(Parser, AddParsing)
 {
-    std::string code =
-            "1 + x + 3";
+    std::string code = "1 + x + 3";
 
     StringBuffer reader(code);
-
-    Parser parser(reader);
+    Parser       parser(reader);
 
     Root op = parser.parse();
 
-    std::cout << "Parsed expr: ";
-    print(std::cout, op);
+    std::stringstream ss; print(ss, op);
+    std::string name = ss.str();
 
-    std::cout << std::endl;
+    EXPECT_EQ(name, code);
+
+    std::cout << "Parsed expr: " << name << std::endl;
 }

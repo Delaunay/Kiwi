@@ -121,7 +121,8 @@ public:
 
     Expression* borrow(Borrow* b){
         if (keep_borrowed)
-            return b;
+            return Builder<DummyRoot>::borrow(b->expr);
+
         return traverse(b->expr);
     }
 

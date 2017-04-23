@@ -1,13 +1,8 @@
 #pragma once
 
 #include "Lexer.h"
+#include "../Debug.h"
 #include "../AST/Builder.h"
-
-//#define printd(x) std::cout << x << std::endl
-//#define dumptok(tol) tok.debug_print(std::cout) << std::endl;
-#undef printd
-#define printd(x)
-#define dumptok(tol)
 
 namespace kiwi{
 

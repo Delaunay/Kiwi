@@ -94,6 +94,11 @@ public:
 /* Borrow is a dummy Node which only exists to help
  * memory management. A Borrowed node is a node owned
  * by another tree. i.e we don't need to free it
+ *
+ * Borrow is mostly during meta programming phase
+ * when the user generates code from a programm.
+ * Borrow allow us to reuse the original program subtree
+ * instead of copying it
  */
 class Borrow: public Expression{
 public:

@@ -1,14 +1,7 @@
 #pragma once
 
 #include <cstdlib>
-
-//#define freeprint(x) std::cout << "Freeing: "; print(std::cout, x); \
-                       std::cout << std::endl;
-
-
-#define freeprint(x)
-#define printd(x) std::cout << x << std::endl;
-#define printdt(x, y) std::cout << x; print(std::cout, y); std::cout << std::endl;
+#include "../Debug.h"
 
 namespace kiwi {
 
