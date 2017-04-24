@@ -70,17 +70,17 @@ public:
         return eval.traverse(expr);
     }
 
-    Root add(Add* x){
+    Expression* add(Add* x){
         Expression* lhs = traverse(x->lhs);
         Expression* rhs = traverse(x->rhs);
 
         if (lhs->tag == NodeTag::value && rhs->tag == NodeTag::value){
             Value* vlhs = static_cast<Value*>(lhs);
             Value* vrhs = static_cast<Value*>(rhs);;
-            return Builder<>::value(vlhs->value + vrhs->value);
+            return Builder<DummyRoot>::value(vlhs->value + vrhs->value);
         }
 
-        return Builder<>::add(lhs, rhs);
+        return Builder<DummyRoot>::add(lhs, rhs);
     }
 
     Expression* value(Value* x){
@@ -91,7 +91,7 @@ public:
         if (ctx.count(x->name) == 0)
             return x;
 
-        return Builder<>::value(ctx.at(x->name));
+        return Builder<DummyRoot>::value(ctx.at(x->name));
     }
 
     const Context& ctx;

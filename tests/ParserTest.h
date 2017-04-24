@@ -10,7 +10,7 @@ using namespace kiwi;
 
 TEST(Parser, AddParsing)
 {
-    std::string code = "1 + x + 3";
+    std::string code = "(1 + 3) + x";
 
     StringBuffer reader(code);
     Parser       parser(reader);

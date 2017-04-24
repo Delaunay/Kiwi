@@ -11,7 +11,7 @@ using namespace kiwi;
 int main()
 {
     std::string code =
-            "1 + x";
+            "(1 + 3) + x";
 
     StringBuffer reader(code);
 

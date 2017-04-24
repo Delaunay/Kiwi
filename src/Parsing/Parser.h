@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Lexer.h"
-#include "../Debug.h"
 #include "../AST/Builder.h"
+
+#define KIWI_DEBUG
+#include "../Debug.h"
 
 namespace kiwi{
 
@@ -22,7 +24,17 @@ public:
 
         dumptok(tok);
 
-        if (tok.type() == tok_float)
+        if (tok.type() == '('){
+            _lexer.consume();
+            lhs = parse();
+
+            tok = _lexer.peek();
+
+            if (tok.type() != ')'){
+                printd("Expected closing parenthesis");
+            }
+        }
+        else if (tok.type() == tok_float)
             lhs = parse_value(tok.as_float());
 
         else if (tok.type() == tok_int)
@@ -31,7 +43,7 @@ public:
         else if (tok.type() == tok_identifier)
             lhs = parse_identifier(tok.identifier());
 
-        _lexer.consume();
+        _lexer.consume();       // Eat ')'/tok_int...
         tok = _lexer.peek();
 
         dumptok(tok);
