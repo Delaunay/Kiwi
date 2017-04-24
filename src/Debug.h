@@ -1,5 +1,3 @@
-#pragma once
-
 #undef printd
 #undef printdt
 #undef dumptok
