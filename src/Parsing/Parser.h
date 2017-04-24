@@ -3,7 +3,7 @@
 #include "Lexer.h"
 #include "../AST/Builder.h"
 
-#define KIWI_DEBUG
+//#define KIWI_DEBUG
 #include "../Debug.h"
 
 namespace kiwi{
@@ -48,9 +48,17 @@ public:
 
         dumptok(tok);
 
+        // end of expr
+        if (tok.type() == tok_eof || tok.type() == ')')
+            return lhs;
+
+        // operator
         if (tok.type() == '+'){
             _lexer.consume();
             return parse_add(lhs);
+        } else {
+            dumptok(tok);
+            printd("Is not a correct op");
         }
         return lhs;
     }

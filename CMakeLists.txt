@@ -49,6 +49,7 @@ OPTION(BUILD_UI             "Build UI"           OFF)
 
 FIND_PACKAGE(Git)
 FIND_PACKAGE(gtest QUIET)
+FIND_PACKAGE(SFML)
 
 #IF(${BUILD_UI})
 #    # Add SFML cmake script

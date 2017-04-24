@@ -10,17 +10,23 @@ using namespace kiwi;
 
 TEST(Parser, AddParsing)
 {
-    std::string code = "(1 + 3) + x";
+    std::string code = "((2 + 2) + (2 + 2)) + x";
 
+    // first
     StringBuffer reader(code);
     Parser       parser(reader);
-
     Root op = parser.parse();
-
     std::stringstream ss; print(ss, op);
-    std::string name = ss.str();
+    std::string code_ret1 = ss.str();
 
-    EXPECT_EQ(name, code);
+    // second
+    StringBuffer reader2(code_ret1);
+    Parser       parser2(reader2);
+    Root op2 = parser2.parse();
+    std::stringstream ss2; print(ss2, op2);
+    std::string code_ret2 = ss2.str();
 
-    std::cout << "Parsed expr: " << name << std::endl;
+    EXPECT_EQ(code_ret2, code_ret1);
+
+    std::cout << "Parsed expr: " << code_ret2 << std::endl;
 }
