@@ -32,7 +32,7 @@ public:
         }
         default:
             KIWI_UNREACHABLE();
-            return RetType();
+            //return RetType();
         }
     }
 

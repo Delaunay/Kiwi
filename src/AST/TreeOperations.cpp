@@ -59,6 +59,44 @@ public:
     const Context& ctx;
 };
 
+class PartialEval: public StaticVisitor<PartialEval, Root>{
+public:
+    PartialEval(const Context& ctx):
+        ctx(ctx)
+    {}
+
+    static Root run(const Context& ctx, Expression* expr){
+        PartialEval eval(ctx);
+        return eval.traverse(expr);
+    }
+
+    Root add(Add* x){
+        Expression* lhs = traverse(x->lhs);
+        Expression* rhs = traverse(x->rhs);
+
+        if (lhs->tag == NodeTag::value && rhs->tag == NodeTag::value){
+            Value* vlhs = static_cast<Value*>(lhs);
+            Value* vrhs = static_cast<Value*>(rhs);;
+            return Builder<>::value(vlhs->value + vrhs->value);
+        }
+
+        return Builder<>::add(lhs, rhs);
+    }
+
+    Expression* value(Value* x){
+        return x;
+    }
+
+    Expression* placeholder(Placeholder* x){
+        if (ctx.count(x->name) == 0)
+            return x;
+
+        return Builder<>::value(ctx.at(x->name));
+    }
+
+    const Context& ctx;
+};
+
 
 class FreeMemory: public StaticVisitor<FreeMemory, void>{
 public:

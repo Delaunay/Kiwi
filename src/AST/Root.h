@@ -54,10 +54,12 @@ public:
      * takes ownership of the node. If the node is already
      * owned a copy of the tree is returned instead
      */
-    Expression* take_ownership() const{
+    Expression* take_ownership(bool borrow=false) const{
         if (_owned){
             // FIXME
             printdt("Node already owned, copying subtree: ", _root);
+            //if (borrow)
+            //    return;
             return copy(_root);
         }
 

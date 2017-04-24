@@ -11,7 +11,7 @@ TEST(Lexer, TokenDump)
             "    \"\"\" This is a docstring \"\"\"\n"
             "    return 1 + 1\n"
             "def function(test:int, test):\n"
-            "    return 1 + 1\n";
+            "    return 1 + 1;\n";
 
     StringBuffer reader(code);
 

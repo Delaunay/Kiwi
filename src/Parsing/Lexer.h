@@ -145,7 +145,7 @@ public:
         std::string num;
         TokenType ntype = tok_int;
 
-        while(c != ' ' && c != EOF && c != '\n')
+        while(std::isdigit(c) || c == '.')
         {
             num.push_back(c);
 
