@@ -11,7 +11,7 @@ pipelines:
     - step:
         script:
           - apt-get update
-          - apt-get install libgtest-dev
+          - apt-get install libgtest-dev libsfml-dev
           - git submodule update --init
           - cmake .
           - make
