@@ -14,5 +14,5 @@ pipelines:
           - apt-get install -y libgtest-dev libsfml-dev
           - git submodule update --init
           - cmake .
-          - make
+          - make kiwi_test
           - ./bin/kiwi_test
