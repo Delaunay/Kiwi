@@ -2,7 +2,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 
 # project name + language used
-PROJECT(kiwi CXX)
+PROJECT(kiwi)
 
 # required for gtest which uses /MD
 if (MSVC)
