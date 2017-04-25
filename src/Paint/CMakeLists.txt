@@ -1,6 +1,10 @@
+# FIND_PACKAGE(SFML)
+
 INCLUDE_DIRECTORIES(${SFML_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(../../dependencies/nuklear/)
 
 SET(FRONT_END_LIST
+    ../../dependencies/nuklear/nuklear.h
     nuklear_main.cpp
 )
 
