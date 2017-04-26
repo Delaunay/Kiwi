@@ -1,43 +1,23 @@
-/*
- * Nuklear - 1.32.0 - public domain
- * no warrenty implied; use at your own risk.
- * authored from 2015-2016 by Micha Mettke
- */
-/*
- * ==============================================================
- *
- *                              API
- *
- * ===============================================================
- */
-#ifndef NK_SFML_GL3_H_
-#define NK_SFML_GL3_H_
-
-/* Feel free to edit here and include your own extension wrangler */
-#include <glad/glad.h>
-/* I use GLAD but you can use GLEW or what you like */
+#define NK_API
+#define NK_INTERN
 
 #include <SFML/Window.hpp>
+#include <glad/glad.h>
 
-NK_API struct nk_context*   nk_sfml_init(sf::Window* window);
-NK_API void                 nk_sfml_font_stash_begin(struct nk_font_atlas** atlas);
-NK_API void                 nk_sfml_font_stash_end(void);
-NK_API int                  nk_sfml_handle_event(sf::Event* event);
-NK_API void                 nk_sfml_render(enum nk_anti_aliasing, int max_vertex_buffer, int max_element_buffer);
-NK_API void                 nk_sfml_shutdown(void);
+//#include <SFML/OpenGL.hpp>
+//#include "SFMLNuklear.h"
 
-NK_API void                 nk_sfml_device_create(void);
-NK_API void                 nk_sfml_device_destroy(void);
+typedef char GLchar;
 
-#endif
-/*
- * ==============================================================
- *
- *                          IMPLEMENTATION
- *
- * ===============================================================
- */
- #ifdef NK_SFML_GL3_IMPLEMENTATION
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#include "nuklear.h"
 
 #include <string>
 
@@ -459,5 +439,3 @@ void nk_sfml_shutdown()
     nk_sfml_device_destroy();
     memset(&sfml, 0, sizeof(sfml));
 }
-
-#endif

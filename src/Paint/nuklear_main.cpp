@@ -1,4 +1,4 @@
-#include "Window.h"
+/*#include "Window.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
@@ -53,17 +53,25 @@ public:
         nk_end(ctx);
 
 
-        /* -------------- EXAMPLES ---------------- */
+        /* -------------- EXAMPLES ---------------- *
         //calculator(ctx);
         //overview(ctx);
         node_editor(ctx);
-        /* ----------------------------------------- */
+        /* ----------------------------------------- *
     }
 };
+*/
+
+
+
+#include "NuklearWindow.h"
+
 
 int main(){
 
-    Application app;
+    kiwi::NuklearWindow app;
+
+    app.init();
 
     app.run();
 
