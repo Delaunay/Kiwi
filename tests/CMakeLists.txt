@@ -30,8 +30,15 @@ SET(TEST_SRC
     ParserTest.h
 )
 
+IF(WIN32)
+
+ELSE()
+    MESSAGE(STATUS "Linking with -lpthread")
+    SET(SYS_LIB -lpthread)
+ENDIF(WIN32)
+
 ADD_EXECUTABLE(kiwi_test gtest_main.cpp ${TEST_SRC})
-TARGET_LINK_LIBRARIES(kiwi_test ast parsing gtest -pthread)
+TARGET_LINK_LIBRARIES(kiwi_test ast parsing gtest ${SYS_LIB})
 SET_PROPERTY(TARGET kiwi_test PROPERTY CXX_STANDARD 14)
 
 

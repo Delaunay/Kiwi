@@ -1,13 +1,10 @@
-#define NK_API
-#define NK_INTERN
-
 #include <SFML/Window.hpp>
 #include <glad/glad.h>
 
-//#include <SFML/OpenGL.hpp>
-//#include "SFMLNuklear.h"
-
-typedef char GLchar;
+// memset
+#if __linux__
+    #include <cstring>
+#endif
 
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
@@ -18,8 +15,6 @@ typedef char GLchar;
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_IMPLEMENTATION
 #include "nuklear.h"
-
-#include <string>
 
 struct nk_sfml_device {
     struct nk_buffer cmds;

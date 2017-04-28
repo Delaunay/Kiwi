@@ -19,7 +19,7 @@ class Expression;
  */
 class Root{
 public:
-    Root(Expression* ptr):
+    Root(Expression* ptr = nullptr):
         _root(ptr), _owned(false)
     {}
 
