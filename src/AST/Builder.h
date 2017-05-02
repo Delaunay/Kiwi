@@ -43,21 +43,14 @@ public:
         return root;
     }*/
 
-    static Parent unary(const std::string op, const Parent& expr){
-        Parent root = new UnaryFunction(op, expr.take_ownership());
-        PARENT(expr->parent = root);
+    static Parent function(const std::string op, const Parent& body){
+        Parent root = new Function(op, body.take_ownership());
+        PARENT(body->parent = root);
         return root;
     }
-    static Parent binary(const std::string op, const Parent& lhs, const Parent& rhs){
-        Parent root = new BinaryFunction(op,
-                                         lhs.take_ownership(),
-                                         rhs.take_ownership());
-        PARENT(lhs->parent = root);
-        PARENT(rhs->parent = root);
-        return root;
-    }
-    static Parent nnary(const std::string name){
-        return new NnaryFunction(name);
+
+    static Parent call(const std::string& op, std::vector<Expression*> args){
+        return new FunctionCall(op, args);
     }
 
     static Parent value(double value){
@@ -70,6 +63,31 @@ public:
 
     static Parent borrow(const Parent& expr){
         return new Borrow(expr.get());
+    }
+
+    static Parent add(const Parent& lhs, const Parent& rhs){
+        Parent root = new FunctionCall("+", {lhs.take_ownership(), rhs.take_ownership()});
+        PARENT(lhs->parent = root);
+        PARENT(rhs->parent = root);
+        return root;
+    }
+    static Parent mult(const Parent& lhs, const Parent& rhs){
+        Parent root = new FunctionCall("*", {lhs.take_ownership(), rhs.take_ownership()});
+        PARENT(lhs->parent = root);
+        PARENT(rhs->parent = root);
+        return root;
+    }
+    static Parent div(const Parent& lhs, const Parent& rhs){
+        Parent root = new FunctionCall("/", {lhs.take_ownership(), rhs.take_ownership()});
+        PARENT(lhs->parent = root);
+        PARENT(rhs->parent = root);
+        return root;
+    }
+    static Parent sub(const Parent& lhs, const Parent& rhs){
+        Parent root = new FunctionCall("-", {lhs.take_ownership(), rhs.take_ownership()});
+        PARENT(lhs->parent = root);
+        PARENT(rhs->parent = root);
+        return root;
     }
 };
 

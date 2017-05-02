@@ -18,17 +18,13 @@ public:
             Add* exp = static_cast<Add*>(x);
             return static_cast<Visitor&>(*this).add(exp);
         }*/
-        case NodeTag::unary:{
-            UnaryFunction* exp = static_cast<UnaryFunction*>(x);
-            return static_cast<Visitor&>(*this).unary(exp);
+        case NodeTag::function:{
+            Function* exp = static_cast<Function*>(x);
+            return static_cast<Visitor&>(*this).function(exp);
         }
-        case NodeTag::binary:{
-            BinaryFunction* exp = static_cast<BinaryFunction*>(x);
-            return static_cast<Visitor&>(*this).binary(exp);
-        }
-        case NodeTag::nnary:{
-            NnaryFunction* exp = static_cast<NnaryFunction*>(x);
-            return static_cast<Visitor&>(*this).nnary(exp);
+        case NodeTag::call:{
+            FunctionCall* exp = static_cast<FunctionCall*>(x);
+            return static_cast<Visitor&>(*this).call(exp);
         }
         // leafs
         case NodeTag::value:{
@@ -76,9 +72,8 @@ public:
     })
 
     //virtual void add(Add* x) = 0;
-    virtual void unary(UnaryFunction* x) = 0;
-    virtual void binary(BinaryFunction* x) = 0;
-    virtual void nnary(NnaryFunction* x) = 0;
+    virtual void function(Function* x) = 0;
+    virtual void call(FunctionCall* x) = 0;
 
     virtual void value(Value* x) = 0;
     virtual void placeholder(Placeholder* x) = 0;

@@ -40,11 +40,10 @@ enum class NodeTag{
     placeholder,
     // add,
 
-    // Functions
-    unary,      // 1 argument
-    binary,     // 2 arguments
-    nnary,      // n arguments
+    function,
+    call,
 
+    builtin,
     borrow
 };
 
@@ -60,79 +59,7 @@ public:
     PARENT(Expression* parent = nullptr;)
 };
 
-//typedef std::unique_ptr<Expression> Expr;
-//typedef Expression* Expr;
 
-class Function: public Expression{
-public:
-    std::string name;
-
-    // Cant create a function, use Unary/Binary/Nnary instead
-protected:
-    Function(const std::string& op, NodeTag tag):
-        Expression(tag), name(op)
-    {}
-public:
-
-    std::size_t args_size() const;
-    Expression* arg(std::size_t index);
-};
-
-class UnaryFunction: public Function{
-public:
-    Expression* expr;
-
-    UnaryFunction(const std::string& op, Expression* expr):
-        Function(op, NodeTag::unary), expr(expr)
-    {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-
-    std::size_t args_size() const { return 1;}
-    Expression* arg(std::size_t index) {
-        switch(index){
-        case 0: return expr;
-        default: return expr;
-        }
-    }
-};
-
-
-class BinaryFunction: public Function{
-public:
-    Expression* lhs;
-    Expression* rhs;
-
-    BinaryFunction(const std::string& op, Expression* lhs, Expression* rhs):
-        Function(op, NodeTag::binary), lhs(lhs), rhs(rhs)
-    {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-
-    std::size_t args_size() const { return 2;}
-    Expression* arg(std::size_t index) {
-        switch(index){
-        case 0: return lhs;
-        case 1: return rhs;
-        default: return lhs;
-        }
-    }
-};
-
-class NnaryFunction: public Function{
-public:
-    std::vector<Expression*> args;
-    Expression*              body;
-
-    NnaryFunction(const std::string& op):
-        Function(op, NodeTag::nnary)
-    {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-
-    std::size_t args_size() const { return args.size();}
-    Expression* arg(std::size_t index) { return args[index]; }
-};
 
 /*
 class Add: public Expression{
@@ -146,6 +73,54 @@ public:
     Expression* lhs;
     Expression* rhs;
 };*/
+
+// Implementation of a function
+class Function: public Expression{
+public:
+    std::string name;
+    std::vector<std::string> args;
+    Expression* body;
+
+    Function(const std::string& name, Expression* body):
+        Expression(NodeTag::function), name(name), body(body)
+    {}
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+
+
+    std::size_t args_size() const{
+        return args.size();
+    }
+    const std::string& arg(std::size_t index) const{
+        return args[index];
+    }
+};
+
+// Reference to a function
+class FunctionCall: public Expression{
+public:
+    std::string name;
+    std::vector<Expression*> args;
+
+    /*
+    FunctionCall(std::size_t arg_size):
+        Expression(NodeTag::call), args(arg_size)
+    {}*/
+
+    FunctionCall(const std::string& name, const std::vector<Expression*>& args):
+        Expression(NodeTag::call), name(name), args(args)
+    {}
+
+    std::size_t args_size() const{
+        return args.size();
+    }
+
+    Expression* arg(std::size_t index){
+        return args[index];
+    }
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+};
 
 class Value: public Expression{
 public:
@@ -184,7 +159,26 @@ public:
         Expression(NodeTag::borrow), expr(expr)
     {}
 
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+
     Expression* expr;
+};
+
+
+/* Builtin is a special construct used to implement
+ * builtin operations i.e (+/x/-/import etc...)
+ * that are hardcoded inside the compiler itself.
+ *
+ * During eval the compiler will lookup the implementation
+ */
+class Builtin: public Expression{
+public:
+    Builtin(const std::string& name):
+        Expression(NodeTag::builtin), name(name)
+    {}
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+    std::string name;
 };
 
 

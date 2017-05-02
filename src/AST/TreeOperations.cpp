@@ -2,6 +2,8 @@
 #include "TreeOperations.h"
 #include "Builder.h"
 
+#include <functional>
+
 namespace kiwi{
 
 class Printing: public StaticVisitor<Printing, void>{
@@ -22,27 +24,30 @@ public:
         traverse(x->rhs);
     }*/
 
-    void unary(UnaryFunction* x){
-        out << x->name << "(";
-        traverse(x->expr);
-        out << ")";
+    void function(Function* x){
+        std::size_t n = x->args_size() - 1;
+        out << "def " << x->name << "(";
+
+        for(int i = 0; i < n; ++i){
+            out << x->arg(i) << ", ";
+        }
+        // last
+        out << x->arg(n) << "):\n";
+
+        traverse(x->body);
     }
 
-    void binary(BinaryFunction* x){
-        traverse(x->lhs);
-        out << " " << x->name << " ";
-        traverse(x->rhs);
-    }
+    void call(FunctionCall* x){
+        std::size_t n = x->args_size() - 1;
 
-    void nnary(NnaryFunction* x){
         out << x->name << "(";
-        for(int i = 0; i < x->args_size() - 1; ++i){
+        for(int i = 0; i < n; ++i){
             traverse(x->arg(i));
             out << ", ";
         }
 
         // last
-        traverse(x->arg(x->args_size() - 1));
+        traverse(x->arg(n));
         out << ")";
     }
 
@@ -74,16 +79,36 @@ public:
         return traverse(x->lhs) + traverse(x->rhs);
     }*/
 
-    double unary(UnaryFunction* x){
-        return traverse(x->expr);
-    }
-
-    double binary(BinaryFunction* x){
-        return traverse(x->lhs) + traverse(x->rhs);
-    }
-
-    double nnary(NnaryFunction* x){
+    // nothing to do...
+    double function(Function*){
         return 0;
+    }
+
+    double call(FunctionCall* x){
+        if (x->args_size() != 2)
+            return 0;
+
+
+        // Quick hack
+        static std::unordered_map<std::string, std::function<double(double, double)>> op ={
+            {"+", [](double a, double b){ return a + b;}},
+            {"-", [](double a, double b){ return a - b;}},
+            {"*", [](double a, double b){ return a * b;}},
+            {"/", [](double a, double b){ return a / b;}},
+        };
+
+        double a = traverse(x->arg(0));
+        double b = traverse(x->arg(1));
+        return op[x->name](a, b);
+
+
+        // we need to build a new context with the arguments
+
+        // lookup the implementation
+
+        // eval body with new context
+
+        // return result
     }
 
     double value(Value* x){
@@ -122,25 +147,19 @@ public:
         return Builder<DummyRoot>::add(lhs, rhs);
     }*/
 
-    Expression* binary(BinaryFunction* x){
-        Expression* lhs = traverse(x->lhs);
-        Expression* rhs = traverse(x->rhs);
-
-        if (lhs->tag == NodeTag::value && rhs->tag == NodeTag::value){
-            Value* vlhs = static_cast<Value*>(lhs);
-            Value* vrhs = static_cast<Value*>(rhs);;
-            return Builder<DummyRoot>::value(vlhs->value + vrhs->value);
-        }
-
-        return Builder<DummyRoot>::binary(x->name, lhs, rhs);
+    Expression* function(Function* x){
+        return x;
     }
 
-    Expression* unary(UnaryFunction* x){
-        return traverse(x->expr);
-    }
+    Expression* call(FunctionCall* x){
+        // we need to build a new context with the arguments
 
-    Expression* nnary(NnaryFunction* x){
-        return Builder<DummyRoot>::value(0);
+        // lookup the implementation
+
+        // eval body with new context
+
+        // return result
+        return x;
     }
 
     Expression* value(Value* x){
@@ -172,23 +191,13 @@ public:
         return;
     }
 
-    void unary(UnaryFunction* x){
-        traverse(x->expr);
-        delete x->expr;
+    void function(Function* x){
+        traverse(x->body);
+        delete x->body;
         return;
     }
 
-    void binary(BinaryFunction* x){
-        traverse(x->lhs);
-        delete x->lhs;
-
-        traverse(x->rhs);
-        delete x->rhs;
-
-        return;
-    }
-
-    void nnary(NnaryFunction* x){
+    void call(FunctionCall* x){
         for(int i = 0; i < x->args_size(); ++i){
             traverse(x->arg(i));
             delete x->arg(i);
@@ -224,26 +233,12 @@ public:
                                        traverse(x->rhs));
     }*/
 
-    Expression* unary(UnaryFunction* x){
-        return Builder<DummyRoot>::unary(x->name, traverse(x->expr));
+    Expression* function(Function* x){
+        return Builder<DummyRoot>::function(x->name, traverse(x->body));
     }
 
-    Expression* binary(BinaryFunction* x){
-        return Builder<DummyRoot>::binary(x->name,
-                                          traverse(x->lhs),
-                                          traverse(x->rhs));
-    }
-
-    Expression* nnary(NnaryFunction* x){
-        NnaryFunction* fun = static_cast<NnaryFunction*>(Builder<DummyRoot>::nnary(x->name).get());
-
-        for(int i = 0; i < x->args_size(); ++i){
-            fun->args.push_back(traverse(x->arg(i)));
-        }
-
-        fun->body = traverse(x->body);
-
-        return fun;
+    Expression* call(FunctionCall* x){
+        return Builder<DummyRoot>::call(x->name, x->args);
     }
 
     Expression* value(Value* x){
