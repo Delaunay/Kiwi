@@ -35,6 +35,8 @@ struct nk_sfml_vertex {
     float uv[2];
     nk_byte col[4];
 };
+
+// Global
 static struct nk_sfml {
     sf::Window* window;
     struct nk_sfml_device ogl;

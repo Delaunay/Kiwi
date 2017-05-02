@@ -13,11 +13,24 @@ template<typename Visitor, typename RetType>
 class StaticVisitor{
 public:
     RetType traverse(Expression* x){
-        switch(x->tag){
+        switch(x->tag){/*
         case NodeTag::add:{
             Add* exp = static_cast<Add*>(x);
             return static_cast<Visitor&>(*this).add(exp);
+        }*/
+        case NodeTag::unary:{
+            UnaryFunction* exp = static_cast<UnaryFunction*>(x);
+            return static_cast<Visitor&>(*this).unary(exp);
         }
+        case NodeTag::binary:{
+            BinaryFunction* exp = static_cast<BinaryFunction*>(x);
+            return static_cast<Visitor&>(*this).binary(exp);
+        }
+        case NodeTag::nnary:{
+            NnaryFunction* exp = static_cast<NnaryFunction*>(x);
+            return static_cast<Visitor&>(*this).nnary(exp);
+        }
+        // leafs
         case NodeTag::value:{
             Value* exp = static_cast<Value*>(x);
             return static_cast<Visitor&>(*this).value(exp);
@@ -62,7 +75,11 @@ public:
         x->visit(this);
     })
 
-    virtual void add(Add* x) = 0;
+    //virtual void add(Add* x) = 0;
+    virtual void unary(UnaryFunction* x) = 0;
+    virtual void binary(BinaryFunction* x) = 0;
+    virtual void nnary(NnaryFunction* x) = 0;
+
     virtual void value(Value* x) = 0;
     virtual void placeholder(Placeholder* x) = 0;
 };

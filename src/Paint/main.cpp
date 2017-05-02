@@ -26,6 +26,10 @@
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
 #define LEN(a) (sizeof(a)/sizeof(a)[0])
 
+#define KIWI_DEBUG
+#include "../Debug.h"
+
+
 /* ===============================================================
  *
  *                          EXAMPLE
@@ -51,8 +55,9 @@ int main(void)
     sf::Window win(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Demo", sf::Style::Default, settings);
     win.setVerticalSyncEnabled(true);
     win.setActive(true);
+
     if(!gladLoadGL()) { /* Load OpenGL extensions */
-        printf("Failed to load OpenGL extensions!\n");
+        printd("Failed to load OpenGL extensions!\n");
         return -1;
     }
     glViewport(0, 0, win.getSize().x, win.getSize().y);

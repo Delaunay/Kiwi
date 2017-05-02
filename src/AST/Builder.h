@@ -12,6 +12,7 @@ template<typename T = Root>
 class Builder{
 public:
     typedef T Parent;
+    /*
     static Parent add(const Parent& lhs, const Parent& rhs){
 
         // Constant folding
@@ -40,6 +41,23 @@ public:
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
+    }*/
+
+    static Parent unary(const std::string op, const Parent& expr){
+        Parent root = new UnaryFunction(op, expr.take_ownership());
+        PARENT(expr->parent = root);
+        return root;
+    }
+    static Parent binary(const std::string op, const Parent& lhs, const Parent& rhs){
+        Parent root = new BinaryFunction(op,
+                                         lhs.take_ownership(),
+                                         rhs.take_ownership());
+        PARENT(lhs->parent = root);
+        PARENT(rhs->parent = root);
+        return root;
+    }
+    static Parent nnary(const std::string name){
+        return new NnaryFunction(name);
     }
 
     static Parent value(double value){

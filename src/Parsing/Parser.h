@@ -66,7 +66,7 @@ public:
     Root parse_add(Root lhs){
         printd("parse_add");
         Root rhs = parse();
-        return Builder<>::add(lhs, rhs);
+        return Builder<>::binary("+", lhs, rhs);//Builder<>::add(lhs, rhs);
     }
 
     Root parse_value(double val){
