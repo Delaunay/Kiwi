@@ -6,7 +6,7 @@
 namespace kiwi{
 
 // TODO: A better context would be Dict<string, Expr*>
-typedef std::unordered_map<std::string, double> Context;
+typedef std::unordered_map<std::string, Expression*> Context;
 
 class Expression;
 

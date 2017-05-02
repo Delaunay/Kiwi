@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdlib>
+
+//#define KIWI_DEBUG
 #include "../Debug.h"
 
 namespace kiwi {

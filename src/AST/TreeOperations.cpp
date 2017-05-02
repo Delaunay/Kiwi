@@ -4,9 +4,12 @@
 
 #include <functional>
 
+//#define KIWI_DEBUG
+#include "../Debug.h"
+
 namespace kiwi{
 
-class Printing: public StaticVisitor<Printing, void>{
+class Printing: public StaticVisitor<Printing, void, int>{
 public:
     Printing(std::ostream& out):
         out(out)
@@ -14,7 +17,7 @@ public:
 
     static void run(std::ostream& out, Expression* expr){
         Printing eval(out);
-        return eval.traverse(expr);
+        return eval.traverse(expr, 1);
     }
 
     /*
@@ -24,38 +27,42 @@ public:
         traverse(x->rhs);
     }*/
 
-    void function(Function* x){
-        std::size_t n = x->args_size() - 1;
+    void function(Function* x, int indentation){
+        int n = x->args_size() - 1;
         out << "def " << x->name << "(";
 
-        for(int i = 0; i < n; ++i){
-            out << x->arg(i) << ", ";
+        if (n > 0){
+            for(int i = 0; i < n; ++i){
+                out << x->arg(i) << ", ";
+            }
+            // last
+            out << x->arg(n);
         }
-        // last
-        out << x->arg(n) << "):\n";
 
-        traverse(x->body);
+        out << "):\n" << std::string(indentation * 4, ' ');
+
+        traverse(x->body, indentation + 1);
     }
 
-    void call(FunctionCall* x){
+    void call(FunctionCall* x, int indentation){
         std::size_t n = x->args_size() - 1;
 
         out << x->name << "(";
         for(int i = 0; i < n; ++i){
-            traverse(x->arg(i));
+            traverse(x->arg(i), indentation);
             out << ", ";
         }
 
         // last
-        traverse(x->arg(n));
+        traverse(x->arg(n), indentation);
         out << ")";
     }
 
-    void value(Value* x){
+    void value(Value* x, int){
         out << x->value;
     }
 
-    void placeholder(Placeholder* x){
+    void placeholder(Placeholder* x, int){
         out << x->name;
     }
 
@@ -85,11 +92,37 @@ public:
     }
 
     double call(FunctionCall* x){
+        int count = ctx.count(x->name);
+        if (count == 1){
+            Expression* efun = ctx.at(x->name);
+
+            if (efun->tag != NodeTag::function){
+                printd("Calling a non-function");
+            }
+
+            Function* fun = static_cast<Function*>(efun);
+
+            if (fun->args_size() == x->args_size()){
+                printd("argument size match");
+
+                // create eval context
+                Context fun_ctx;
+
+                for(int i = 0; i < fun->args_size(); ++i){
+                    fun_ctx[fun->arg(i)] = x->arg(i);
+                    printd(fun->arg(i) << " "; print(std::cout, x->arg(i)); std::cout);
+                }
+
+                printd("Context built "; print(std::cout, fun->body); std::cout);
+                return full_eval(fun_ctx, fun->body);
+            }
+
+        }
+
+        // This is a temporary hack
         if (x->args_size() != 2)
             return 0;
 
-
-        // Quick hack
         static std::unordered_map<std::string, std::function<double(double, double)>> op ={
             {"+", [](double a, double b){ return a + b;}},
             {"-", [](double a, double b){ return a - b;}},
@@ -116,7 +149,7 @@ public:
     }
 
     double placeholder(Placeholder* x){
-        return ctx.at(x->name);
+        return traverse(ctx.at(x->name));
     }
 
     const Context& ctx;
@@ -170,7 +203,7 @@ public:
         if (ctx.count(x->name) == 0)
             return x;
 
-        return Builder<DummyRoot>::value(ctx.at(x->name));
+        return traverse(ctx.at(x->name));
     }
 
     const Context& ctx;

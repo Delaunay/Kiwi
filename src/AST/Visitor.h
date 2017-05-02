@@ -9,10 +9,10 @@ namespace kiwi{
  * StaticVisitor does not rely on vtables and thus might be optimized better
  * as small functions could be inlined
  */
-template<typename Visitor, typename RetType>
+template<typename Visitor, typename RetType, typename ...Args>
 class StaticVisitor{
 public:
-    RetType traverse(Expression* x){
+    RetType traverse(Expression* x, Args... args){
         switch(x->tag){/*
         case NodeTag::add:{
             Add* exp = static_cast<Add*>(x);
@@ -20,24 +20,24 @@ public:
         }*/
         case NodeTag::function:{
             Function* exp = static_cast<Function*>(x);
-            return static_cast<Visitor&>(*this).function(exp);
+            return static_cast<Visitor&>(*this).function(exp, args...);
         }
         case NodeTag::call:{
             FunctionCall* exp = static_cast<FunctionCall*>(x);
-            return static_cast<Visitor&>(*this).call(exp);
+            return static_cast<Visitor&>(*this).call(exp, args...);
         }
         // leafs
         case NodeTag::value:{
             Value* exp = static_cast<Value*>(x);
-            return static_cast<Visitor&>(*this).value(exp);
+            return static_cast<Visitor&>(*this).value(exp, args...);
         }
         case NodeTag::placeholder:{
             Placeholder* exp = static_cast<Placeholder*>(x);
-            return static_cast<Visitor&>(*this).placeholder(exp);
+            return static_cast<Visitor&>(*this).placeholder(exp, args...);
         }
         case NodeTag::borrow:{
             Borrow* exp = static_cast<Borrow*>(x);
-            return static_cast<Visitor&>(*this).borrow(exp);
+            return static_cast<Visitor&>(*this).borrow(exp, args...);
         }
         default:
             KIWI_UNREACHABLE();
@@ -46,8 +46,8 @@ public:
     }
 
     // default behavior is: Borrows are ignored
-    RetType borrow(Borrow* b){
-        return traverse(b->expr);
+    RetType borrow(Borrow* b, Args... args){
+        return traverse(b->expr, args...);
     }
 };
 
