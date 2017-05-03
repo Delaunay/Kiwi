@@ -11,6 +11,43 @@
 
 namespace kiwi{
 
+typedef std::function<double(double, double)> BinaryOperator;
+typedef std::unordered_map<std::string,
+    BinaryOperator> BinaryOperatorTable;
+
+typedef std::function<double(double)> UnaryOperator;
+typedef std::unordered_map<std::string,
+    UnaryOperator> UnaryOperatorTable;
+
+BinaryOperatorTable& binary_table(){
+    static BinaryOperatorTable op ={
+        {"+", [](double a, double b){ return a + b;}},
+        {"-", [](double a, double b){ return a - b;}},
+        {"*", [](double a, double b){ return a * b;}},
+        {"/", [](double a, double b){ return a / b;}},
+    };
+    return op;
+}
+
+UnaryOperatorTable& unary_table(){
+    static UnaryOperatorTable op ={
+        {"ln",     [](double a){ return std::log(a);}},
+        {"exp",    [](double a){ return std::exp(a);}},
+        {"sqrt",   [](double a){ return std::sqrt(a);}},
+        {"return", [](double a){ return a;}},
+    };
+    return op;
+}
+
+BinaryOperator& binary_operator(const std::string& name){
+    return binary_table()[name];
+}
+
+UnaryOperator& unary_operator(const std::string& name){
+    return unary_table()[name];
+}
+
+
 class Printing: public StaticVisitor<Printing, void, int>{
 public:
     Printing(std::ostream& out):
@@ -106,33 +143,6 @@ public:
     Function* fun;
 };*/
 
-typedef std::function<double(double, double)> BinaryOperator;
-typedef std::unordered_map<std::string,
-    BinaryOperator> BinaryOperatorTable;
-
-typedef std::function<double(double)> UnaryOperator;
-typedef std::unordered_map<std::string,
-    UnaryOperator> UnaryOperatorTable;
-
-BinaryOperator& binary_table(const std::string& name){
-    static BinaryOperatorTable op ={
-        {"+", [](double a, double b){ return a + b;}},
-        {"-", [](double a, double b){ return a - b;}},
-        {"*", [](double a, double b){ return a * b;}},
-        {"/", [](double a, double b){ return a / b;}},
-    };
-    return op[name];
-}
-
-UnaryOperator& unary_table(const std::string& name){
-    static UnaryOperatorTable op ={
-        {"ln",   [](double a){ return std::log(a);}},
-        {"exp",  [](double a){ return std::exp(a);}},
-        {"sqrt", [](double a){ return std::sqrt(a);}},
-    };
-    return op[name];
-}
-
 
 class FullEval: public StaticVisitor<FullEval, double>{
 public:
@@ -144,11 +154,6 @@ public:
         FullEval eval(ctx);
         return eval.traverse(expr);
     }
-
-    /*
-    double add(Add* x){
-        return traverse(x->lhs) + traverse(x->rhs);
-    }*/
 
     // nothing to do...
     double function(Function*){
@@ -194,13 +199,13 @@ public:
         double a = traverse(x->arg(0));
         double b = traverse(x->arg(1));
 
-        return binary_table(x->name)(a, b);
+        return binary_operator(x->name)(a, b);
     }
 
     double unary_call(UnaryCall* x){
         double a = traverse(x->arg(0));
 
-        return unary_table(x->name)(a);
+        return unary_operator(x->name)(a);
     }
 
 
@@ -248,7 +253,7 @@ public:
         if (expr->tag == NodeTag::value){
             Value* vexpr = static_cast<Value*>(expr);
             return Builder<DummyRoot>::value(
-                     unary_table(x->name)(vexpr->value));
+                     unary_operator(x->name)(vexpr->value));
         }
 
         return Builder<DummyRoot>::unary_call(x->name, expr);
@@ -262,7 +267,7 @@ public:
             Value* vlhs = static_cast<Value*>(lhs);
             Value* vrhs = static_cast<Value*>(rhs);;
             return Builder<DummyRoot>::value(
-                     binary_table(x->name)(vlhs->value, vrhs->value));
+                     binary_operator(x->name)(vlhs->value, vrhs->value));
         }
 
         return Builder<DummyRoot>::binary_call(x->name, lhs, rhs);
@@ -303,28 +308,24 @@ public:
         return;
     }
 
-    void call(FunctionCall* x){
-        for(int i = 0; i < x->args_size(); ++i){
-            traverse(x->arg(i));
-            delete x->arg(i);
+    void general_call(Call& x){
+        for(int i = 0; i < x.args_size(); ++i){
+            traverse(x.arg(i));
+            delete x.arg(i);
         }
         return;
+    }
+
+    void call(FunctionCall* x){
+        return general_call(*x);
     }
 
     void binary_call(BinaryCall* x){
-        for(int i = 0; i < x->args_size(); ++i){
-            traverse(x->arg(i));
-            delete x->arg(i);
-        }
-        return;
+        return general_call(*x);
     }
 
     void unary_call(UnaryCall* x){
-        for(int i = 0; i < x->args_size(); ++i){
-            traverse(x->arg(i));
-            delete x->arg(i);
-        }
-        return;
+        return general_call(*x);
     }
 
     void borrow(Borrow*){

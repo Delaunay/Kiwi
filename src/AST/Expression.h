@@ -61,21 +61,6 @@ public:
     PARENT(Expression* parent = nullptr;)
 };
 
-
-
-/*
-class Add: public Expression{
-public:
-    Add(Expression* lhs, Expression* rhs):
-        Expression(NodeTag::add), lhs(lhs), rhs(rhs)
-    {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-
-    Expression* lhs;
-    Expression* rhs;
-};*/
-
 // Implementation of a function
 class Function: public Expression{
 public:
@@ -106,8 +91,6 @@ public:
 class Call: public Expression{
 public:
     std::string name;
-
-
     std::size_t args_size() const;
     Expression* arg(std::size_t index);
 
@@ -120,6 +103,7 @@ protected:
 class UnaryCall: public Call{
 public:
     Expression* expr;
+    bool right = false; // operator is left/right associative
 
     UnaryCall(const std::string& name, Expression* expr):
         Call(NodeTag::call1, name), expr(expr)

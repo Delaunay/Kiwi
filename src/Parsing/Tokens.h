@@ -20,8 +20,8 @@
  *      Hex: 0x000A9F
  *      bin: bx010101
  */
-#define LYTHON_INDENT 4
-#define LYTHON_TOKEN \
+#define KIWI_INDENT 4
+#define KIWI_TOKEN \
     X(tok_identifier, -1)\
     X(tok_float,      -2)\
     X(tok_string,     -3)\
@@ -35,7 +35,7 @@
     X(tok_docstring,  -11)\
     X(tok_arrow,      -12)
 
-#define LYTHON_KEYWORDS \
+#define KIWI_KEYWORDS \
     X("def", tok_def)\
     X("->", tok_arrow)
     
@@ -43,7 +43,7 @@ namespace kiwi{
 
 enum TokenType{
 #define X(name, nb) name = nb,
-    LYTHON_TOKEN
+    KIWI_TOKEN
 #undef X
 };
 

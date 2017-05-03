@@ -69,13 +69,13 @@ public:
                 c = nextc();
                 k++;
 
-                if (k == LYTHON_INDENT && c == ' '){
+                if (k == KIWI_INDENT && c == ' '){
                     consumec();
                     break;
                 }
             } while(c == ' ');
 
-            _cindent += LYTHON_INDENT;
+            _cindent += KIWI_INDENT;
 
             // if current indent is the same do nothing
             if (_cindent <= _oindent)
@@ -86,7 +86,7 @@ public:
         }
 
         if (_cindent < _oindent){
-            _oindent -= LYTHON_INDENT;
+            _oindent -= KIWI_INDENT;
             return make_token(tok_desindent);
         }
 

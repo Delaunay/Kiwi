@@ -7,7 +7,7 @@ namespace kiwi
 std::string tok_to_string(int8 t){
     switch(t){
 #define X(name, nb) case nb: return std::string(#name);
-    LYTHON_TOKEN
+    KIWI_TOKEN
 #undef X
     default:
         std::string s = "' '";
@@ -22,7 +22,7 @@ uint8 tok_name_size()
 {
     std::vector<std::string> v = {
     #define X(name, nb) #name,
-        LYTHON_TOKEN
+        KIWI_TOKEN
     #undef X
     };
 
@@ -85,7 +85,7 @@ std::ostream& Token::print(std::ostream& out, int indent){
 
     // Indentation
     if (emptyline && indent_level > 0)
-        out << std::string(indent_level * LYTHON_INDENT, ' ');
+        out << std::string(indent_level * KIWI_INDENT, ' ');
 
     // Single Char
     if (type() > 0){
@@ -128,7 +128,7 @@ std::ostream& Token::print(std::ostream& out, int indent){
 ReservedKeyword& keywords(){
     static ReservedKeyword _keywords = {
     #define X(str, tok) {str, tok},
-        LYTHON_KEYWORDS
+        KIWI_KEYWORDS
     #undef X
     };
     return _keywords;
@@ -137,7 +137,7 @@ ReservedKeyword& keywords(){
 KeywordToString& keyword_as_string(){
     static KeywordToString _keywords = {
     #define X(str, tok) {tok, str},
-        LYTHON_KEYWORDS
+        KIWI_KEYWORDS
     #undef X
     };
     return _keywords;

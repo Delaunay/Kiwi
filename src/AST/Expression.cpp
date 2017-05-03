@@ -2,17 +2,19 @@
 #include "Visitor.h"
 
 namespace kiwi {
-VTABLEV(/*
-void Add::visit(DynamicVisitor* v){
-    v->add(this);
-}*/
+VTABLEV(
 void Function::visit(DynamicVisitor* v){
     v->function(this);
 }
 void FunctionCall::visit(DynamicVisitor* v){
     v->call(this);
 }
-
+void UnaryCall::visit(DynamicVisitor* v){
+    v->unary_call(this);
+}
+void BinaryCall::visit(DynamicVisitor* v){
+    v->binary_call(this);
+}
 void Value::visit(DynamicVisitor* v){
     v->value(this);
 }
