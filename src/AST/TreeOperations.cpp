@@ -20,7 +20,7 @@ typedef std::unordered_map<std::string,
     UnaryOperator> UnaryOperatorTable;
 
 BinaryOperatorTable& binary_table(){
-    static BinaryOperatorTable op ={
+    static BinaryOperatorTable op = {
         {"+", [](double a, double b){ return a + b;}},
         {"-", [](double a, double b){ return a - b;}},
         {"*", [](double a, double b){ return a * b;}},
@@ -30,7 +30,7 @@ BinaryOperatorTable& binary_table(){
 }
 
 UnaryOperatorTable& unary_table(){
-    static UnaryOperatorTable op ={
+    static UnaryOperatorTable op = {
         {"ln",     [](double a){ return std::log(a);}},
         {"exp",    [](double a){ return std::exp(a);}},
         {"sqrt",   [](double a){ return std::sqrt(a);}},
@@ -88,8 +88,13 @@ public:
     }
 
     void unary_call(UnaryCall* x, int indentation){
+        if (!x->right)
+            out << x->name;
+
         traverse(x->arg(0), indentation);
-        out << x->name;
+
+        if (x->right)
+            out << x->name;
     }
 
     void binary_call(BinaryCall* x, int indentation){

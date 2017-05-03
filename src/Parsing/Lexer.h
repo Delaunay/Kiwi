@@ -119,6 +119,7 @@ public:
 
         // strings
         if (c == '"'){
+            c = nextc();
             return read_string(c);
         }
 
@@ -171,34 +172,44 @@ public:
 
     Token read_string(char c){
         std::string str;
+        int k = 1;
 
-        while((c = nextc()) != '"'){
-            str.push_back(c);
-        }
-
-        /* Check for doc string
+        // empty
         if (c == '"'){
             c = nextc();
+
+            if (c != '"')
+                return make_token(tok_string, "");
+
+            c = nextc();
+            k = 3;
+        }
+
+        int i = 0;
+        while(i < k){
+            // dont add closing quotes
             if (c == '"'){
-                int k = 0;
-                c = nextc();
-                while(k != 3){
-                    if (c == '"'){
-                        k += 1;
-                    }
-                    else {
-                        k = 0;
-                        str.push_back(c);
-                        c = nextc();
-                    }
-                }
-                c = nextc();
-                return make_token(tok_docstring, str);
+                i += 1;
             }
-        }*/
+            else{
+                // " were not closing quotes we need to add them
+                if (i != 0){
+                    for(int n = 0; n < i; ++n)
+                        str.push_back('"');
+                }
+                str.push_back(c);
+            }
+            c = nextc();
+        }
+
+        Token tok = dummy();
+        if (k == 1)
+            tok = make_token(tok_string, str);
+        else
+            tok = make_token(tok_docstring, str);
 
         consumec();
-        return make_token(tok_string, str);
+        return tok;
     }
 
     Token make_token(int8 t){
