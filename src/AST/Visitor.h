@@ -22,7 +22,16 @@ public:
             Function* exp = static_cast<Function*>(x);
             return static_cast<Visitor&>(*this).function(exp, args...);
         }
-        case NodeTag::call:{
+        // Call
+        case NodeTag::call1:{
+            UnaryCall* exp = static_cast<UnaryCall*>(x);
+            return static_cast<Visitor&>(*this).unary_call(exp, args...);
+        }
+        case NodeTag::call2:{
+            BinaryCall* exp = static_cast<BinaryCall*>(x);
+            return static_cast<Visitor&>(*this).binary_call(exp, args...);
+        }
+        case NodeTag::calln:{
             FunctionCall* exp = static_cast<FunctionCall*>(x);
             return static_cast<Visitor&>(*this).call(exp, args...);
         }
@@ -74,6 +83,8 @@ public:
     //virtual void add(Add* x) = 0;
     virtual void function(Function* x) = 0;
     virtual void call(FunctionCall* x) = 0;
+    virtual void unary_call(UnaryCall* x) = 0;
+    virtual void binary_call(BinaryCall* x) = 0;
 
     virtual void value(Value* x) = 0;
     virtual void placeholder(Placeholder* x) = 0;

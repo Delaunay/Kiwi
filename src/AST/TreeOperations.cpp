@@ -2,6 +2,8 @@
 #include "TreeOperations.h"
 #include "Builder.h"
 
+#include <iterator>
+#include <algorithm>
 #include <functional>
 
 //#define KIWI_DEBUG
@@ -20,27 +22,18 @@ public:
         return eval.traverse(expr, 1);
     }
 
-    /*
-    void add(Add* x){
-        traverse(x->lhs);
-        out << " + ";
-        traverse(x->rhs);
-    }*/
-
     void function(Function* x, int indentation){
-        int n = x->args_size() - 1;
+        int n = int(x->args_size()) - 1;
         out << "def " << x->name << "(";
 
-        if (n > 0){
+        if (n >= 0){
             for(int i = 0; i < n; ++i){
                 out << x->arg(i) << ", ";
             }
-            // last
             out << x->arg(n);
         }
 
         out << "):\n" << std::string(indentation * 4, ' ');
-
         traverse(x->body, indentation + 1);
     }
 
@@ -53,8 +46,20 @@ public:
             out << ", ";
         }
 
-        // last
         traverse(x->arg(n), indentation);
+        out << ")";
+    }
+
+    void unary_call(UnaryCall* x, int indentation){
+        traverse(x->arg(0), indentation);
+        out << x->name;
+    }
+
+    void binary_call(BinaryCall* x, int indentation){
+        out << "(";
+        traverse(x->arg(0), indentation);
+        out << " " << x->name << " ";
+        traverse(x->arg(1), indentation);
         out << ")";
     }
 
@@ -68,6 +73,65 @@ public:
 
     std::ostream& out;
 };
+
+/*/ Placeholders are inserted inside the function
+class AppendArgs: public StaticVisitor<AppendArgs, void>{
+public:
+    AppendArgs(Function* fun):
+        fun(fun)
+    {}
+
+    static void run(Function* fun, Expression* expr){
+        AppendArgs eval(fun);
+        return eval.traverse(expr);
+    }
+
+    void value(Value*){}
+    void function(Function*){}
+
+    void call(FunctionCall* x){
+        for(int i = 0; i < x->args_size(); ++i){
+            traverse(x->arg(i));
+        }
+    }
+
+    void borrow(Borrow *b){
+
+    }
+
+    void placeholder(Placeholder* x){
+        fun->args.push_back(x->name);
+    }
+
+    Function* fun;
+};*/
+
+typedef std::function<double(double, double)> BinaryOperator;
+typedef std::unordered_map<std::string,
+    BinaryOperator> BinaryOperatorTable;
+
+typedef std::function<double(double)> UnaryOperator;
+typedef std::unordered_map<std::string,
+    UnaryOperator> UnaryOperatorTable;
+
+BinaryOperator& binary_table(const std::string& name){
+    static BinaryOperatorTable op ={
+        {"+", [](double a, double b){ return a + b;}},
+        {"-", [](double a, double b){ return a - b;}},
+        {"*", [](double a, double b){ return a * b;}},
+        {"/", [](double a, double b){ return a / b;}},
+    };
+    return op[name];
+}
+
+UnaryOperator& unary_table(const std::string& name){
+    static UnaryOperatorTable op ={
+        {"ln",   [](double a){ return std::log(a);}},
+        {"exp",  [](double a){ return std::exp(a);}},
+        {"sqrt", [](double a){ return std::sqrt(a);}},
+    };
+    return op[name];
+}
 
 
 class FullEval: public StaticVisitor<FullEval, double>{
@@ -92,57 +156,53 @@ public:
     }
 
     double call(FunctionCall* x){
-        int count = ctx.count(x->name);
-        if (count == 1){
-            Expression* efun = ctx.at(x->name);
+        std::size_t count = ctx.count(x->name);
 
-            if (efun->tag != NodeTag::function){
-                printd("Calling a non-function");
-            }
-
-            Function* fun = static_cast<Function*>(efun);
-
-            if (fun->args_size() == x->args_size()){
-                printd("argument size match");
-
-                // create eval context
-                Context fun_ctx;
-
-                for(int i = 0; i < fun->args_size(); ++i){
-                    fun_ctx[fun->arg(i)] = x->arg(i);
-                    printd(fun->arg(i) << " "; print(std::cout, x->arg(i)); std::cout);
-                }
-
-                printd("Context built "; print(std::cout, fun->body); std::cout);
-                return full_eval(fun_ctx, fun->body);
-            }
-
+        if (count == 0){
+            printd("Function does not exist");
+            return 0;
         }
 
-        // This is a temporary hack
-        if (x->args_size() != 2)
+        Expression* efun = ctx.at(x->name);
+
+        if (efun->tag != NodeTag::function){
+            printd("Calling a non-function");
             return 0;
+        }
 
-        static std::unordered_map<std::string, std::function<double(double, double)>> op ={
-            {"+", [](double a, double b){ return a + b;}},
-            {"-", [](double a, double b){ return a - b;}},
-            {"*", [](double a, double b){ return a * b;}},
-            {"/", [](double a, double b){ return a / b;}},
-        };
+        Function* fun = static_cast<Function*>(efun);
 
+        if (fun->args_size() != x->args_size()){
+            printd("argument size mismatch:" <<
+                   fun->args_size()  << " " << x->args_size());
+            return 0;
+        } else {
+            // create eval context
+            Context fun_ctx;
+
+            for(int i = 0; i < fun->args_size(); ++i){
+                fun_ctx[fun->arg(i)] = x->arg(i);
+                printd(fun->arg(i) << " "; print(std::cout, x->arg(i)); std::cout);
+            }
+
+            printd("Context built "; print(std::cout, fun->body); std::cout);
+            return full_eval(fun_ctx, fun->body);
+        }
+    }
+
+    double binary_call(BinaryCall* x){
         double a = traverse(x->arg(0));
         double b = traverse(x->arg(1));
-        return op[x->name](a, b);
 
-
-        // we need to build a new context with the arguments
-
-        // lookup the implementation
-
-        // eval body with new context
-
-        // return result
+        return binary_table(x->name)(a, b);
     }
+
+    double unary_call(UnaryCall* x){
+        double a = traverse(x->arg(0));
+
+        return unary_table(x->name)(a);
+    }
+
 
     double value(Value* x){
         return x->value;
@@ -155,6 +215,7 @@ public:
     const Context& ctx;
 };
 
+// TODO
 class PartialEval: public StaticVisitor<PartialEval, Root>{
 public:
     PartialEval(const Context& ctx):
@@ -165,20 +226,6 @@ public:
         PartialEval eval(ctx);
         return eval.traverse(expr);
     }
-
-    /*
-    Expression* add(Add* x){
-        Expression* lhs = traverse(x->lhs);
-        Expression* rhs = traverse(x->rhs);
-
-        if (lhs->tag == NodeTag::value && rhs->tag == NodeTag::value){
-            Value* vlhs = static_cast<Value*>(lhs);
-            Value* vrhs = static_cast<Value*>(rhs);;
-            return Builder<DummyRoot>::value(vlhs->value + vrhs->value);
-        }
-
-        return Builder<DummyRoot>::add(lhs, rhs);
-    }*/
 
     Expression* function(Function* x){
         return x;
@@ -193,6 +240,32 @@ public:
 
         // return result
         return x;
+    }
+
+    Expression* unary_call(UnaryCall* x){
+        Expression* expr = traverse(x->expr);
+
+        if (expr->tag == NodeTag::value){
+            Value* vexpr = static_cast<Value*>(expr);
+            return Builder<DummyRoot>::value(
+                     unary_table(x->name)(vexpr->value));
+        }
+
+        return Builder<DummyRoot>::unary_call(x->name, expr);
+    }
+
+    Expression* binary_call(BinaryCall* x){
+        Expression* lhs = traverse(x->lhs);
+        Expression* rhs = traverse(x->rhs);
+
+        if (lhs->tag == NodeTag::value && rhs->tag == NodeTag::value){
+            Value* vlhs = static_cast<Value*>(lhs);
+            Value* vrhs = static_cast<Value*>(rhs);;
+            return Builder<DummyRoot>::value(
+                     binary_table(x->name)(vlhs->value, vrhs->value));
+        }
+
+        return Builder<DummyRoot>::binary_call(x->name, lhs, rhs);
     }
 
     Expression* value(Value* x){
@@ -238,6 +311,22 @@ public:
         return;
     }
 
+    void binary_call(BinaryCall* x){
+        for(int i = 0; i < x->args_size(); ++i){
+            traverse(x->arg(i));
+            delete x->arg(i);
+        }
+        return;
+    }
+
+    void unary_call(UnaryCall* x){
+        for(int i = 0; i < x->args_size(); ++i){
+            traverse(x->arg(i));
+            delete x->arg(i);
+        }
+        return;
+    }
+
     void borrow(Borrow*){
         // nothing to do. Borrow will be deleted by its parent
     }
@@ -260,18 +349,24 @@ public:
         return eval.traverse(expr);
     }
 
-    /*
-    Expression* add(Add* x){
-        return Builder<DummyRoot>::add(traverse(x->lhs),
-                                       traverse(x->rhs));
-    }*/
-
     Expression* function(Function* x){
         return Builder<DummyRoot>::function(x->name, traverse(x->body));
     }
 
     Expression* call(FunctionCall* x){
-        return Builder<DummyRoot>::call(x->name, x->args);
+        std::vector<Expression*> new_args;
+
+        std::transform(x->args.begin(), x->args.end(), // from -> to
+                       std::back_inserter(new_args),    // insert to
+                       [this](Expression* expr){ return traverse(expr); }); // copy each arguments
+
+        return Builder<DummyRoot>::call(x->name, new_args);
+    }
+    Expression* unary_call(UnaryCall* x){
+        return Builder<DummyRoot>::unary_call(x->name, traverse(x->expr));
+    }
+    Expression* binary_call(BinaryCall* x){
+        return Builder<DummyRoot>::binary_call(x->name, traverse(x->lhs), traverse(x->rhs));
     }
 
     Expression* value(Value* x){
@@ -308,5 +403,11 @@ double full_eval(const Context& ctx, Expression* expr){
 void free(Expression* expr){
     return FreeMemory::run(expr);
 }
+/*
+void append_args(Function* fun, Expression* expr){
+    return AppendArgs::run(fun, expr);
+}*/
+
+
 
 }

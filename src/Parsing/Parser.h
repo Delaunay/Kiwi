@@ -6,6 +6,12 @@
 //#define KIWI_DEBUG
 #include "../Debug.h"
 
+
+#define EXPECT(c, message)\
+    if (tok.type() != c){\
+        printd(message);\
+    }
+
 namespace kiwi{
 
 class Parser{
@@ -14,6 +20,53 @@ public:
         _lexer(buffer)
     {
         _lexer.consume();
+    }
+
+    Token nexttok(){
+        _lexer.consume();
+        return _lexer.peek();
+    }
+
+    // not tested
+    Root parse_function(){
+        printd("parse_function");
+
+        Root  lhs = nullptr;
+        Token tok = _lexer.peek();
+
+        EXPECT(tok_def, "not a function");
+
+        tok = nexttok();
+        EXPECT(tok_identifier, "expected function name");
+
+
+        std::string name = tok.identifier();
+        Function* fun = static_cast<Function*>(
+                    Builder<>::function(name, nullptr).get());
+
+        tok = nexttok();
+        EXPECT('(', "'(' expected");
+        tok = nexttok();
+
+        while(tok.type() != ')'){
+            EXPECT(tok_identifier, "expected arg name");
+            fun->args.push_back(tok.identifier());
+            tok = nexttok();
+
+            if (tok.type() == ',')
+                tok = nexttok();
+        }
+
+        EXPECT(':', "':' expected");
+        tok = nexttok();
+
+        EXPECT(tok_newline, "new line expected");
+        tok = nexttok();
+
+        Root body = parse();
+        fun->body = body;
+
+        return fun;
     }
 
     Root parse(){

@@ -22,11 +22,6 @@ TEST(AST, Printing)
 
     print(std::cout, g);
     std::cout << std::endl;
-
-
-    // def sqr(x):
-    //     return x * x
-
 }
 
 
@@ -35,10 +30,9 @@ TEST(AST, Function)
     // def sqr(x):
     //     return x * x
 
-    Root x = Builder<>::placeholder("x");
+    Root x    = Builder<>::placeholder("x");
     Root body = Builder<>::mult(x, Builder<>::borrow(x));
-
-    Root sqr = Builder<>::function("sqr", body);
+    Root sqr  = Builder<>::function("sqr", body);
          static_cast<Function*>(sqr.get())->args.push_back("x");
 
     // add function to context
@@ -46,22 +40,19 @@ TEST(AST, Function)
       {"sqr", sqr.get()}
     };
 
-
     // print function
-    std::cout << "decl: ";
-    print(std::cout, sqr);
+    std::cout << "decl: \n"; print(std::cout, sqr);
     std::cout << std::endl;
 
     // call function sqr(2)
-    Root val  = Builder<>::value(2);
+    Root val  = Builder<>::value(3);
     Root sqr2 = Builder<>::call("sqr", {val.take_ownership()});
 
 
-    std::cout << "call: ";
-    print(std::cout, sqr2);
+    std::cout << "call: "; print(std::cout, sqr2);
     std::cout << std::endl;
 
-    full_eval(ctx, sqr2);
+    EXPECT_DOUBLE_EQ(full_eval(ctx, sqr2), 9.0);
 }
 
 TEST(AST, Eval)

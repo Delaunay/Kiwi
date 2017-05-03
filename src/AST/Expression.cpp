@@ -9,7 +9,7 @@ void Add::visit(DynamicVisitor* v){
 void Function::visit(DynamicVisitor* v){
     v->function(this);
 }
-void FunctionCcall::visit(DynamicVisitor* v){
+void FunctionCall::visit(DynamicVisitor* v){
     v->call(this);
 }
 
@@ -20,5 +20,31 @@ void Placeholder::visit(DynamicVisitor* v){
     v->placeholder(this);
 }
 )
+
+std::size_t Call::args_size() const{
+    switch(tag){
+    case NodeTag::call1:
+        return static_cast<const UnaryCall&>(*this).args_size();
+    case NodeTag::call2:
+        return static_cast<const BinaryCall&>(*this).args_size();
+    case NodeTag::calln:
+        return static_cast<const FunctionCall&>(*this).args_size();
+    default:
+        return 0;
+    }
+}
+
+Expression* Call::arg(std::size_t index){
+    switch(tag){
+    case NodeTag::call1:
+        return static_cast<UnaryCall&>(*this).arg(index);
+    case NodeTag::call2:
+        return static_cast<BinaryCall&>(*this).arg(index);
+    case NodeTag::calln:
+        return static_cast<FunctionCall&>(*this).arg(index);
+    default:
+        return nullptr;
+    }
+}
 
 }

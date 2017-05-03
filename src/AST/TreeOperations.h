@@ -9,9 +9,12 @@ namespace kiwi{
 typedef std::unordered_map<std::string, Expression*> Context;
 
 class Expression;
+class Function;
 
 
 void print(std::ostream& out, Expression* expr);
+
+// void append_args(Function* fun, Expression* expr);
 
 // Compute the graph (all placeholder must be defined)
 double full_eval(const Context& ctx, Expression* expr);

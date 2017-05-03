@@ -41,7 +41,9 @@ enum class NodeTag{
     // add,
 
     function,
-    call,
+    call1,
+    call2,
+    calln,
 
     builtin,
     borrow
@@ -96,19 +98,73 @@ public:
     }
 };
 
-// Reference to a function
-class FunctionCall: public Expression{
+/* Function Call are split in 3
+ *      - call1, call to an unaryOperator
+ *      - call2, call to a binaryOperator
+ *      - calln, call to a function
+ */
+class Call: public Expression{
 public:
     std::string name;
+
+
+    std::size_t args_size() const;
+    Expression* arg(std::size_t index);
+
+protected:
+    Call(NodeTag tag, const std::string& name):
+        Expression(tag), name(name)
+    {}
+};
+
+class UnaryCall: public Call{
+public:
+    Expression* expr;
+
+    UnaryCall(const std::string& name, Expression* expr):
+        Call(NodeTag::call1, name), expr(expr)
+    {}
+
+    std::size_t args_size() const{ return 1;}
+
+    Expression* arg(std::size_t index){
+        switch(index){
+        case 0:  return expr;
+        default: return expr;
+        }
+    }
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+};
+
+class BinaryCall: public Call{
+public:
+    Expression* lhs;
+    Expression* rhs;
+
+    BinaryCall(const std::string& name, Expression* lhs, Expression* rhs):
+        Call(NodeTag::call2, name), lhs(lhs), rhs(rhs)
+    {}
+
+    std::size_t args_size() const{return 2;}
+
+    Expression* arg(std::size_t index){
+        switch(index){
+        case 0:  return lhs;
+        case 1:  return rhs;
+        default: return lhs;
+        }
+    }
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+};
+
+class FunctionCall: public Call{
+public:
     std::vector<Expression*> args;
 
-    /*
-    FunctionCall(std::size_t arg_size):
-        Expression(NodeTag::call), args(arg_size)
-    {}*/
-
     FunctionCall(const std::string& name, const std::vector<Expression*>& args):
-        Expression(NodeTag::call), name(name), args(args)
+        Call(NodeTag::calln, name), args(args)
     {}
 
     std::size_t args_size() const{
