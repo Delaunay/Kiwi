@@ -8,6 +8,8 @@
 
 #define FONT_FOLDER "../../dependencies/nuklear/extra_font/"
 
+#include "Node.h"
+
 namespace kiwi{
 
 class NuklearWindow : public SFMLWindow<NuklearWindow> {
@@ -71,6 +73,8 @@ public:
         rect.setSize(sf::Vector2f(100, 100));
 
         screen.draw(rect);
+
+        _node.draw(_nuklear_ctx);
     }
 
     void render(sf::RenderWindow& screen){
@@ -83,6 +87,8 @@ public:
     }
 
 protected:
+    Node                  _node;
+
     struct nk_context*    _nuklear_ctx;
     struct nk_color       _background_color;
     struct nk_font_atlas* _atlas;

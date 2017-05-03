@@ -23,6 +23,12 @@ SET(FRONT_END_LIST
     SFMLNuklear.h
     SFMLNuklear.cpp
     NuklearWindow.h
+
+    Node.h
+    Node.cpp
+
+    NodeEditor.h
+    NodeEditor.cpp
 )
 
 IF(WIN32)

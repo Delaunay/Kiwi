@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 //#include <memory>
 
 //#define LINK_TO_PARENT
@@ -38,16 +39,22 @@ namespace kiwi{
 enum class NodeTag{
     value,
     placeholder,
-    // add,
 
     function,
     call1,
     call2,
     calln,
 
+    // type
+    type,   // type node
+    arrow,  // function type
+
+    // helpers
     builtin,
     borrow
 };
+
+class Arrow;
 
 class Expression{
 public:
@@ -64,16 +71,11 @@ public:
 // Implementation of a function
 class Function: public Expression{
 public:
-    std::string name;
-    std::vector<std::string> args;
-    Expression* body;
+    typedef std::vector<std::string> ArgNames;
 
     Function(const std::string& name, Expression* body):
         Expression(NodeTag::function), name(name), body(body)
     {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-
 
     std::size_t args_size() const{
         return args.size();
@@ -81,6 +83,12 @@ public:
     const std::string& arg(std::size_t index) const{
         return args[index];
     }
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+    std::string name;
+    ArgNames    args;
+    Arrow*      type;
+    Expression* body;
 };
 
 /* Function Call are split in 3
@@ -90,7 +98,9 @@ public:
  */
 class Call: public Expression{
 public:
+    Arrow*      type;
     std::string name;
+
     std::size_t args_size() const;
     Expression* arg(std::size_t index);
 
@@ -102,9 +112,6 @@ protected:
 
 class UnaryCall: public Call{
 public:
-    Expression* expr;
-    bool right = false; // operator is left/right associative
-
     UnaryCall(const std::string& name, Expression* expr):
         Call(NodeTag::call1, name), expr(expr)
     {}
@@ -119,13 +126,12 @@ public:
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
+    Expression* expr;
+    bool right = false; // operator is left/right associative
 };
 
 class BinaryCall: public Call{
 public:
-    Expression* lhs;
-    Expression* rhs;
-
     BinaryCall(const std::string& name, Expression* lhs, Expression* rhs):
         Call(NodeTag::call2, name), lhs(lhs), rhs(rhs)
     {}
@@ -141,11 +147,13 @@ public:
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
+    Expression* lhs;
+    Expression* rhs;
 };
 
 class FunctionCall: public Call{
 public:
-    std::vector<Expression*> args;
+    typedef std::vector<Expression*> Args;
 
     FunctionCall(const std::string& name, const std::vector<Expression*>& args):
         Call(NodeTag::calln, name), args(args)
@@ -160,6 +168,7 @@ public:
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
+    Args   args;
 };
 
 class Value: public Expression{
@@ -169,8 +178,10 @@ public:
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-
     double value;
+
+    Expression* evalue;
+    Expression* type;
 };
 
 class Placeholder: public Expression{
@@ -180,8 +191,8 @@ public:
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-
     std::string name;
+    Expression* type;
 };
 
 /* Borrow is a dummy Node which only exists to help
@@ -200,9 +211,9 @@ public:
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-
     Expression* expr;
 };
+
 
 
 /* Builtin is a special construct used to implement
@@ -218,7 +229,56 @@ public:
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    std::string name;
+    const std::string name;
+};
+
+
+class Type: public Expression{
+public:
+    static Expression* type(const std::string& name){
+        static std::unordered_map<std::string, Type> builtin_types = {
+            {"type", Type("type")},
+            // signed
+            { "i8", Type( "i8")},
+            {"i16", Type("i16")},
+            {"i32", Type("i32")},
+            {"i64", Type("i64")},
+            // unsigned
+            { "u8", Type( "u8")},
+            {"u16", Type("u16")},
+            {"u32", Type("u32")},
+            {"u64", Type("u64")},
+            // floats
+            { "f8", Type( "f8")},
+            {"f16", Type("f16")},
+            {"f32", Type("f32")},
+            {"f64", Type("f64")},
+        };
+        return &builtin_types[name];
+    }
+
+    Type(const std::string& name):
+        Expression(NodeTag::type), name(name)
+    {}
+
+    Type():
+        Expression(NodeTag::type)
+    {}
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+    const std::string name;
+};
+
+// (i32, i32) -> i32
+class Arrow: public Expression{
+public:
+    Arrow():
+        Expression(NodeTag::arrow)
+    {}
+
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+    std::vector<Expression*> args;
+    Expression* return_type;
 };
 
 

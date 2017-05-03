@@ -136,9 +136,10 @@ node_editor_init(struct node_editor *editor)
     memset(editor, 0, sizeof(*editor));
     editor->begin = NULL;
     editor->end = NULL;
-    node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 0, 1);
+    node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 5, 5);
     node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), nk_rgb(0, 255, 0), 0, 1);
     node_editor_add(editor, "Combine", nk_rect(400, 100, 180, 220), nk_rgb(0,0,255), 2, 2);
+
     node_editor_link(editor, 0, 0, 2, 0);
     node_editor_link(editor, 1, 0, 2, 1);
     editor->show_grid = nk_true;
@@ -189,7 +190,9 @@ node_editor(struct nk_context *ctx)
                     it->bounds.y - nodedit->scrolling.y, it->bounds.w, it->bounds.h));
 
                 /* execute node window */
-                if (nk_group_begin(ctx, it->name, NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR|NK_WINDOW_BORDER|NK_WINDOW_TITLE))
+                if (nk_group_begin(ctx, it->name,
+                                   NK_WINDOW_MOVABLE|NK_WINDOW_NO_SCROLLBAR|
+                                   NK_WINDOW_BORDER|NK_WINDOW_TITLE))
                 {
                     /* always have last selected node on top */
 
@@ -231,7 +234,8 @@ node_editor(struct nk_context *ctx)
                         nk_fill_circle(canvas, circle, nk_rgb(100, 100, 100));
 
                         /* start linking process */
-                        if (nk_input_has_mouse_click_down_in_rect(in, NK_BUTTON_LEFT, circle, nk_true)) {
+                        if (nk_input_has_mouse_click_down_in_rect(in, NK_BUTTON_LEFT,
+                                                                  circle, nk_true)) {
                             nodedit->linking.active = nk_true;
                             nodedit->linking.node = it;
                             nodedit->linking.input_id = it->ID;
@@ -258,7 +262,8 @@ node_editor(struct nk_context *ctx)
                         nk_fill_circle(canvas, circle, nk_rgb(100, 100, 100));
                         if (nk_input_is_mouse_released(in, NK_BUTTON_LEFT) &&
                             nk_input_is_mouse_hovering_rect(in, circle) &&
-                            nodedit->linking.active && nodedit->linking.node != it) {
+                            nodedit->linking.active && nodedit->linking.node != it)
+                        {
                             nodedit->linking.active = nk_false;
                             node_editor_link(nodedit, nodedit->linking.input_id,
                                 nodedit->linking.input_slot, it->ID, n);

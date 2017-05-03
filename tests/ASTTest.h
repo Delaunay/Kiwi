@@ -48,7 +48,6 @@ TEST(AST, Function)
     Root val  = Builder<>::value(3);
     Root sqr2 = Builder<>::call("sqr", {val.take_ownership()});
 
-
     std::cout << "call: "; print(std::cout, sqr2);
     std::cout << std::endl;
 

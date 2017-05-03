@@ -6,6 +6,9 @@
 #include "Buffer.h"
 #include "Tokens.h"
 
+#define KIWI_DEBUG
+#include "../Debug.h"
+
 /*
  *  Lexer is a stream of tokens
  *
@@ -67,15 +70,17 @@ public:
             int k = 1;
             do{
                 c = nextc();
-                k++;
 
-                if (k == KIWI_INDENT && c == ' '){
+                if (c == ' ')
+                    k += 1;
+
+                if (k == KIWI_INDENT){
                     consumec();
                     break;
                 }
             } while(c == ' ');
 
-            _cindent += KIWI_INDENT;
+            _cindent = KIWI_INDENT;
 
             // if current indent is the same do nothing
             if (_cindent <= _oindent)
