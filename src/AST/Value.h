@@ -7,7 +7,7 @@
 #include "Expression.h"
 
 //#define KIWI_DEBUG
-#include "../src/Debug.h"
+#include "../Debug.h"
 
 namespace kiwi{
 
@@ -45,7 +45,8 @@ enum class BuiltinType : std::size_t{
 #define X(n) n,
     KIWI_TYPE_TYPE
 #undef X
-    object
+    object,
+    type
 };
 
 
@@ -62,6 +63,7 @@ const std::string& name(BuiltinType id){
 
 template<typename T>
 BuiltinType type_id(){ return BuiltinType::object; }
+template<> inline BuiltinType type_id<typetype>(){ return BuiltinType::type; }
 
 #define X(n) template<> inline BuiltinType type_id<n>(){ return BuiltinType::n; }
     KIWI_TYPE_TYPE
@@ -99,14 +101,21 @@ public:
         #define X(n)\
             case BuiltinType::n:{\
                 out << "(" << as<n>() << ": " << name(BuiltinType::n) << ")";\
-                out.flush();\
                 break;}
             KIWI_TYPE_TYPE
         #undef X
+        // this is a dummy type
+        case BuiltinType::type:{
+            out << "Type";
+            break;}
+        // this a user defined object i.e a Kiwi object
+        case BuiltinType::object:{
+            out << "Object";
+            break;}
         }
+        out.flush();
         return out;
     }
-
 
     const BuiltinType type;
 

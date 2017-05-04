@@ -14,5 +14,7 @@ TEST(Value, val)
     std::cout << std::endl;
     Value(2.0).dump(std::cout);
     std::cout << std::endl;
+    Value("hello").dump(std::cout);
+    std::cout << std::endl;
 
 }
