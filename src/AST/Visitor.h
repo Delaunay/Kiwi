@@ -1,9 +1,11 @@
 #pragma once
 #include "Expression.h"
+#include "Value.h"
 
 #define KIWI_UNREACHABLE()
 
 namespace kiwi{
+
 
 /*
  * StaticVisitor does not rely on vtables and thus might be optimized better

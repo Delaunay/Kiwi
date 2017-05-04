@@ -4,6 +4,7 @@ SET(AST_SRC
     Root.h
     Expression.h
     Expression.cpp
+    Value.h
     Builder.h
     Builder.cpp
     Visitor.h

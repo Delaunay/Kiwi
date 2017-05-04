@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "Value.h"
 #include "Expression.h"
 #include "TreeOperations.h"
 #include "Root.h"
@@ -47,19 +48,19 @@ public:
         // Constant folding
         if (lhs->tag == NodeTag::value){
             Value* vlhs = static_cast<Value*>(lhs.get());
-            if (std::abs(vlhs->value) <= 1e-12){
+            if (std::abs(vlhs->as<f64>()) <= 1e-12){
                 return rhs;
             }
 
             if (rhs->tag == NodeTag::value){
                 Value* vrhs = static_cast<Value*>(rhs.get());
-                return new Value(vrhs->value + vlhs->value);
+                return new Value(vrhs->as<f64>() + vlhs->as<f64>());
             }
         }
 
         if (rhs->tag == NodeTag::value){
             Value* vrhs = static_cast<Value*>(rhs.get());
-            if (std::abs(vrhs->value) <= 1e-12){
+            if (std::abs(vrhs->as<f64>()) <= 1e-12){
                 return lhs;
             }
         }

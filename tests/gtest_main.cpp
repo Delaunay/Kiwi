@@ -1,4 +1,6 @@
 #include "LexerTest.h"
+#include "ValueTest.h"
+
 #include "ASTTest.h"
 #include "ParserTest.h"
 

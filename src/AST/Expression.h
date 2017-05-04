@@ -171,18 +171,6 @@ public:
     Args   args;
 };
 
-class Value: public Expression{
-public:
-    Value(double value):
-        Expression(NodeTag::value), value(value)
-    {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-    double value;
-
-    Expression* evalue;
-    Expression* type;
-};
 
 class Placeholder: public Expression{
 public:
@@ -214,8 +202,6 @@ public:
     Expression* expr;
 };
 
-
-
 /* Builtin is a special construct used to implement
  * builtin operations i.e (+/x/-/import etc...)
  * that are hardcoded inside the compiler itself.
@@ -235,28 +221,6 @@ public:
 
 class Type: public Expression{
 public:
-    static Expression* type(const std::string& name){
-        static std::unordered_map<std::string, Type> builtin_types = {
-            {"type", Type("type")},
-            // signed
-            { "i8", Type( "i8")},
-            {"i16", Type("i16")},
-            {"i32", Type("i32")},
-            {"i64", Type("i64")},
-            // unsigned
-            { "u8", Type( "u8")},
-            {"u16", Type("u16")},
-            {"u32", Type("u32")},
-            {"u64", Type("u64")},
-            // floats
-            { "f8", Type( "f8")},
-            {"f16", Type("f16")},
-            {"f32", Type("f32")},
-            {"f64", Type("f64")},
-        };
-        return &builtin_types[name];
-    }
-
     Type(const std::string& name):
         Expression(NodeTag::type), name(name)
     {}

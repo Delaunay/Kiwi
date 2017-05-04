@@ -106,7 +106,7 @@ public:
     }
 
     void value(Value* x, int){
-        out << x->value;
+        out << x->as<f64>();
     }
 
     void placeholder(Placeholder* x, int){
@@ -215,7 +215,7 @@ public:
 
 
     double value(Value* x){
-        return x->value;
+        return x->as<f64>();
     }
 
     double placeholder(Placeholder* x){
@@ -258,7 +258,7 @@ public:
         if (expr->tag == NodeTag::value){
             Value* vexpr = static_cast<Value*>(expr);
             return Builder<DummyRoot>::value(
-                     unary_operator(x->name)(vexpr->value));
+                     unary_operator(x->name)(vexpr->as<f64>()));
         }
 
         return Builder<DummyRoot>::unary_call(x->name, expr);
@@ -272,7 +272,7 @@ public:
             Value* vlhs = static_cast<Value*>(lhs);
             Value* vrhs = static_cast<Value*>(rhs);;
             return Builder<DummyRoot>::value(
-                     binary_operator(x->name)(vlhs->value, vrhs->value));
+                     binary_operator(x->name)(vlhs->as<f64>(), vrhs->as<f64>()));
         }
 
         return Builder<DummyRoot>::binary_call(x->name, lhs, rhs);
@@ -376,7 +376,7 @@ public:
     }
 
     Expression* value(Value* x){
-        return Builder<DummyRoot>::value(x->value);
+        return Builder<DummyRoot>::value(x->as<f64>());
     }
 
     Expression* placeholder(Placeholder* x){

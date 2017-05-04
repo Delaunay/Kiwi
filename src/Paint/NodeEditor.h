@@ -8,7 +8,7 @@ class NodeEditor{
 
 
     int draw(struct nk_context *ctx){
-        nk_flags falgs = NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR|
+        nk_flags flags = NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR|
                 NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE;
 
         if (nk_begin(ctx, "NodeEdit", nk_rect(0, 0, 800, 600), flags))
@@ -49,7 +49,7 @@ class NodeEditor{
             float y = (float)fmod(size.y - scrolling.y, grid_size);
             for (; y < size.h; y += grid_size)
                 nk_stroke_line(canvas,
-                               size.x, y+size.y,
+                               size.x, y + size.y,
                                size.x + size.w, y + size.y, 1.0f, grid_color);
     }
 

@@ -9,13 +9,12 @@ using namespace kiwi;
 
 TEST(AST, Printing)
 {
-    Root v = Builder<>::value(2);
-    Root w = Builder<>::value(3);
+    Root v = Builder<>::value(2.0);
+    Root w = Builder<>::value(3.0);
     Root x = Builder<>::placeholder("x");
 
-    Root f = Builder<>::add(v, Builder<>::borrow(x));
-
     Root g = Builder<>::add(w, x);
+    Root f = Builder<>::add(v, Builder<>::borrow(x));
 
     print(std::cout, f);
     std::cout << std::endl;
@@ -45,7 +44,7 @@ TEST(AST, Function)
     std::cout << std::endl;
 
     // call function sqr(2)
-    Root val  = Builder<>::value(3);
+    Root val  = Builder<>::value(3.0);
     Root sqr2 = Builder<>::call("sqr", {val.take_ownership()});
 
     std::cout << "call: "; print(std::cout, sqr2);
@@ -56,7 +55,7 @@ TEST(AST, Function)
 
 TEST(AST, Eval)
 {
-    Root v = Builder<>::value(2);
+    Root v = Builder<>::value(2.0);
     Root x = Builder<>::placeholder("x");
 
     Root f = Builder<>::add(v, x);

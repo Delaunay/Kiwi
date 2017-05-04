@@ -6,7 +6,7 @@
 #include "Buffer.h"
 #include "Tokens.h"
 
-#define KIWI_DEBUG
+//#define KIWI_DEBUG
 #include "../Debug.h"
 
 /*

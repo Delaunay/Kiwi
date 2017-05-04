@@ -28,6 +28,7 @@ SET(TEST_SRC
     ASTTest.h
     LexerTest.h
     ParserTest.h
+    ValueTest.h
 )
 
 IF(WIN32)
