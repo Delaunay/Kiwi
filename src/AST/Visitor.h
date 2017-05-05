@@ -14,48 +14,30 @@ namespace kiwi{
 template<typename Visitor, typename RetType, typename ...Args>
 class StaticVisitor{
 public:
+    typedef RetType return_value;
+
     RetType traverse(Expression* x, Args... args){
         switch(x->tag){
-        case NodeTag::function:{
-            Function* exp = static_cast<Function*>(x);
-            return static_cast<Visitor&>(*this).function(exp, args...);
+    #define X(name, object)\
+        case NodeTag::name:{\
+            object* exp = static_cast<object*>(x);\
+            return static_cast<Visitor&>(*this).name(exp, args...);\
         }
-        // Call
-        case NodeTag::call1:{
-            UnaryCall* exp = static_cast<UnaryCall*>(x);
-            return static_cast<Visitor&>(*this).unary_call(exp, args...);
-        }
-        case NodeTag::call2:{
-            BinaryCall* exp = static_cast<BinaryCall*>(x);
-            return static_cast<Visitor&>(*this).binary_call(exp, args...);
-        }
-        case NodeTag::calln:{
-            FunctionCall* exp = static_cast<FunctionCall*>(x);
-            return static_cast<Visitor&>(*this).call(exp, args...);
-        }
-        // leafs
-        case NodeTag::value:{
-            Value* exp = static_cast<Value*>(x);
-            return static_cast<Visitor&>(*this).value(exp, args...);
-        }
-        case NodeTag::placeholder:{
-            Placeholder* exp = static_cast<Placeholder*>(x);
-            return static_cast<Visitor&>(*this).placeholder(exp, args...);
-        }
-        case NodeTag::borrow:{
-            Borrow* exp = static_cast<Borrow*>(x);
-            return static_cast<Visitor&>(*this).borrow(exp, args...);
-        }
+        KIWI_AST_NODES
+    #undef X
         default:
             KIWI_UNREACHABLE();
             return RetType();
         }
     }
 
-    // default behavior is: Borrows are ignored
-    RetType borrow(Borrow* b, Args... args){
-        return traverse(b->expr, args...);
+#define X(name, object)\
+    RetType name(object* x, Args... args){\
+        log_warning("unimplemented default behavior");\
+        return RetType();\
     }
+    KIWI_AST_NODES
+#undef X
 };
 
 #ifdef VTABLE_VISITOR
@@ -78,13 +60,9 @@ public:
         x->visit(this);
     })
 
-    virtual void function(Function* x) = 0;
-    virtual void call(FunctionCall* x) = 0;
-    virtual void unary_call(UnaryCall* x) = 0;
-    virtual void binary_call(BinaryCall* x) = 0;
-
-    virtual void value(Value* x) = 0;
-    virtual void placeholder(Placeholder* x) = 0;
+#define X(name, object) virtual void name(object* x) = 0;
+    KIWI_AST_NODES
+#undef X
 };
 
 }

@@ -4,6 +4,7 @@
 #undef freeprint
 #undef debug
 #undef debug_if
+#undef log_warning
 
 #ifdef KIWI_DEBUG
 #   include <iostream>
@@ -14,6 +15,7 @@
                          std::cout << std::endl;
 #   define debug(x)      x
 #   define debug_if(cond, x) {if (cond) {x;}}
+#   define log_warning(x)    std::cout << x << std::endl
 #else
 #   define printd(x)
 #   define printdt(x, y)
@@ -21,6 +23,7 @@
 #   define freeprint(x)
 #   define debug(x)
 #   define debug_if(cond, x)
+#   define log_warning(x)
 #endif
 
 

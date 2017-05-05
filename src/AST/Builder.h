@@ -32,6 +32,10 @@ public:
         return new BinaryCall(op, lhs.take_ownership(), rhs.take_ownership());
     }
 
+    static Parent error(const std::string& message){
+        return new ErrorNode(message);
+    }
+
     static Parent value(double value){
         return new Value(value);
     }

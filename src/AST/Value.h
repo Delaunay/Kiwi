@@ -97,17 +97,25 @@ public:
     }
 
     std::ostream& dump(std::ostream& out){
+        return print(out);
+    }
+
+    std::ostream& print(std::ostream& out, bool ptype = false){
         switch(type){
         #define X(n)\
             case BuiltinType::n:{\
-                out << "(" << as<n>() << ": " << name(BuiltinType::n) << ")";\
-                break;}
+                if (ptype){ out << "(";}\
+                out << as<n>();\
+                if (ptype){ out << ": " << name(BuiltinType::n) << ")";}\
+                break;\
+            }
             KIWI_TYPE_TYPE
         #undef X
         // this is a dummy type
         case BuiltinType::type:{
             out << "Type";
-            break;}
+            break;
+        }
         // this a user defined object i.e a Kiwi object
         case BuiltinType::object:{
             out << "Object";

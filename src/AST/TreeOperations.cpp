@@ -74,7 +74,7 @@ public:
         traverse(x->body, indentation + 1);
     }
 
-    void call(FunctionCall* x, int indentation){
+    void function_call(FunctionCall* x, int indentation){
         std::size_t n = x->args_size() - 1;
 
         out << x->name << "(";
@@ -105,8 +105,39 @@ public:
         out << ")";
     }
 
+    return_value borrow(Borrow* b, int indentation){
+        return traverse(b->expr, indentation);
+    }
+
+    void arrow(Arrow* x, int indentation){
+        out << "(";
+
+        int n = int(x->args.size()) - 1;
+        for(int i = 0; i < n; ++i){
+            traverse(x->args[i], indentation);
+            out << ", ";
+        }
+        traverse(x->args[n], indentation);
+
+        out << ") -> ";
+        traverse(x->return_type, indentation);
+    }
+
+    void type(Type* x, int indentation){
+        out << x->name;
+    }
+
+    void builtin(Builtin* e, int indentation){
+        out << "(Builtin " << e->name << ")";
+    }
+
+    void error(ErrorNode* e, int indentation){
+        out << "(error, m = " << e->message << ")";
+    }
+
     void value(Value* x, int){
-        out << x->as<f64>();
+        x->print(out);
+        // out << x->as<f64>();
     }
 
     void placeholder(Placeholder* x, int){
@@ -165,7 +196,7 @@ public:
         return 0;
     }
 
-    double call(FunctionCall* x){
+    double function_call(FunctionCall* x){
         std::size_t count = ctx.count(x->name);
 
         if (count == 0){
@@ -213,6 +244,9 @@ public:
         return unary_operator(x->name)(a);
     }
 
+    return_value borrow(Borrow* b){
+        return traverse(b->expr);
+    }
 
     double value(Value* x){
         return x->as<f64>();
@@ -220,6 +254,22 @@ public:
 
     double placeholder(Placeholder* x){
         return traverse(ctx.at(x->name));
+    }
+
+    return_value arrow(Arrow* x){
+        return 0;
+    }
+
+    return_value type(Type* x){
+        return 0;
+    }
+
+    return_value builtin(Builtin* e){
+        return 0;
+    }
+
+    return_value error(ErrorNode* e){
+        return 0;
     }
 
     const Context& ctx;
@@ -241,7 +291,7 @@ public:
         return x;
     }
 
-    Expression* call(FunctionCall* x){
+    Expression* function_call(FunctionCall* x){
         // we need to build a new context with the arguments
 
         // lookup the implementation
@@ -278,6 +328,10 @@ public:
         return Builder<DummyRoot>::binary_call(x->name, lhs, rhs);
     }
 
+    return_value borrow(Borrow* b){
+        return traverse(b->expr);
+    }
+
     Expression* value(Value* x){
         return x;
     }
@@ -287,6 +341,22 @@ public:
             return x;
 
         return traverse(ctx.at(x->name));
+    }
+
+    return_value arrow(Arrow* x){
+        return x;
+    }
+
+    return_value type(Type* x){
+        return x;
+    }
+
+    return_value builtin(Builtin* e){
+        return e;
+    }
+
+    return_value error(ErrorNode* e){
+        return e;
     }
 
     const Context& ctx;
@@ -321,7 +391,7 @@ public:
         return;
     }
 
-    void call(FunctionCall* x){
+    void function_call(FunctionCall* x){
         return general_call(*x);
     }
 
@@ -339,6 +409,19 @@ public:
 
     void value      (Value* x)      {   return;}
     void placeholder(Placeholder* x){   return;}
+
+    // TODO
+    return_value arrow(Arrow* x){
+    }
+
+    return_value type(Type* x){
+    }
+
+    return_value builtin(Builtin* e){
+    }
+
+    return_value error(ErrorNode* e){
+    }
 };
 
 class Copy: public StaticVisitor<Copy, Expression*>{
@@ -359,7 +442,7 @@ public:
         return Builder<DummyRoot>::function(x->name, traverse(x->body));
     }
 
-    Expression* call(FunctionCall* x){
+    Expression* function_call(FunctionCall* x){
         std::vector<Expression*> new_args;
 
         std::transform(x->args.begin(), x->args.end(), // from -> to
@@ -388,6 +471,23 @@ public:
             return Builder<DummyRoot>::borrow(b->expr);
 
         return traverse(b->expr);
+    }
+
+    // TODO
+    return_value arrow(Arrow* x){
+        return x;
+    }
+
+    return_value type(Type* x){
+        return x;
+    }
+
+    return_value builtin(Builtin* e){
+        return e;
+    }
+
+    return_value error(ErrorNode* e){
+        return e;
     }
 
     bool keep_borrowed;
