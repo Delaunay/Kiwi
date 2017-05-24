@@ -60,6 +60,8 @@ enum class NodeTag{
 #undef X
 };
 
+// TODO: test typing system
+// TODO: Precedence table <= Or should I this is parsing stuff
 
 class Expression{
 public:
@@ -78,38 +80,50 @@ namespace generic{
 template<typename Node>
 class NodeTrait{
 public:
-    typedef std::string             StringType;
-    typedef std::vector<Node*>      Args;
-    typedef std::vector<StringType> ArgNames;
-    typedef std::size_t             IndexType;
+    typedef typename std::string             StringType;
+    typedef typename std::vector<Node*>      Args;
+    typedef typename std::vector<StringType> ArgNames;
+    typedef typename std::size_t             IndexType;
 };
 
+/*
+// Just a helper class, I don't think I actually need it...
 template<typename Node>
-class BaseNode{
+class SC{
 public:
     typedef typename NodeTrait<Node>::StringType StringType;
     typedef typename NodeTrait<Node>::Args       Args;
     typedef typename NodeTrait<Node>::ArgNames   ArgNames;
     typedef typename NodeTrait<Node>::IndexType  IndexType;
-};
+};*/
+
+#define NODE_TYPES\
+    typedef typename NodeTrait<Node>::StringType StringType;\
+    typedef typename NodeTrait<Node>::Args       Args;\
+    typedef typename NodeTrait<Node>::ArgNames   ArgNames;\
+    typedef typename NodeTrait<Node>::IndexType  IndexType;
 
 // (i32, i32) -> i32
 template<typename Node>
-class Arrow final: public Node, public BaseNode<Node>{
+class Arrow final: public Node{
 public:
+    NODE_TYPES
+
     Arrow():
         Node(NodeTag::arrow)
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    std::vector<Node*> args;
+    Args  args;
     Node* return_type;
 };
 
 // Implementation of a function
 template<typename Node>
-class Function final: public Node, public BaseNode<Node>{
+class Function final: public Node{
 public:
+    NODE_TYPES
+
     Function(const StringType& name, Node* body):
         Node(NodeTag::function), name(name), body(body)
     {}
@@ -135,23 +149,14 @@ public:
  *      - calln, call to a function
  */
 template<typename Node>
-class Call: public Node, public BaseNode<Node>{
+class Call: public Node{
 public:
+    NODE_TYPES
+
     Arrow<Node>* type;
     StringType   name;
 
-    IndexType args_size() const{
-        switch(tag){
-        case NodeTag::unary_call:
-            return static_cast<const UnaryCall<Node>&>(*this).args_size();
-        case NodeTag::binary_call:
-            return static_cast<const BinaryCall<Node>&>(*this).args_size();
-        case NodeTag::function_call:
-            return static_cast<const FunctionCall<Node>&>(*this).args_size();
-        default:
-            return 0;
-        }
-    }
+    std::size_t args_size() const;
 
     Node* arg(IndexType index);
 
@@ -164,8 +169,10 @@ protected:
 template<typename Node>
 class UnaryCall final: public Call<Node>{
 public:
+    NODE_TYPES
+
     UnaryCall(const StringType& name, Node* expr):
-        Call(NodeTag::unary_call, name), expr(expr)
+        Call<Node>(NodeTag::unary_call, name), expr(expr)
     {}
 
     IndexType args_size() const{ return 1;}
@@ -185,8 +192,10 @@ public:
 template<typename Node>
 class BinaryCall final: public Call<Node>{
 public:
+    NODE_TYPES
+
     BinaryCall(const StringType& name, Node* lhs, Node* rhs):
-        Call(NodeTag::binary_call, name), lhs(lhs), rhs(rhs)
+        Call<Node>(NodeTag::binary_call, name), lhs(lhs), rhs(rhs)
     {}
 
     IndexType args_size() const{return 2;}
@@ -207,8 +216,10 @@ public:
 template<typename Node>
 class FunctionCall final: public Call<Node>{
 public:
+    NODE_TYPES
+
     FunctionCall(const StringType& name, const Args& args):
-        Call(NodeTag::function_call, name), args(args)
+        Call<Node>(NodeTag::function_call, name), args(args)
     {}
 
     IndexType args_size() const{
@@ -225,8 +236,10 @@ public:
 
 
 template<typename Node>
-class Placeholder final: public Node, public BaseNode<Node>{
+class Placeholder final: public Node{
 public:
+    NODE_TYPES
+
     Placeholder(const StringType name):
         Node(NodeTag::placeholder), name(name)
     {}
@@ -246,8 +259,10 @@ public:
  * instead of copying it
  */
 template<typename Node>
-class Borrow final: public Node, public BaseNode<Node>{
+class Borrow final: public Node{
 public:
+    NODE_TYPES
+
     Borrow(Node* expr):
         Node(NodeTag::borrow), expr(expr)
     {}
@@ -263,8 +278,10 @@ public:
  * During eval the compiler will lookup the implementation
  */
 template<typename Node>
-class Builtin final: public Node, public BaseNode<Node>{
+class Builtin final: public Node{
 public:
+    NODE_TYPES
+
     Builtin(const StringType& name):
         Node(NodeTag::builtin), name(name)
     {}
@@ -275,8 +292,10 @@ public:
 
 
 template<typename Node>
-class Type final: public Node, public BaseNode<Node>{
+class Type final: public Node{
 public:
+    NODE_TYPES
+
     Type(const StringType& name):
         Node(NodeTag::type), name(name)
     {}
@@ -307,8 +326,10 @@ public:
 // ErrorNode also holds an expected Node which used
 // when the parser can determine the node that should be present
 template<typename Node>
-class ErrorNode final: public Node, public BaseNode<Node>{
+class ErrorNode final: public Node{
 public:
+    NODE_TYPES
+
     ErrorNode(const StringType message, Node* partial=nullptr):
         Node(NodeTag::error), message(message), partial(partial)
     {}
@@ -322,7 +343,7 @@ public:
 
 template<typename Node>
 Node* Call<Node>::arg(IndexType index){
-    switch(tag){
+    switch(Node::tag){
     case NodeTag::unary_call:
         return static_cast<UnaryCall<Node>&>(*this).arg(index);
     case NodeTag::binary_call:
@@ -331,6 +352,20 @@ Node* Call<Node>::arg(IndexType index){
         return static_cast<FunctionCall<Node>&>(*this).arg(index);
     default:
         return nullptr;
+    }
+}
+
+template<typename Node>
+std::size_t Call<Node>::args_size() const{
+    switch(Node::tag){
+    case NodeTag::unary_call:
+        return static_cast<const UnaryCall<Node>&>(*this).args_size();
+    case NodeTag::binary_call:
+        return static_cast<const BinaryCall<Node>&>(*this).args_size();
+    case NodeTag::function_call:
+        return static_cast<const FunctionCall<Node>&>(*this).args_size();
+    default:
+        return 0;
     }
 }
 

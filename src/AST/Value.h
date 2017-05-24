@@ -70,7 +70,7 @@ template<> inline BuiltinType type_id<typetype>(){ return BuiltinType::type; }
 
 template<typename T>
 Expression* type(){
-    static Type t(name(type_id<T>()));
+    static generic::Type<Expression> t(name(type_id<T>()));
     return &t;
 }
 
@@ -78,8 +78,10 @@ namespace generic{
 
 //
 template<typename Node>
-class Value: public Node, BaseNode<Node>{
+class Value: public Node{
 public:
+    NODE_TYPES
+
     template<typename T>
     Value(T x):
         Node(NodeTag::value),
