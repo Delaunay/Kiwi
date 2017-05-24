@@ -2,8 +2,7 @@
 
 #include <cmath>
 
-#include "Value.h"
-#include "Expression.h"
+#include "LightAST.h"
 #include "TreeOperations.h"
 #include "Root.h"
 

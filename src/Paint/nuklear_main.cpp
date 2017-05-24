@@ -66,8 +66,8 @@ public:
 
 
 
-#include "NuklearWindow.h"
-//#include "SFMLWindow.h"
+//#include "NuklearWindow.h"
+#include "SFMLWindow.h"
 
 class App : public kiwi::SFMLWindow<App>{
 
@@ -75,9 +75,9 @@ class App : public kiwi::SFMLWindow<App>{
 
 int main(){
 
-    kiwi::NuklearWindow app;
+    //kiwi::NuklearWindow app;
 
-    //App app;
+    App app;
 
     app.init();
 

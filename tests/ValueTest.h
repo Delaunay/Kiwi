@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "AST/Value.h"
+#include "AST/LightAST.h"
 
 //#define KIWI_DEBUG
 #include "../src/Debug.h"

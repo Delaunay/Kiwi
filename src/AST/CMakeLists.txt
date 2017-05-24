@@ -8,6 +8,7 @@ SET(AST_SRC
     Builder.h
     Builder.cpp
     Visitor.h
+    LightAST.h
     TreeOperations.h
     TreeOperations.cpp)
 

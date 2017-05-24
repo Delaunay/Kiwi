@@ -41,14 +41,13 @@ typedef std::uint64_t u64;
     X(f32) \
     X(f64)
 
-enum class BuiltinType : std::size_t{
+enum class BuiltinType{
 #define X(n) n,
     KIWI_TYPE_TYPE
 #undef X
     object,
     type
 };
-
 
 inline
 const std::string& name(BuiltinType id){
@@ -75,13 +74,15 @@ Expression* type(){
     return &t;
 }
 
+namespace generic{
 
 //
-class Value: public Expression{
+template<typename Node>
+class Value: public Node, BaseNode<Node>{
 public:
     template<typename T>
     Value(T x):
-        Expression(NodeTag::value),
+        Node(NodeTag::value),
         _self(std::make_shared<Model<T>>(std::move(x))),
         type(kiwi::type_id<T>())
     {}
@@ -145,4 +146,5 @@ private:
     std::shared_ptr<const Concept> _self;
 };
 
+}
 }

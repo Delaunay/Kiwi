@@ -33,6 +33,10 @@
  *  Indeed Builder::Add/Placeholder should be used instead as
  *  those enable us to implement basic optimizations such as constant
  *  folding
+ *
+ * Everything is a template because we are going to generate different ASTs
+ * i.e RenderTree to render the AST on the screen and a Lighweight AST
+ * for internal use
  */
 namespace kiwi{
 
@@ -56,7 +60,6 @@ enum class NodeTag{
 #undef X
 };
 
-class Arrow;
 
 class Expression{
 public:
@@ -70,27 +73,60 @@ public:
     PARENT(Expression* parent = nullptr;)
 };
 
-// Implementation of a function
-class Function: public Expression{
-public:
-    typedef std::vector<std::string> ArgNames;
+namespace generic{
 
-    Function(const std::string& name, Expression* body):
-        Expression(NodeTag::function), name(name), body(body)
+template<typename Node>
+class NodeTrait{
+public:
+    typedef std::string             StringType;
+    typedef std::vector<Node*>      Args;
+    typedef std::vector<StringType> ArgNames;
+    typedef std::size_t             IndexType;
+};
+
+template<typename Node>
+class BaseNode{
+public:
+    typedef typename NodeTrait<Node>::StringType StringType;
+    typedef typename NodeTrait<Node>::Args       Args;
+    typedef typename NodeTrait<Node>::ArgNames   ArgNames;
+    typedef typename NodeTrait<Node>::IndexType  IndexType;
+};
+
+// (i32, i32) -> i32
+template<typename Node>
+class Arrow final: public Node, public BaseNode<Node>{
+public:
+    Arrow():
+        Node(NodeTag::arrow)
     {}
 
-    std::size_t args_size() const{
+    VTABLEV(void visit(class DynamicVisitor* v) override;)
+    std::vector<Node*> args;
+    Node* return_type;
+};
+
+// Implementation of a function
+template<typename Node>
+class Function final: public Node, public BaseNode<Node>{
+public:
+    Function(const StringType& name, Node* body):
+        Node(NodeTag::function), name(name), body(body)
+    {}
+
+    IndexType args_size() const{
         return args.size();
     }
-    const std::string& arg(std::size_t index) const{
+    const StringType& arg(IndexType index) const{
         return args[index];
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    std::string name;
-    ArgNames    args;
-    Arrow*      type;
-    Expression* body;
+
+    StringType   name;
+    ArgNames     args;
+    Arrow<Node>* type;
+    Node       * body;
 };
 
 /* Function Call are split in 3
@@ -98,29 +134,43 @@ public:
  *      - call2, call to a binaryOperator
  *      - calln, call to a function
  */
-class Call: public Expression{
+template<typename Node>
+class Call: public Node, public BaseNode<Node>{
 public:
-    Arrow*      type;
-    std::string name;
+    Arrow<Node>* type;
+    StringType   name;
 
-    std::size_t args_size() const;
-    Expression* arg(std::size_t index);
+    IndexType args_size() const{
+        switch(tag){
+        case NodeTag::unary_call:
+            return static_cast<const UnaryCall<Node>&>(*this).args_size();
+        case NodeTag::binary_call:
+            return static_cast<const BinaryCall<Node>&>(*this).args_size();
+        case NodeTag::function_call:
+            return static_cast<const FunctionCall<Node>&>(*this).args_size();
+        default:
+            return 0;
+        }
+    }
+
+    Node* arg(IndexType index);
 
 protected:
-    Call(NodeTag tag, const std::string& name):
-        Expression(tag), name(name)
+    Call(NodeTag tag, const StringType& name):
+        Node(tag), name(name)
     {}
 };
 
-class UnaryCall: public Call{
+template<typename Node>
+class UnaryCall final: public Call<Node>{
 public:
-    UnaryCall(const std::string& name, Expression* expr):
+    UnaryCall(const StringType& name, Node* expr):
         Call(NodeTag::unary_call, name), expr(expr)
     {}
 
-    std::size_t args_size() const{ return 1;}
+    IndexType args_size() const{ return 1;}
 
-    Expression* arg(std::size_t index){
+    Node* arg(IndexType index){
         switch(index){
         case 0:  return expr;
         default: return expr;
@@ -128,19 +178,20 @@ public:
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    Expression* expr;
+    Node* expr;
     bool right = false; // operator is left/right associative
 };
 
-class BinaryCall: public Call{
+template<typename Node>
+class BinaryCall final: public Call<Node>{
 public:
-    BinaryCall(const std::string& name, Expression* lhs, Expression* rhs):
+    BinaryCall(const StringType& name, Node* lhs, Node* rhs):
         Call(NodeTag::binary_call, name), lhs(lhs), rhs(rhs)
     {}
 
-    std::size_t args_size() const{return 2;}
+    IndexType args_size() const{return 2;}
 
-    Expression* arg(std::size_t index){
+    Node* arg(IndexType index){
         switch(index){
         case 0:  return lhs;
         case 1:  return rhs;
@@ -149,23 +200,22 @@ public:
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    Expression* lhs;
-    Expression* rhs;
+    Node* lhs;
+    Node* rhs;
 };
 
-class FunctionCall: public Call{
+template<typename Node>
+class FunctionCall final: public Call<Node>{
 public:
-    typedef std::vector<Expression*> Args;
-
-    FunctionCall(const std::string& name, const std::vector<Expression*>& args):
+    FunctionCall(const StringType& name, const Args& args):
         Call(NodeTag::function_call, name), args(args)
     {}
 
-    std::size_t args_size() const{
+    IndexType args_size() const{
         return args.size();
     }
 
-    Expression* arg(std::size_t index){
+    Node* arg(IndexType index){
         return args[index];
     }
 
@@ -174,15 +224,16 @@ public:
 };
 
 
-class Placeholder: public Expression{
+template<typename Node>
+class Placeholder final: public Node, public BaseNode<Node>{
 public:
-    Placeholder(const std::string name):
-        Expression(NodeTag::placeholder), name(name)
+    Placeholder(const StringType name):
+        Node(NodeTag::placeholder), name(name)
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    std::string name;
-    Expression* type;
+    StringType name;
+    Node* type;
 };
 
 /* Borrow is a dummy Node which only exists to help
@@ -194,14 +245,15 @@ public:
  * Borrow allow us to reuse the original program subtree
  * instead of copying it
  */
-class Borrow: public Expression{
+template<typename Node>
+class Borrow final: public Node, public BaseNode<Node>{
 public:
-    Borrow(Expression* expr):
-        Expression(NodeTag::borrow), expr(expr)
+    Borrow(Node* expr):
+        Node(NodeTag::borrow), expr(expr)
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    Expression* expr;
+    Node* expr;
 };
 
 /* Builtin is a special construct used to implement
@@ -210,72 +262,77 @@ public:
  *
  * During eval the compiler will lookup the implementation
  */
-class Builtin: public Expression{
+template<typename Node>
+class Builtin final: public Node, public BaseNode<Node>{
 public:
-    Builtin(const std::string& name):
-        Expression(NodeTag::builtin), name(name)
+    Builtin(const StringType& name):
+        Node(NodeTag::builtin), name(name)
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    const std::string name;
+    const StringType name;
 };
 
 
-class Type: public Expression{
+template<typename Node>
+class Type final: public Node, public BaseNode<Node>{
 public:
-    Type(const std::string& name):
-        Expression(NodeTag::type), name(name)
+    Type(const StringType& name):
+        Node(NodeTag::type), name(name)
     {}
 
     Type():
-        Expression(NodeTag::type)
+        Node(NodeTag::type)
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    const std::string name;
+    const StringType name;
 };
-
-// (i32, i32) -> i32
-class Arrow: public Expression{
-public:
-    Arrow():
-        Expression(NodeTag::arrow)
-    {}
-
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
-    std::vector<Expression*> args;
-    Expression* return_type;
-};
-
 
 // An ErrorNode is used by the parser
 // when a parsing error occur, that way the parsing
 // can keep going without stopping.
 // Which makes our compiler able to report as many errors
 // as possible. Moreover the parser is used extensively
-// in our IDE, we can't allow our parser to crash
+// in our IDE, we can't allow our parser to crash:
 // we need to be able to represent incorrect programs
 //
 // Interative IDE
 // --------------
 // ErrorNode hold a string that is used by the parser to
-// replace ErrorNode with the resulting expression
+// replace ErrorNode with the resulting Node
 //
 // Parsing Auto-Correct
 // --------------------
-// ErrorNode also holds an expected expression which used
+// ErrorNode also holds an expected Node which used
 // when the parser can determine the node that should be present
-class ErrorNode : public Expression{
+template<typename Node>
+class ErrorNode final: public Node, public BaseNode<Node>{
 public:
-    ErrorNode(const std::string message, Expression* partial=nullptr):
-        Expression(NodeTag::error), message(message), partial(partial)
+    ErrorNode(const StringType message, Node* partial=nullptr):
+        Node(NodeTag::error), message(message), partial(partial)
     {}
 
-    Expression* partial;    // partial parsed Expression
-    Expression* expected;   // suggested node
-    std::string code;       // code the parser should use to solve the issue
-    std::string message;    // error message
+    Node* partial;    // partial parsed Node
+    Node* expected;   // suggested node
+    StringType code;       // code the parser should use to solve the issue
+    StringType message;    // error message
 };
 
 
+template<typename Node>
+Node* Call<Node>::arg(IndexType index){
+    switch(tag){
+    case NodeTag::unary_call:
+        return static_cast<UnaryCall<Node>&>(*this).arg(index);
+    case NodeTag::binary_call:
+        return static_cast<BinaryCall<Node>&>(*this).arg(index);
+    case NodeTag::function_call:
+        return static_cast<FunctionCall<Node>&>(*this).arg(index);
+    default:
+        return nullptr;
+    }
+}
+
+}
 }

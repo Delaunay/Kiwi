@@ -23,10 +23,12 @@ SET(FRONT_END_LIST
     SFMLNuklear.h
     SFMLNuklear.cpp
     NuklearWindow.h
-
+    RenderTree.h
+    RenderTree.cpp
+    Fonts.h
+    Fonts.cpp
     Node.h
     Node.cpp
-
     NodeEditor.h
     NodeEditor.cpp
 )

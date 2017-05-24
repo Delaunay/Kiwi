@@ -7,7 +7,7 @@ PROJECT(kiwi)
 # required for gtest which uses /MD
 if (MSVC)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_COMPILE_OPTIONS(/MDd)
+    ADD_COMPILE_OPTIONS(/MD)
 ELSE(MSVC)
     ADD_COMPILE_OPTIONS(-fno-rtti)
 ENDIF(MSVC)

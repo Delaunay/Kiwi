@@ -4,6 +4,7 @@
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 //#include <SFML/OpenGL.hpp>
+#include "Fonts.h"
 
 #define KIWI_DEBUG
 #include "../Debug.h"
@@ -96,6 +97,29 @@ public:
         rect.setSize(sf::Vector2f(100, 100));
 
         screen.draw(rect);
+
+        /*
+        std::string utf8_source = "...";
+        std::basic_string<sf::Uint32> tmp;
+        sf::Uint8::toUtf32(source.begin(), source.end(), std::back_inserter(tmp));
+        sf::String final = tmp;*/
+
+        sf::Text test;
+        test.setFont(default_font());
+        test.setString(L"Hello World");
+        test.setFillColor(sf::Color(50, 100, 100));
+        test.setOutlineColor(sf::Color(255, 255, 255));
+        test.setOutlineThickness(1);
+        screen.draw(test);
+
+        sf::Text test2;
+        test2.setPosition(sf::Vector2f(0, test.getLocalBounds().height));
+        test2.setFont(default_font());
+        test2.setString(L"Hello World");
+        test2.setFillColor(sf::Color(50, 100, 100));
+        //test.setOutlineColor(sf::Color(100, 50, 100));
+        //test.setOutlineThickness(1);
+        screen.draw(test2);
     }
 
     void render(sf::RenderWindow& screen){

@@ -1,26 +1,25 @@
 #pragma once
-#include "Expression.h"
-#include "Value.h"
+#include "LightAST.h"
 
 #define KIWI_UNREACHABLE()
 
 namespace kiwi{
 
-
+namespace generic{
 /*
  * StaticVisitor does not rely on vtables and thus might be optimized better
  * as small functions could be inlined
  */
-template<typename Visitor, typename RetType, typename ...Args>
+template<typename Visitor, typename Node, typename RetType, typename ...Args>
 class StaticVisitor{
 public:
     typedef RetType return_value;
 
-    RetType traverse(Expression* x, Args... args){
+    RetType traverse(Node* x, Args... args){
         switch(x->tag){
     #define X(name, object)\
         case NodeTag::name:{\
-            object* exp = static_cast<object*>(x);\
+            object<Node>* exp = static_cast<object<Node>*>(x);\
             return static_cast<Visitor&>(*this).name(exp, args...);\
         }
         KIWI_AST_NODES
@@ -32,7 +31,7 @@ public:
     }
 
 #define X(name, object)\
-    RetType name(object* x, Args... args){\
+    RetType name(object<Node>* x, Args... args){\
         log_warning("unimplemented default behavior");\
         return RetType();\
     }
@@ -43,26 +42,33 @@ public:
 #ifdef VTABLE_VISITOR
 #   define KIWI_DV_INHERIT
 #else
-#   define KIWI_DV_INHERIT : public StaticVisitor<DynamicVisitor, void>
+#   define KIWI_DV_INHERIT : public StaticVisitor<DynamicVisitor<Node>, Node, void>
 #endif
 
 /*
  * DynamicVisitor is a standard visitor. It can rely on Expression's vtables
  * if their usage is activated
  */
+template<typename Node>
 class DynamicVisitor KIWI_DV_INHERIT{
 public:
 
     virtual ~DynamicVisitor() {}
 
     VTABLEV(
-    void traverse(Expr x){
+    void traverse(Node x){
         x->visit(this);
     })
 
-#define X(name, object) virtual void name(object* x) = 0;
+#define X(name, object) virtual void name(object<Node>* x) = 0;
     KIWI_AST_NODES
 #undef X
+};
+}
+
+template<typename Visitor, typename RetType, typename ...Args>
+class StaticVisitor: public generic::StaticVisitor<Visitor, Expression, RetType, Args...>{
+
 };
 
 }
