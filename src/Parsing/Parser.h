@@ -16,6 +16,11 @@ namespace kiwi{
 
 class Parser{
 public:
+    typedef typename generic::Root<Expression> Root;
+    typedef typename generic::DummyRoot<Expression> DummyRoot;
+    typedef Builder<Root, LightAST> RBuilder;
+    typedef LightAST Tree;
+
     Parser(AbstractBuffer& buffer):
         _lexer(buffer)
     {
@@ -39,10 +44,9 @@ public:
         tok = nexttok();
         EXPECT(tok_identifier, "expected function name");
 
-
         std::string name = tok.identifier();
-        Function* fun = static_cast<Function*>(
-                    Builder<>::function(name, nullptr).get());
+        Tree::Function* fun = static_cast<Tree::Function*>(
+                    RBuilder::function(name, nullptr).get());
 
         tok = nexttok();
         EXPECT('(', "'(' expected");
@@ -129,17 +133,17 @@ public:
         if (rhs.get() == nullptr)
             return lhs;
 
-        return Builder<>::add(lhs, rhs);
+        return RBuilder::add(lhs, rhs);
     }
 
     Root parse_value(double val){
         printd("parse_val");
-        return Builder<>::value(val);
+        return RBuilder::value(val);
     }
 
     Root parse_identifier(std::string name){
         printd("parse_identifier");
-        return Builder<>::placeholder(name);
+        return RBuilder::placeholder(name);
     }
 
 private:

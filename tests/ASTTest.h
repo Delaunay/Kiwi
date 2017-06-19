@@ -7,14 +7,17 @@
 
 using namespace kiwi;
 
+typedef generic::Root<Expression> Root;
+typedef Builder<Root, LightAST> RBuilder;
+
 TEST(AST, Printing)
 {
-    Root v = Builder<>::value(2.0);
-    Root w = Builder<>::value(3.0);
-    Root x = Builder<>::placeholder("x");
+    Root v = RBuilder::value(2.0);
+    Root w = RBuilder::value(3.0);
+    Root x = RBuilder::placeholder("x");
 
-    Root g = Builder<>::add(w, x);
-    Root f = Builder<>::add(v, Builder<>::borrow(x));
+    Root g = RBuilder::add(w, x);
+    Root f = RBuilder::add(v, RBuilder::borrow(x));
 
     print(std::cout, f);
     std::cout << std::endl;
@@ -29,10 +32,10 @@ TEST(AST, Function)
     // def sqr(x):
     //     return x * x
 
-    Root x    = Builder<>::placeholder("x");
-    Root body = Builder<>::mult(x, Builder<>::borrow(x));
-    Root sqr  = Builder<>::function("sqr", body);
-         static_cast<Function*>(sqr.get())->args.push_back("x");
+    Root x    = RBuilder::placeholder("x");
+    Root body = RBuilder::mult(x, RBuilder::borrow(x));
+    Root sqr  = RBuilder::function("sqr", body);
+         static_cast<LightAST::Function*>(sqr.get())->args.push_back("x");
 
     // add function to context
     Context ctx = {
@@ -44,8 +47,8 @@ TEST(AST, Function)
     std::cout << std::endl;
 
     // call function sqr(2)
-    Root val  = Builder<>::value(3.0);
-    Root sqr2 = Builder<>::call("sqr", {val.take_ownership()});
+    Root val  = RBuilder::value(3.0);
+    Root sqr2 = RBuilder::call("sqr", {val.take_ownership()});
 
     std::cout << "call: "; print(std::cout, sqr2);
     std::cout << std::endl;
@@ -55,10 +58,10 @@ TEST(AST, Function)
 
 TEST(AST, Eval)
 {
-    Root v = Builder<>::value(2.0);
-    Root x = Builder<>::placeholder("x");
+    Root v = RBuilder::value(2.0);
+    Root x = RBuilder::placeholder("x");
 
-    Root f = Builder<>::add(v, x);
+    Root f = RBuilder::add(v, x);
 
     Context ctx;
         ctx["x"] = v.get();

@@ -8,10 +8,17 @@
 
 namespace kiwi {
 
-template<typename T = Root>
+template<typename T, typename Tree>
 class Builder{
 public:
     typedef T Parent;
+    typedef typename T::ptr_type Expr;
+
+    typedef typename Tree::Call Call;
+    typedef typename Tree::Node Node;
+    #define X(name, object) typedef typename Tree::object object;
+        KIWI_AST_NODES
+    #undef X
 
     static Parent function(const std::string op, const Parent& body){
         Function* root = new Function(op, body.take_ownership());
@@ -20,7 +27,7 @@ public:
         return Parent(root);
     }
 
-    static Parent call(const std::string& op, std::vector<Expression*> args){
+    static Parent call(const std::string& op, std::vector<Expr> args){
         return new FunctionCall(op, args);
     }
     static Parent unary_call(const std::string& op, const Parent& expr){
@@ -51,24 +58,24 @@ public:
         // Constant folding
         if (lhs->tag == NodeTag::value){
             Value* vlhs = static_cast<Value*>(lhs.get());
-            if (std::abs(vlhs->as<f64>()) <= 1e-12){
+            if (std::abs(as<f64>(vlhs)) <= 1e-12){
                 return rhs;
             }
 
             if (rhs->tag == NodeTag::value){
                 Value* vrhs = static_cast<Value*>(rhs.get());
-                return new Value(vrhs->as<f64>() + vlhs->as<f64>());
+                return new Value(as<f64>(vrhs) + as<f64>(vlhs));
             }
         }
 
         if (rhs->tag == NodeTag::value){
             Value* vrhs = static_cast<Value*>(rhs.get());
-            if (std::abs(vrhs->as<f64>()) <= 1e-12){
+            if (std::abs(as<f64>(vrhs)) <= 1e-12){
                 return lhs;
             }
         }
 
-        Parent root  =new BinaryCall("+",
+        Parent root = new BinaryCall("+",
                                      lhs.take_ownership(),
                                      rhs.take_ownership());
 

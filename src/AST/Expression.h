@@ -65,6 +65,15 @@ enum class NodeTag{
 
 class Expression{
 public:
+    typedef typename std::string              StringType;
+    typedef typename std::vector<Expression*> Args;
+    typedef typename std::vector<StringType>  ArgNames;
+    typedef typename std::size_t              IndexType;
+
+    static StringType make_string(const std::string& str){
+        return StringType(str);
+    }
+
     Expression(NodeTag tag):
         tag(tag)
     {}
@@ -77,31 +86,12 @@ public:
 
 namespace generic{
 
-template<typename Node>
-class NodeTrait{
-public:
-    typedef typename std::string             StringType;
-    typedef typename std::vector<Node*>      Args;
-    typedef typename std::vector<StringType> ArgNames;
-    typedef typename std::size_t             IndexType;
-};
-
-/*
-// Just a helper class, I don't think I actually need it...
-template<typename Node>
-class SC{
-public:
-    typedef typename NodeTrait<Node>::StringType StringType;
-    typedef typename NodeTrait<Node>::Args       Args;
-    typedef typename NodeTrait<Node>::ArgNames   ArgNames;
-    typedef typename NodeTrait<Node>::IndexType  IndexType;
-};*/
-
+// Thanks gcc for forcing us to use such beautiful macro
 #define NODE_TYPES\
-    typedef typename NodeTrait<Node>::StringType StringType;\
-    typedef typename NodeTrait<Node>::Args       Args;\
-    typedef typename NodeTrait<Node>::ArgNames   ArgNames;\
-    typedef typename NodeTrait<Node>::IndexType  IndexType;
+    typedef typename Node::StringType StringType;\
+    typedef typename Node::Args       Args;\
+    typedef typename Node::ArgNames   ArgNames;\
+    typedef typename Node::IndexType  IndexType;
 
 // (i32, i32) -> i32
 template<typename Node>
@@ -124,8 +114,8 @@ class Function final: public Node{
 public:
     NODE_TYPES
 
-    Function(const StringType& name, Node* body):
-        Node(NodeTag::function), name(name), body(body)
+    Function(const std::string& name, Node* body):
+        Node(NodeTag::function), name(Node::make_string(name)), body(body)
     {}
 
     IndexType args_size() const{
@@ -161,8 +151,8 @@ public:
     Node* arg(IndexType index);
 
 protected:
-    Call(NodeTag tag, const StringType& name):
-        Node(tag), name(name)
+    Call(NodeTag tag, const std::string& name):
+        Node(tag), name(Node::make_string(name))
     {}
 };
 
@@ -171,8 +161,8 @@ class UnaryCall final: public Call<Node>{
 public:
     NODE_TYPES
 
-    UnaryCall(const StringType& name, Node* expr):
-        Call<Node>(NodeTag::unary_call, name), expr(expr)
+    UnaryCall(const std::string& name, Node* expr):
+        Call<Node>(NodeTag::unary_call, Node::make_string(name)), expr(expr)
     {}
 
     IndexType args_size() const{ return 1;}
@@ -194,7 +184,7 @@ class BinaryCall final: public Call<Node>{
 public:
     NODE_TYPES
 
-    BinaryCall(const StringType& name, Node* lhs, Node* rhs):
+    BinaryCall(const std::string& name, Node* lhs, Node* rhs):
         Call<Node>(NodeTag::binary_call, name), lhs(lhs), rhs(rhs)
     {}
 
@@ -218,8 +208,8 @@ class FunctionCall final: public Call<Node>{
 public:
     NODE_TYPES
 
-    FunctionCall(const StringType& name, const Args& args):
-        Call<Node>(NodeTag::function_call, name), args(args)
+    FunctionCall(const std::string& name, const Args& args):
+        Call<Node>(NodeTag::function_call, Node::make_string(name)), args(args)
     {}
 
     IndexType args_size() const{
@@ -240,8 +230,8 @@ class Placeholder final: public Node{
 public:
     NODE_TYPES
 
-    Placeholder(const StringType name):
-        Node(NodeTag::placeholder), name(name)
+    Placeholder(const std::string& name):
+        Node(NodeTag::placeholder), name(Node::make_string(name))
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
@@ -282,8 +272,8 @@ class Builtin final: public Node{
 public:
     NODE_TYPES
 
-    Builtin(const StringType& name):
-        Node(NodeTag::builtin), name(name)
+    Builtin(const std::string& name):
+        Node(NodeTag::builtin), name(Node::make_string(name))
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
@@ -296,8 +286,8 @@ class Type final: public Node{
 public:
     NODE_TYPES
 
-    Type(const StringType& name):
-        Node(NodeTag::type), name(name)
+    Type(const std::string& name):
+        Node(NodeTag::type), name(Node::make_string(name))
     {}
 
     Type():
@@ -330,8 +320,8 @@ class ErrorNode final: public Node{
 public:
     NODE_TYPES
 
-    ErrorNode(const StringType message, Node* partial=nullptr):
-        Node(NodeTag::error), message(message), partial(partial)
+    ErrorNode(const std::string& message, Node* partial=nullptr):
+        Node(NodeTag::error), message(Node::make_string(message)), partial(partial)
     {}
 
     Node* partial;    // partial parsed Node

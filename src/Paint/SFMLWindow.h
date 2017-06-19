@@ -12,6 +12,7 @@
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 712
 
+#include "RenderTree.h"
 
 namespace kiwi{
 
@@ -103,7 +104,7 @@ public:
         std::basic_string<sf::Uint32> tmp;
         sf::Uint8::toUtf32(source.begin(), source.end(), std::back_inserter(tmp));
         sf::String final = tmp;*/
-
+/*
         sf::Text test;
         test.setFont(default_font());
         test.setString(L"Hello World");
@@ -119,7 +120,10 @@ public:
         test2.setFillColor(sf::Color(50, 100, 100));
         //test.setOutlineColor(sf::Color(100, 50, 100));
         //test.setOutlineThickness(1);
-        screen.draw(test2);
+        screen.draw(test2);*/
+
+        auto sqr = RenderVisitor::make_sqr();
+        RenderVisitor::run(_window, sqr, {0, 0});
     }
 
     void render(sf::RenderWindow& screen){

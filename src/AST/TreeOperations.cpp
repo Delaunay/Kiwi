@@ -48,7 +48,7 @@ UnaryOperator& unary_operator(const std::string& name){
 }
 
 
-class Printing: public StaticVisitor<Printing, void, int>{
+class Printing: public LightStaticVisitor<Printing, void, int>{
 public:
     Printing(std::ostream& out):
         out(out)
@@ -180,7 +180,7 @@ public:
 };*/
 
 
-class FullEval: public StaticVisitor<FullEval, double>{
+class FullEval: public LightStaticVisitor<FullEval, double>{
 public:
     FullEval(const Context& ctx):
         ctx(ctx)
@@ -276,8 +276,11 @@ public:
 };
 
 // TODO
-class PartialEval: public StaticVisitor<PartialEval, Root>{
+class PartialEval: public LightStaticVisitor<PartialEval, generic::Root<Expression>>{
 public:
+    typedef typename generic::Root<Expression> Root;
+    typedef typename generic::DummyRoot<Expression> DummyRoot;
+
     PartialEval(const Context& ctx):
         ctx(ctx)
     {}
@@ -307,11 +310,11 @@ public:
 
         if (expr->tag == NodeTag::value){
             Value* vexpr = static_cast<Value*>(expr);
-            return Builder<DummyRoot>::value(
+            return Builder<DummyRoot, Tree>::value(
                      unary_operator(x->name)(vexpr->as<f64>()));
         }
 
-        return Builder<DummyRoot>::unary_call(x->name, expr);
+        return Builder<DummyRoot, Tree>::unary_call(x->name, expr);
     }
 
     Expression* binary_call(BinaryCall* x){
@@ -321,11 +324,11 @@ public:
         if (lhs->tag == NodeTag::value && rhs->tag == NodeTag::value){
             Value* vlhs = static_cast<Value*>(lhs);
             Value* vrhs = static_cast<Value*>(rhs);;
-            return Builder<DummyRoot>::value(
+            return Builder<DummyRoot, Tree>::value(
                      binary_operator(x->name)(vlhs->as<f64>(), vrhs->as<f64>()));
         }
 
-        return Builder<DummyRoot>::binary_call(x->name, lhs, rhs);
+        return Builder<DummyRoot, Tree>::binary_call(x->name, lhs, rhs);
     }
 
     return_value borrow(Borrow* b){
@@ -363,7 +366,7 @@ public:
 };
 
 
-class FreeMemory: public StaticVisitor<FreeMemory, void>{
+class FreeMemory: public LightStaticVisitor<FreeMemory, void>{
 public:
     FreeMemory() = default;
 
@@ -424,8 +427,11 @@ public:
     }
 };
 
-class Copy: public StaticVisitor<Copy, Expression*>{
+class Copy: public LightStaticVisitor<Copy, Expression*>{
 public:
+    typedef typename generic::Root<Expression> Root;
+    typedef typename generic::DummyRoot<Expression> DummyRoot;
+
     Copy(bool keep_borrowed):
         keep_borrowed(keep_borrowed)
     {}
@@ -439,7 +445,7 @@ public:
     }
 
     Expression* function(Function* x){
-        return Builder<DummyRoot>::function(x->name, traverse(x->body));
+        return Builder<DummyRoot, Tree>::function(x->name, traverse(x->body));
     }
 
     Expression* function_call(FunctionCall* x){
@@ -449,26 +455,26 @@ public:
                        std::back_inserter(new_args),    // insert to
                        [this](Expression* expr){ return traverse(expr); }); // copy each arguments
 
-        return Builder<DummyRoot>::call(x->name, new_args);
+        return Builder<DummyRoot, Tree>::call(x->name, new_args);
     }
     Expression* unary_call(UnaryCall* x){
-        return Builder<DummyRoot>::unary_call(x->name, traverse(x->expr));
+        return Builder<DummyRoot, Tree>::unary_call(x->name, traverse(x->expr));
     }
     Expression* binary_call(BinaryCall* x){
-        return Builder<DummyRoot>::binary_call(x->name, traverse(x->lhs), traverse(x->rhs));
+        return Builder<DummyRoot, Tree>::binary_call(x->name, traverse(x->lhs), traverse(x->rhs));
     }
 
     Expression* value(Value* x){
-        return Builder<DummyRoot>::value(x->as<f64>());
+        return Builder<DummyRoot, Tree>::value(x->as<f64>());
     }
 
     Expression* placeholder(Placeholder* x){
-        return Builder<DummyRoot>::placeholder(x->name);
+        return Builder<DummyRoot, Tree>::placeholder(x->name);
     }
 
     Expression* borrow(Borrow* b){
         if (keep_borrowed)
-            return Builder<DummyRoot>::borrow(b->expr);
+            return Builder<DummyRoot, Tree>::borrow(b->expr);
 
         return traverse(b->expr);
     }

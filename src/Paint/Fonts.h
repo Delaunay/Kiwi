@@ -30,4 +30,9 @@ namespace kiwi{
         static sf::Font font = load_font(HOME "consola.ttf");
         return font;
     }
+
+    inline
+    const std::size_t default_font_size(){
+        return 12;
+    }
 }

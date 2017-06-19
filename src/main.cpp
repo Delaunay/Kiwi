@@ -17,7 +17,7 @@ int main()
 
     Parser parser(reader);
 
-    Root op = parser.parse();
+    Parser::Root op = parser.parse();
 
     std::cout << "Parsed expr: ";
     print(std::cout, op);

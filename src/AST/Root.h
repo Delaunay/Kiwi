@@ -19,9 +19,13 @@ class Expression;
  * Root is kind of a unique_ptr but that allows copying
  * and it was adapted for our tree structure.
  */
+namespace generic{
+template<typename T>
 class Root{
 public:
-    Root(Expression* ptr = nullptr):
+    typedef T* ptr_type;
+
+    Root(T* ptr = nullptr):
         _root(ptr), _owned(false)
     {}
 
@@ -47,8 +51,8 @@ public:
 
     ~Root(){
         if (!_owned){
-            freeprint(_root);
-            free(_root);
+            //freeprint(_root);
+            //free(_root);
         }
     }
 
@@ -56,13 +60,13 @@ public:
      * takes ownership of the node. If the node is already
      * owned a copy of the tree is returned instead
      */
-    Expression* take_ownership(bool borrow=false) const{
+    T* take_ownership(bool borrow=false) const{
         if (_owned){
             // FIXME
-            printdt("Node already owned, copying subtree: ", _root);
+            // printdt("Node already owned, copying subtree: ", _root);
             //if (borrow)
             //    return;
-            return copy(_root);
+            // return copy(_root);
         }
 
         _owned = true;
@@ -71,15 +75,15 @@ public:
 
     bool owned() const{ return _owned; }
 
-    Expression* get       () const{ return _root; }
-    Expression* operator->() const{ return _root; }
+    T* get       () const{ return _root; }
+    T* operator->() const{ return _root; }
 
-    operator Expression*() const{
+    operator T*() const{
         return _root;
     }
 
 private:
-    Expression*  _root;
+    T*  _root;
     mutable bool _owned;
 };
 
@@ -88,27 +92,30 @@ private:
  * As opposed to Root this can be trivially simplified to a naked pointer
  * by the compiler.
  */
+template<typename T>
 class DummyRoot{
 public:
-    DummyRoot(Expression* ptr):
+    typedef T* ptr_type;
+
+    DummyRoot(T* ptr):
         _root(ptr)
     {}
 
-    Expression* take_ownership() const{
+    T* take_ownership() const{
         return _root;
     }
 
     bool owned() const{ return false; }
 
-    Expression* get       () const{ return _root; }
-    Expression* operator->() const{ return _root; }
+    T* get       () const{ return _root; }
+    T* operator->() const{ return _root; }
 
-    operator Expression*() const{
+    operator T*() const{
         return _root;
     }
 
 private:
-    Expression* _root;
+    T* _root;
 };
-
+}
 }

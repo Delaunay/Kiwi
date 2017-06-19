@@ -99,6 +99,14 @@ public:
         return reinterpret_cast<const Model<T>*>(_self.get())->_data;
     }
 
+    template<typename T>
+    T as(T dummy){
+        debug_if(type != type_id<T>() , this->dump(std::cout));
+
+        assert(type == type_id<T>() && "wrong Value cast");
+        return reinterpret_cast<const Model<T>*>(_self.get())->_data;
+    }
+
     std::ostream& dump(std::ostream& out){
         return print(out);
     }
@@ -148,5 +156,10 @@ private:
     std::shared_ptr<const Concept> _self;
 };
 
+}
+
+template<typename T, typename E>
+T as (generic::Value<E>* expr){
+    return expr->as(T());
 }
 }
