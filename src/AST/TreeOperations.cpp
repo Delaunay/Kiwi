@@ -75,7 +75,7 @@ public:
     }
 
     void function_call(FunctionCall* x, int indentation){
-        std::size_t n = x->args_size() - 1;
+        int n = x->args_size() - 1;
 
         out << x->name << "(";
         for(int i = 0; i < n; ++i){
@@ -114,10 +114,10 @@ public:
 
         int n = int(x->args.size()) - 1;
         for(int i = 0; i < n; ++i){
-            traverse(x->args[i], indentation);
+            traverse(x->arg(i), indentation);
             out << ", ";
         }
-        traverse(x->args[n], indentation);
+        traverse(x->arg(n), indentation);
 
         out << ") -> ";
         traverse(x->return_type, indentation);

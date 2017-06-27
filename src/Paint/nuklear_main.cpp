@@ -69,6 +69,8 @@ public:
 //#include "NuklearWindow.h"
 #include "SFMLWindow.h"
 
+#include "../Logging/Log.h"
+
 class App : public kiwi::SFMLWindow<App>{
 
 };
@@ -77,11 +79,28 @@ int main(){
 
     //kiwi::NuklearWindow app;
 
+    /*
+    log_warn("Doing weird stuff");
+    log_trace("Doing weird stuff");
+    log_error("Doing weird stuff");
+    log_info("Doing weird stuff");
+    log_debug("Doing weird stuff");
+
+    for(int i = 0; i < 7; ++i)
+        log_rec(i, "Doing weird stuff");
+
+    for(int i = 0; i < 8; ++i)
+        log_rec(7 - i, "Doing weird stuff");
+    */
+
+
     App app;
 
     app.init();
 
     app.run();
+
+
 
     return 0;
 }

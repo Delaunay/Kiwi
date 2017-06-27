@@ -84,7 +84,6 @@ public:
 
 template<typename Visitor, typename RetType, typename ...Args>
 class LightStaticVisitor: public generic::StaticVisitor<Visitor, LightAST, RetType, Args...>{
-
 };
 
 }

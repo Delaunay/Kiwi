@@ -1,9 +1,11 @@
 #pragma once
 
+//#include <SFML/OpenGL.hpp>
 #include <glad/glad.h>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
-//#include <SFML/OpenGL.hpp>
+#include <SFML/System/Clock.hpp>
+
 #include "Fonts.h"
 
 #define KIWI_DEBUG
@@ -12,7 +14,12 @@
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 712
 
-#include "RenderTree.h"
+#include "RenderEngine.h"
+
+#include "../dependencies/imgui/imgui.h"
+#include "../dependencies/imgui-sfml/imconfig-SFML.h"
+#include "../dependencies/imgui-sfml/imgui-SFML.h"
+
 
 namespace kiwi{
 
@@ -37,8 +44,10 @@ public:
             printd("Failed to load OpenGL extensions!");
             std::abort();
         }//*/
+
         printd("glad loaded");
 
+        ImGui::SFML::Init(_window);
         glViewport(0, 0, _window.getSize().x, _window.getSize().y);
     }
 
@@ -104,7 +113,8 @@ public:
         std::basic_string<sf::Uint32> tmp;
         sf::Uint8::toUtf32(source.begin(), source.end(), std::back_inserter(tmp));
         sf::String final = tmp;*/
-/*
+
+        /*
         sf::Text test;
         test.setFont(default_font());
         test.setString(L"Hello World");
@@ -116,21 +126,30 @@ public:
         sf::Text test2;
         test2.setPosition(sf::Vector2f(0, test.getLocalBounds().height));
         test2.setFont(default_font());
-        test2.setString(L"Hello World");
+        test2.setString(L"Héllo World");
         test2.setFillColor(sf::Color(50, 100, 100));
         //test.setOutlineColor(sf::Color(100, 50, 100));
         //test.setOutlineThickness(1);
-        screen.draw(test2);*/
+        screen.draw(test2);//*/
 
-        auto sqr = RenderVisitor::make_sqr();
-        RenderVisitor::run(_window, sqr, {0, 0});
+
+        ImGui::SFML::Update(_window, _deltaClock.restart());
+
+        ImGui::Begin("Hello, world!");
+          ImGui::Button("Look at this pretty button");
+        ImGui::End();
+
+        auto sqr = RenderEngine::make_sqr();
+        RenderEngine::run(_window, sqr, {0, 0});
     }
 
     void render(sf::RenderWindow& screen){
+        ImGui::SFML::Render(_window);
         screen.display();
     }
 
 protected:
+    sf::Clock             _deltaClock;
     sf::ContextSettings   _settings;
     sf::RenderWindow      _window;
 };

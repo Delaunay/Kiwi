@@ -84,6 +84,8 @@ FIND_PACKAGE(gtest QUIET)
 #ENDIF()
 
 # Configuration
+FIND_PACKAGE(SFML 2 COMPONENTS system window graphics audio)
+FIND_PACKAGE(OpenGL)
 
 # Find revision ID and hash of the sourcetree
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})

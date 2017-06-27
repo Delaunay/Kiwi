@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <SFML/Graphics/Font.hpp>
 
 #define HOME "../../fonts/"
@@ -27,12 +26,12 @@ namespace kiwi{
 
     inline
     const sf::Font& default_font(){
-        static sf::Font font = load_font(HOME "consola.ttf");
+        static sf::Font font = load_font(HOME "DejaVuSansMono.ttf");
         return font;
     }
 
     inline
-    const std::size_t default_font_size(){
-        return 12;
+    const unsigned int default_font_size(){
+        return 18;
     }
 }

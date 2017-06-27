@@ -60,6 +60,14 @@ enum class NodeTag{
 #undef X
 };
 
+template<typename T>
+T acess(T* ptr){
+    if (ptr == nullptr){
+
+    }
+    return ptr;
+}
+
 // TODO: test typing system
 // TODO: Precedence table <= Or should I this is parsing stuff
 
@@ -68,7 +76,7 @@ public:
     typedef typename std::string              StringType;
     typedef typename std::vector<Expression*> Args;
     typedef typename std::vector<StringType>  ArgNames;
-    typedef typename std::size_t              IndexType;
+    typedef          int                      IndexType;
 
     static StringType make_string(const std::string& str){
         return StringType(str);
@@ -103,9 +111,12 @@ public:
         Node(NodeTag::arrow)
     {}
 
+    int args_size()       { return args.size(); }
+    Node* arg(int i) { return args[i]; }
+
     VTABLEV(void visit(class DynamicVisitor* v) override;)
     Args  args;
-    Node* return_type;
+    Node* return_type{nullptr};
 };
 
 // Implementation of a function
@@ -119,7 +130,7 @@ public:
     {}
 
     IndexType args_size() const{
-        return args.size();
+        return int(args.size());
     }
     const StringType& arg(IndexType index) const{
         return args[index];
@@ -129,8 +140,8 @@ public:
 
     StringType   name;
     ArgNames     args;
-    Arrow<Node>* type;
-    Node       * body;
+    Arrow<Node>* type{nullptr};
+    Node       * body{nullptr};
 };
 
 /* Function Call are split in 3
@@ -143,7 +154,7 @@ class Call: public Node{
 public:
     NODE_TYPES
 
-    Arrow<Node>* type;
+    Arrow<Node>* type{nullptr};
     StringType   name;
 
     std::size_t args_size() const;
@@ -213,7 +224,7 @@ public:
     {}
 
     IndexType args_size() const{
-        return args.size();
+        return int(args.size());
     }
 
     Node* arg(IndexType index){
@@ -236,7 +247,7 @@ public:
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
     StringType name;
-    Node* type;
+    Node* type{nullptr};
 };
 
 /* Borrow is a dummy Node which only exists to help
@@ -258,7 +269,7 @@ public:
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
-    Node* expr;
+    Node* expr{nullptr};
 };
 
 /* Builtin is a special construct used to implement
@@ -324,10 +335,10 @@ public:
         Node(NodeTag::error), message(Node::make_string(message)), partial(partial)
     {}
 
-    Node* partial;    // partial parsed Node
-    Node* expected;   // suggested node
-    StringType code;       // code the parser should use to solve the issue
-    StringType message;    // error message
+    Node* partial{nullptr};    // partial parsed Node
+    Node* expected{nullptr};   // suggested node
+    StringType code;           // code the parser should use to solve the issue
+    StringType message;        // error message
 };
 
 
