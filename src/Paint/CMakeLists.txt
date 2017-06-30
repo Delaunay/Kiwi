@@ -1,4 +1,4 @@
-
+﻿
 
 INCLUDE_DIRECTORIES(${SFML_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(../../dependencies/nuklear/)
@@ -25,6 +25,9 @@ SET(FRONT_END_LIST
     Fonts.cpp
     CollisionEngine.h
     AssetManager.h
+    StyleManager.h
+    StyleManager.cpp
+    UTF8Symbol.h
 
     nuklear_main.cpp
     SFMLWindow.h

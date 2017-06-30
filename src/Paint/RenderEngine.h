@@ -1,9 +1,20 @@
-#pragma once
+﻿#pragma once
+
+#ifndef WIN32
+#   include <algorithm>
+#define MIN(x, y) std::min(x, y)
+#define MAX(x, y) std::max(x, y)
+#else
+#define MIN(x, y) (((x) > (y)) ? (y) : (x))
+#define MAX(x, y) (((x) < (y)) ? (y) : (x))
+#endif
 
 #include "../AST/Builder.h"
+#include "../Logging/Log.h"
 
 #include "RenderTreeVisitor.h"
-#include "Fonts.h"
+#include "StyleManager.h"
+
 
 namespace kiwi{
 
@@ -17,47 +28,115 @@ public:
         KIWI_AST_NODES
     #undef X
 
-    RenderEngine(sf::RenderWindow& rw, sf::Vector2f pos):
+    RenderEngine(sf::RenderWindow& rw, sf::Vector2f pos = {0, 0}):
         rw(rw), original_pos(pos)
-    {}
+    { }
 
-    sf::Font font = default_font();
-
-    unsigned int font_size = default_font_size();
-    sf::Text fun_def = sf::Text("def ", font, font_size);
-    sf::Text fun_op  = sf::Text("(", font, font_size);
-    sf::Text fun_cp  = sf::Text(")", font, font_size);
-    sf::Text fun_col = sf::Text(":", font, font_size);
-    sf::Text fun_com = sf::Text(", ", font, font_size);
-    sf::Text space   = sf::Text(" ", font, font_size);
-    sf::Text farrow  = sf::Text(L" \u2192 ", font, font_size);
-
-    float glyph_width = space.getGlobalBounds().width;   // space.getCharacterSize();
-    float glyph_height = font.getLineSpacing(font_size); // space.getGlobalBounds().height;
-
-    std::ostream& out = std::cout;
     sf::RenderWindow& rw;
-    sf::Vector2f original_pos;
+
+    StyleManager style;
+    float outline = 1;
+
+
+    Node* current_expression = nullptr;
+    sf::Vector2f original_pos = {0, 0};
+
+    // Check if `render` inputs have changed
+    // if so we need to recompute the bouding boxes and
+    // update positions
+    bool has_input_changed(Node* expr, sf::Vector2f pos){
+        return (current_expression != expr || pos != original_pos);
+    }
+
+    void render(Node* expr, sf::Vector2f pos){
+        if (has_input_changed(expr, pos)){
+            current_expression = expr;
+            original_pos = pos;
+            bounding_boxes.clear();
+            box_extracted = false;
+        } else if (box_extracted){
+            draw_bounding_box(top_box,
+                              sf::Color(0, 0, 100),
+                              sf::Color(000, 200, 100));
+        }
+
+        traverse(expr, pos, 0);
+
+        // We need to take into account the current position
+        if (!box_extracted){
+            top_box.width  -= pos.x;
+            top_box.height -= pos.y;
+        }
+
+        box_extracted = true;
+    }
+
+    bool box_extracted = false;
+    std::vector<sf::FloatRect> bounding_boxes;
+    sf::FloatRect top_box = {10000, 10000, -10000, -10000};
+
+    void add_bounding_box(float x, float y, float w, float h){
+        bounding_boxes.emplace_back(x, y, w, h);
+
+        top_box.top    = MIN(x, top_box.top);
+        top_box.left   = MIN(y, top_box.left);
+        top_box.width  = MAX(x + w, top_box.width);
+        top_box.height = MAX(y + h, top_box.height);
+    }
+
+    void draw_bounding_box(sf::FloatRect bb,
+                          sf::Color fill = sf::Color(0, 100, 0),
+                          sf::Color out = sf::Color(200, 100, 100)){
+        sf::RectangleShape bbs({bb.width, bb.height});
+        bbs.setPosition({bb.top, bb.left});
+        bbs.setFillColor(fill);
+        bbs.setOutlineThickness(outline);
+        bbs.setOutlineColor(out);
+        rw.draw(bbs);
+    }
+
+    void draw_bounding_box(float x, float y, float w, float h,
+                          sf::Color fill = sf::Color(0, 100, 0),
+                          sf::Color out = sf::Color(200, 100, 100)){
+        return draw_bounding_box({y, x, w, h}, fill, out);
+    }
+
 
     // helpers
     // ------------------------------------------------------------------------
     sf::Vector2f render(sf::Text item, sf::Vector2f pos){
+        //log_trace("Rendering: " + item.getString());
         item.setPosition(pos.x, pos.y);
+
+        float x = pos.x;
+        float y = pos.y;
+        float w = style.width(item);
+        float h = style.height() - outline;
+
+        draw_bounding_box(x, y, w, h);
+
+        if (!box_extracted)
+            add_bounding_box(x, y, w, h);
+
         rw.draw(item);
-        pos.x += glyph_width * item.getString().getSize();
+        pos.x += w;
         return pos;
     }
 
     sf::Vector2f new_line(sf::Vector2f pos, int indent){
-        pos.y += glyph_height;
-        pos.x = original_pos.x + glyph_width * indent;
+        pos.y += style.height();
+        pos.x = original_pos.x + style.width() * indent;
         return pos;
     }
 
     static Root make_sqr(){
         Root x    = NBuilder::placeholder("x");
         Root body = NBuilder::mult(x, NBuilder::borrow(x));
-        Root sqr  = NBuilder::function("sqr", body);
+
+        Root dbl = NBuilder::builtin("double");
+        Root fun_type = NBuilder::arrow({dbl.get()}, dbl.get());
+
+        Root sqr  = NBuilder::function("sqr", body, fun_type);
         RenderNode* node = sqr.get();
 
         // generic::Function<RenderNode>*
@@ -69,59 +148,60 @@ public:
 
     // ------------------------------------------------------------------------
     static sf::Vector2f run(sf::RenderWindow& rw, RenderNode* expr, sf::Vector2f pos){
+        log_trace("Initializing");
         RenderEngine eval(rw, pos);
+        log_trace("Tree Renderer starting");
         return eval.traverse(expr, pos, 0);
     }
 
     sf::Vector2f function(Function* x, sf::Vector2f pos, int idt){
-        pos = render(fun_def, pos);
+        pos = render(style.def(), pos);
         pos = render(x->name, pos);
-        pos = render(fun_op, pos);
-
+        pos = render(style.get('('), pos);
 
         int n = int(x->args_size()) - 1;
         if (n >= 0){
             for(int i = 0; i < n; ++i){
                 pos = render(x->arg(i), pos);
-                pos = render(fun_com, pos);
+                pos = render(style.get(','), pos);
             }
             pos = render(x->arg(n), pos);
         }
 
-        pos = render(fun_cp, pos);
+        pos = render(style.get(')'), pos);
 
 
         if (x->type != nullptr && x->type->return_type != nullptr){
-            pos = render(farrow, pos);
+            pos = render(style.arrow(), pos);
             pos = traverse(x->type->return_type, pos, idt);
         }
 
-        pos = render(fun_col, pos);
+        pos = render(style.get(':'), pos);
         pos = new_line(pos);
         pos = indent(pos, idt + 1);
         return traverse(x->body, pos, idt + 1);
     }
 
     sf::Vector2f new_line(sf::Vector2f pos){
-        return pos + sf::Vector2f(0, glyph_height);
+        return pos + sf::Vector2f(0, style.height());
     }
 
     sf::Vector2f indent(sf::Vector2f pos, int idt){
-        return sf::Vector2f(glyph_width * 4 * idt , pos.y);
+        return sf::Vector2f(style.width() * 4 * idt , pos.y);
     }
 
     sf::Vector2f function_call(FunctionCall* x, sf::Vector2f pos, int idt){
         pos = render(x->name, pos);
-        pos = render(fun_op, pos);
+        pos = render(style.get('('), pos);
 
         int n = x->args_size() - 1;
         for(int i = 0; i < n; ++i){
             pos = traverse(x->arg(i), pos, idt);
-            pos = render(fun_com, pos);
+            pos = render(style.get(','), pos);
         }
 
         pos = traverse(x->arg(n), pos, idt);
-        pos = render(fun_cp, pos);
+        pos = render(style.get(')'), pos);
         return pos;
     }
 
@@ -149,16 +229,16 @@ public:
     }
 
     sf::Vector2f arrow(Arrow* x, sf::Vector2f pos, int idt){
-        pos = render(fun_op, pos);
+        pos = render(style.get('('), pos);
 
         int n = int(x->args.size()) - 1;
         for(int i = 0; i < n; ++i){
             pos = traverse(x->arg(i), pos, idt);
-            out << ", ";
+            pos = render(style.get(','), pos);
         }
         pos = traverse(x->arg(n), pos, idt);
-        pos = render(fun_cp, pos);
-        pos = render(farrow, pos);
+        pos = render(style.get(')'), pos);
+        pos = render(style.arrow(), pos);
         pos = traverse(x->return_type, pos, idt);
         return pos;
     }
@@ -176,7 +256,7 @@ public:
     }
 
     sf::Vector2f value(Value* x, sf::Vector2f pos, int){
-        sf::Text txt(std::to_string(x->as<f64>()), font, 10);
+        sf::Text txt(std::to_string(x->as<f64>()), style.font(), 10);
         return render(txt, pos);
     }
 

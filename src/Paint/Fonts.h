@@ -1,8 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #include <SFML/Graphics/Font.hpp>
+#include "../Logging/Log.h"
 
 #define HOME "../../fonts/"
+
+#include <cassert>
 
 namespace kiwi{
 
@@ -20,7 +23,11 @@ namespace kiwi{
     inline
     sf::Font load_font(const std::string& str){
         sf::Font font;
-        font.loadFromFile(str);
+        bool ret = font.loadFromFile(str);
+        assert(ret && "Unable to load font");
+
+        log_info(" Font: " + std::to_string(ret));
+
         return font;
     }
 
@@ -31,7 +38,7 @@ namespace kiwi{
     }
 
     inline
-    const unsigned int default_font_size(){
+    unsigned int default_font_size(){
         return 18;
     }
 }

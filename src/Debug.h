@@ -1,4 +1,4 @@
-#undef printd
+﻿#undef printd
 #undef printdt
 #undef dumptok
 #undef freeprint
@@ -13,17 +13,13 @@
 #   define dumptok(tol)  tok.debug_print(std::cout) << std::endl;
 #   define freeprint(x)  std::cout << "Freeing: "; print(std::cout, x); \
                          std::cout << std::endl;
-#   define debug(x)      x
 #   define debug_if(cond, x) {if (cond) {x;}}
-#   define log_warning(x)    std::cout << x << std::endl
 #else
 #   define printd(x)
 #   define printdt(x, y)
 #   define dumptok(tol)
 #   define freeprint(x)
-#   define debug(x)
 #   define debug_if(cond, x)
-#   define log_warning(x)
 #endif
 
 

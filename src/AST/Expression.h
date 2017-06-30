@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cassert>
 //#include <memory>
 
 //#define LINK_TO_PARENT
@@ -111,6 +112,10 @@ public:
         Node(NodeTag::arrow)
     {}
 
+    Arrow(const Args& args, Node* expr):
+        Node(NodeTag::arrow), args(args), return_type(expr)
+    {}
+
     int args_size()       { return args.size(); }
     Node* arg(int i) { return args[i]; }
 
@@ -129,6 +134,12 @@ public:
         Node(NodeTag::function), name(Node::make_string(name)), body(body)
     {}
 
+    Function(const std::string& name, Node* body, Node* type):
+        Node(NodeTag::function), name(Node::make_string(name)), body(body), type(static_cast<Arrow<Node>*>(type))
+    {
+        assert(type->tag == NodeTag::arrow && "Not a function type");
+    }
+
     IndexType args_size() const{
         return int(args.size());
     }
@@ -141,7 +152,7 @@ public:
     StringType   name;
     ArgNames     args;
     Arrow<Node>* type{nullptr};
-    Node       * body{nullptr};
+    Node        *body{nullptr};
 };
 
 /* Function Call are split in 3

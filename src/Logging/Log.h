@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <iostream>
@@ -28,20 +28,12 @@ enum class LogLevel{
 class Log{
 public:
 
-    void log(LogLevel level, std::string datetime, std::string file,
-             std::string function, int line, std::string message, int depth)
+    template<typename T, typename... Args>
+    void log(LogLevel level, std::string file,
+             std::string function, int line, T val, Args... args)
     {
         if (log_level <= level)
-            LogEntry(level, datetime,  pretty_file(file), function, line, message, depth)
-                    .print(out);
-    }
-
-    void flush(){
-        for(const auto& entry: entries){
-            if (log_level <= entry.level)
-                entry.print(out);
-        }
-        entries.clear();
+            print(out, date(), " ", get_string(level), pretty_file(file), ":", function, ":", line, "\t", val, args...) << std::endl;
     }
 
     static std::string date(){
@@ -54,7 +46,7 @@ public:
         timeinfo = localtime(&rawtime);
 
         strftime(&date_buffer[0], 20, "%Y-%m-%d %H:%M:%S", timeinfo);
-        return date_buffer;
+        return date_buffer.substr(0, 19);
    }
 
     static const std::string& get_string(LogLevel level){
@@ -91,43 +83,6 @@ public:
     }
 
 public:
-    struct LogEntry{
-        LogEntry(LogLevel level, std::string datetime, std::string file,
-                 std::string function, int line, std::string message, int depth):
-            level(level), datetime(datetime), file(file), function(function),
-            line(line), message(message), depth(depth)
-        {
-            if (max_depth() < depth)
-                max_depth() = depth;
-        }
-
-        LogLevel    level;
-        std::string datetime;
-        std::string file;
-        std::string function;
-        int         line;
-        std::string message;
-        int         depth;
-
-        static int&  max_depth(){
-            static int depth = 0;
-            return depth;
-        }
-
-        void print(std::ostream& out) const{
-            if (depth < 0)
-                out << "| "  << datetime << "|"
-                    << get_string(level) << "| "
-                    << file              << ":"
-                    << line              << " | ";
-            else
-                out << pretty_depth(unsigned(depth));
-
-            out << function << " | "
-                << message  << "\n";
-        }
-    };
-
     static std::string pretty_depth(unsigned int d){
         std::string s(d + 4, ' ');
 
@@ -161,9 +116,9 @@ public:
      * +->
      */
 private:
-    std::vector<LogEntry> entries;
+    //std::vector<LogEntry> entries;
     std::ostream&         out;
-    LogLevel              log_level = LogLevel::warning;
+    LogLevel              log_level = LogLevel::all;
 
 public:
 
@@ -179,67 +134,13 @@ public:
         return log;
     }
 #undef debug
-    static void warning(std::string file, std::string function, int line, std::string message, int depth = -1){
-        Log::instance().log(LogLevel::warning, date(), file, function, line, message, depth);
-    }
-
-    static void info(std::string file, std::string function, int line, std::string message, int depth = -1){
-        Log::instance().log(LogLevel::info, date(), file, function, line, message, depth);
-    }
-
-    static void error(std::string file, std::string function, int line, std::string message, int depth = -1){
-        Log::instance().log(LogLevel::error, date(), file, function, line, message, depth);
-    }
-
-    static void debug(std::string file, std::string function, int line, std::string message, int depth = -1){
-        Log::instance().log(LogLevel::debug, date(), file, function, line, message, depth);
-    }
-
-    static void trace(std::string file, std::string function, int line, std::string message, int depth = -1){
-        Log::instance().log(LogLevel::trace, date(), file, function, line, message, depth);
-    }
-
-    static void call_trace(std::string file, std::string function, int line, std::string message, int depth = -1){
-        Log::instance().log(LogLevel::call_trace, date(), file, function, line, message, depth);
-    }
-
     template<typename T, typename... Args>
-    std::string printf(const char *s, T value, Args... args)
-    {
-        bool escaped = false;
-
-        while (*s) {
-
-            if (*s == '\\'){
-                escaped = true;
-                s += 1;
-            }
-            else if (*s == '%' && !escaped) {
-                switch (*(s + 1)){
-                case 'f':{
-                    out << value;
-                    s += 2;
-                    return printf(s, args...);
-                }
-                case 'i':{
-                    out << value;
-                    s += 2;
-                    return printf(s, args...);
-                }
-                default:{
-                    out << value;
-                    s += 2;
-                    printf(s, args...);
-                }
-                }
-            }
-            else{
-                s += 1;
-                out << *s;
-                escaped = false;
-            }
-        }
+    std::ostream& print(std::ostream& out, T value, Args... args){
+        out << value;
+        return print(out, args...);
     }
+
+    std::ostream& print(std::ostream& out){ return out; }
 
 private:
     Log(const std::string& header):
@@ -249,21 +150,100 @@ private:
     }
 };
 
-#define log_warn(message)\
-    kiwi::Log::warning(__FILE__, __func__, __LINE__, message)
+#define log_warn(...)\
+    kiwi::Log::instance().log(LogLevel::warning, __FILE__, __func__, __LINE__,  __VA_ARGS__)
 
-#define log_info(message)\
-    kiwi::Log::info   (__FILE__, __func__, __LINE__, message)
+#define log_info(...)\
+    kiwi::Log::instance().log(LogLevel::info, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
-#define log_error(message)\
-    kiwi::Log::error  (__FILE__, __func__, __LINE__, message)
+#define log_error(...)\
+    kiwi::Log::instance().log(LogLevel::error, __FILE__, __func__, __LINE__,  __VA_ARGS__)
 
-#define log_debug(message)\
-    kiwi::Log::debug  (__FILE__, __func__, __LINE__, message)
+#define log_debug(...)\
+    kiwi::Log::instance().log(LogLevel::debug, __FILE__, __func__, __LINE__,  __VA_ARGS__)
 
-#define log_trace(message)\
-    kiwi::Log::trace  (__FILE__, __func__, __LINE__, message)
+#define log_trace(...)\
+    kiwi::Log::instance().log(LogLevel::trace, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
-#define log_rec(depth, message)\
-    kiwi::Log::call_trace(__FILE__, __func__, __LINE__, message, depth)
+#define log_rec(depth, ...)\
+    kiwi::Log::instance().log(LogLevel::call_trace, __FILE__, __func__, __LINE__,  depth, __VA_ARGS__)
 }
+
+
+
+
+/*
+template<typename T, typename... Args>
+std::string printf(const char *s, T value, Args... args)
+{
+    bool escaped = false;
+
+    while (*s) {
+
+        if (*s == '\\'){
+            escaped = true;
+            s += 1;
+        }
+        else if (*s == '%' && !escaped) {
+            switch (*(s + 1)){
+            case 'f':{
+                out << value;
+                s += 2;
+                return printf(s, args...);
+            }
+            case 'i':{
+                out << value;
+                s += 2;
+                return printf(s, args...);
+            }
+            default:{
+                out << value;
+                s += 2;
+                printf(s, args...);
+            }
+            }
+        }
+        else{
+            s += 1;
+            out << *s;
+            escaped = false;
+        }
+    }
+}*/
+/*
+    struct LogEntry{
+        LogEntry(LogLevel level, std::string datetime, std::string file,
+                 std::string function, int line, std::string message, int depth):
+            level(level), datetime(datetime), file(file), function(function),
+            line(line), message(message), depth(depth)
+        {
+            if (max_depth() < depth)
+                max_depth() = depth;
+        }
+
+        LogLevel    level;
+        std::string datetime;
+        std::string file;
+        std::string function;
+        int         line;
+        std::string message;
+        int         depth;
+
+        static int&  max_depth(){
+            static int depth = 0;
+            return depth;
+        }
+
+        void print(std::ostream& out) const{
+            if (depth < 0)
+                out << "| "  << datetime << " |"
+                    << get_string(level) << "| "
+                    << file              << ":"
+                    << line              << " | ";
+            else
+                out << pretty_depth(unsigned(depth));
+
+            out << function << " | "
+                << message  << "\n";
+        }
+    };*/

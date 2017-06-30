@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
-//#include <SFML/OpenGL.hpp>
+#include <chrono>
+
 #include <glad/glad.h>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
@@ -21,13 +22,29 @@
 #include "../dependencies/imgui-sfml/imgui-SFML.h"
 
 
+
+template<int N, typename fun>
+void timeit(const char* msg, fun f){
+    auto start = std::chrono::steady_clock::now();
+    for(int i = 0; i < N; ++i){
+        f();
+    }
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> dt = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    printf("%s", msg);
+    printf("took: %f sec\n", dt.count());
+}
+
+
 namespace kiwi{
 
 template<typename Derived>
 class SFMLWindow{
 public:
+    typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
+
     SFMLWindow():
-        _settings(24, 8, 4, 3, 3)
+        _settings(24, 8, 4, 3, 3), _engine(_window)
     {}
 
     ~SFMLWindow()
@@ -41,11 +58,11 @@ public:
 
         //*
         if(!gladLoadGL()) {
-            printd("Failed to load OpenGL extensions!");
+            log_error("Failed to load OpenGL extensions!");
             std::abort();
         }//*/
 
-        printd("glad loaded");
+        log_debug("glad loaded");
 
         ImGui::SFML::Init(_window);
         glViewport(0, 0, _window.getSize().x, _window.getSize().y);
@@ -53,21 +70,32 @@ public:
 
     void run()
     {
+        log_trace("Loading Assets");
+        start_clock();
         static_cast<Derived&>(*this).load_assets();
+
+        log_trace("Asset loaded in: ", stop_clock(), "s");
 
         while(_window.isOpen())
         {
+            number_image += 1;
+
+            log_trace("Events");
             static_cast<Derived&>(*this).process_events();
             static_cast<Derived&>(*this).process_network();
 
+            log_trace("Clear");
             static_cast<Derived&>(*this).clear(_window);
+            log_trace("Draw");
             static_cast<Derived&>(*this).draw(_window);
+            log_trace("Render");
             static_cast<Derived&>(*this).render(_window);
 
             // don't use 99% of CPU
             sf::sleep(sf::microseconds(1));
         }
 
+        log_trace("Tear Down");
         static_cast<Derived&>(*this).tear_down();
     }
 
@@ -133,14 +161,18 @@ public:
         screen.draw(test2);//*/
 
 
+        log_trace("IMGUI update");
         ImGui::SFML::Update(_window, _deltaClock.restart());
 
         ImGui::Begin("Hello, world!");
           ImGui::Button("Look at this pretty button");
         ImGui::End();
 
-        auto sqr = RenderEngine::make_sqr();
-        RenderEngine::run(_window, sqr, {0, 0});
+        log_trace("Rendering...");
+        _engine.render(sqr, {10, 10});
+
+        log_trace(std::to_string(_engine.bounding_boxes.size()));
+        log_trace("Done");
     }
 
     void render(sf::RenderWindow& screen){
@@ -148,10 +180,26 @@ public:
         screen.display();
     }
 
+    void start_clock(){
+        start = std::chrono::steady_clock::now();
+    }
+
+    double stop_clock(){
+        auto end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> dt = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        return dt.count();
+    }
+
 protected:
     sf::Clock             _deltaClock;
     sf::ContextSettings   _settings;
     sf::RenderWindow      _window;
+    RenderEngine          _engine;
+
+    TimePoint start;
+    int number_image = 0;
+
+    generic::Root<RenderAST::Node>  sqr = RenderEngine::make_sqr();
 };
 
 

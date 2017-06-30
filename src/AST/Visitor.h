@@ -1,5 +1,6 @@
-#pragma once
+﻿#pragma once
 #include "LightAST.h"
+#include "../Logging/Log.h"
 
 #define KIWI_UNREACHABLE()
 
@@ -22,17 +23,18 @@ public:
         KIWI_AST_NODES
     #undef X
 
-
     RetType traverse(Node* x, Args... args){
         switch(x->tag){
     #define X(name, object)\
         case NodeTag::name:{\
             object* exp = static_cast<object*>(x);\
+            log_debug("Calling: " #name);\
             return static_cast<Visitor&>(*this).name(exp, args...);\
         }
         KIWI_AST_NODES
     #undef X
         default:
+            log_error("Calling Unreachable Realm");
             KIWI_UNREACHABLE();
             return RetType();
         }
@@ -40,7 +42,7 @@ public:
 
 #define X(name, object)\
     RetType name(object* x, Args... args){\
-        log_warning("unimplemented default behavior");\
+        log_warn("unimplemented default behavior");\
         return RetType();\
     }
     KIWI_AST_NODES

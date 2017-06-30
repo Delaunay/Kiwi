@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cmath>
 
@@ -23,6 +23,12 @@ public:
     static Parent function(const std::string op, const Parent& body){
         Function* root = new Function(op, body.take_ownership());
         // append_args(root, body.get());
+        PARENT(body->parent = root);
+        return Parent(root);
+    }
+
+    static Parent function(const std::string op, const Parent& body, const Parent& type){
+        Function* root = new Function(op, body.take_ownership(), type.take_ownership());
         PARENT(body->parent = root);
         return Parent(root);
     }
@@ -52,6 +58,14 @@ public:
 
     static Parent borrow(const Parent& expr){
         return new Borrow(expr.get());
+    }
+
+    static Parent arrow(std::vector<Node*> args, const Parent& return_type){
+        return new Arrow(args, return_type);
+    }
+
+    static Parent builtin(const std::string& name){
+        return new Builtin(name);
     }
 
     static Parent add(const Parent& lhs, const Parent& rhs){

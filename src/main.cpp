@@ -1,10 +1,12 @@
-#include <iostream>
+﻿#include <iostream>
 #include <sstream>
 
 #include "AST/Builder.h"
 #include "AST/TreeOperations.h"
 
 #include "Parsing/Parsing.h"
+
+#include "Logging/Log.h"
 
 using namespace kiwi;
 
@@ -23,6 +25,8 @@ int main()
     print(std::cout, op);
 
     std::cout << std::endl;
+
+    log_warn("A", 1, "B");
 
     /*
     Root v = Builder<>::value(2);
