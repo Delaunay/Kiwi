@@ -19,14 +19,23 @@ int main()
 
     Parser parser(reader);
 
-    Parser::Root op = parser.parse();
+    Parser::Root op = parser.parse(0);
 
-    std::cout << "Parsed expr: ";
-    print(std::cout, op);
 
-    std::cout << std::endl;
+    std::stringstream ss; print_expr(ss, op);
+
+    print(std::cout, "Parsed expr: ", ss.str()) << std::endl;
 
     log_warn("A", 1, "B");
+
+    std::cout<< to_string("A", 1, "B") << std::endl;
+
+    log_cwarn(0, "Message 1");
+    log_cwarn(1, "Message 2");
+    log_cwarn(2, "Message 3");
+    log_cwarn(3, "Message 4");
+    log_cwarn(2, "Message 5");
+
 
     /*
     Root v = Builder<>::value(2);

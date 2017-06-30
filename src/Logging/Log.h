@@ -5,7 +5,10 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
+
 #include <algorithm>
+
+#include "../Format.h"
 
 namespace kiwi{
 
@@ -15,9 +18,7 @@ namespace kiwi{
     KIWI_LEVEL(debug, Debug, " [?] DEBUG   ")\
     KIWI_LEVEL(warning, Warning, " /!\\ WARNING ")\
     KIWI_LEVEL(info, Info, " [i] INFO    ")\
-    KIWI_LEVEL(error, Error, " [!] ERROR   ")\
-    KIWI_LEVEL(call_trace, CallTrace, "")
-
+    KIWI_LEVEL(error, Error, " [!] ERROR   ")
 
 enum class LogLevel{
 #define KIWI_LEVEL(a, b, c) a,
@@ -28,12 +29,20 @@ enum class LogLevel{
 class Log{
 public:
 
-    template<typename T, typename... Args>
+    template<typename... Args>
     void log(LogLevel level, std::string file,
-             std::string function, int line, T val, Args... args)
+             std::string function, int line, Args... args)
     {
         if (log_level <= level)
-            print(out, date(), " ", get_string(level), pretty_file(file), ":", function, ":", line, "\t", val, args...) << std::endl;
+            print(out, date(), " ", get_string(level), pretty_file(file), ":", function, ":l", line, "\t", args...) << std::endl;
+    }
+
+    template<typename... Args>
+    void log_call_trace(LogLevel level, std::string file,
+             std::string function, int line, int depth, Args... args)
+    {
+        if (log_level <= level)
+            print(out, get_string(level), pretty_depth(depth), pretty_file(file), ":", function, ":l", line, "\t", args...) << std::endl;
     }
 
     static std::string date(){
@@ -82,7 +91,14 @@ public:
         return strings[size - 1];
     }
 
-public:
+    /* +->          i = 0
+     * |+->         i = 1
+     * |:+->        i = 2
+     * |:|+->       i = 3
+     * |:+->
+     * |+->
+     * +->
+     */
     static std::string pretty_depth(unsigned int d){
         std::string s(d + 4, ' ');
 
@@ -98,23 +114,6 @@ public:
         return s;
     }
 
-
-    /* +->          i = 0
-     * |+->         i = 1
-     * |:+->        i = 2
-     * |:|+->       i = 3
-     * |:|:+->      i = 4
-     * |:|:|+->     i = 5
-     * |:|:|:+->    i = 6
-     * |:|:|:|+->   i = 7
-     * |:|:|:+->
-     * |:|:|+->
-     * |:|:+->
-     * |:|+->
-     * |:+->
-     * |+->
-     * +->
-     */
 private:
     //std::vector<LogEntry> entries;
     std::ostream&         out;
@@ -125,7 +124,7 @@ public:
     static std::string header(){
         return
         ".-----------------------------------------------------------------------------.\n"
-        "| YYYY-MM-DD HH:MM:SS |  SEVERITY   | FILE:LINE | FUNCTION | MESSAGE          |\n"
+        "| YYYY-MM-DD HH:MM:SS |  SEVERITY   | FILE:FUNCTION:LINE   | MESSAGE          |\n"
         "|---------------------+-------------+-----------------------------------------|\n";
     }
 
@@ -133,14 +132,6 @@ public:
         static Log log(header());
         return log;
     }
-#undef debug
-    template<typename T, typename... Args>
-    std::ostream& print(std::ostream& out, T value, Args... args){
-        out << value;
-        return print(out, args...);
-    }
-
-    std::ostream& print(std::ostream& out){ return out; }
 
 private:
     Log(const std::string& header):
@@ -150,23 +141,24 @@ private:
     }
 };
 
-#define log_warn(...)\
-    kiwi::Log::instance().log(LogLevel::warning, __FILE__, __func__, __LINE__,  __VA_ARGS__)
+#define LOG_INTERNAL(level, ...)\
+    kiwi::Log::instance().log(level, __FILE__, __func__, __LINE__,  __VA_ARGS__)
 
-#define log_info(...)\
-    kiwi::Log::instance().log(LogLevel::info, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define log_warn(...)  LOG_INTERNAL(LogLevel::warning, __VA_ARGS__)
+#define log_info(...)  LOG_INTERNAL(LogLevel::info,    __VA_ARGS__)
+#define log_error(...) LOG_INTERNAL(LogLevel::error,   __VA_ARGS__)
+#define log_debug(...) LOG_INTERNAL(LogLevel::debug,   __VA_ARGS__)
+#define log_trace(...) LOG_INTERNAL(LogLevel::trace,   __VA_ARGS__)
 
-#define log_error(...)\
-    kiwi::Log::instance().log(LogLevel::error, __FILE__, __func__, __LINE__,  __VA_ARGS__)
+#define LOG_INTERNAL_CALL(level, depth, ...)\
+    kiwi::Log::instance().log_call_trace(level, __FILE__, __func__, __LINE__,  depth, __VA_ARGS__)
 
-#define log_debug(...)\
-    kiwi::Log::instance().log(LogLevel::debug, __FILE__, __func__, __LINE__,  __VA_ARGS__)
+#define log_cwarn(depth, ...)  LOG_INTERNAL_CALL(LogLevel::warning,depth,  __VA_ARGS__)
+#define log_cinfo(depth, ...)  LOG_INTERNAL_CALL(LogLevel::info,   depth,  __VA_ARGS__)
+#define log_cerror(depth, ...) LOG_INTERNAL_CALL(LogLevel::error , depth,  __VA_ARGS__)
+#define log_cdebug(depth, ...) LOG_INTERNAL_CALL(LogLevel::debug,  depth,  __VA_ARGS__)
+#define log_ctrace(depth, ...) LOG_INTERNAL_CALL(LogLevel::trace,  depth,  __VA_ARGS__)
 
-#define log_trace(...)\
-    kiwi::Log::instance().log(LogLevel::trace, __FILE__, __func__, __LINE__, __VA_ARGS__)
-
-#define log_rec(depth, ...)\
-    kiwi::Log::instance().log(LogLevel::call_trace, __FILE__, __func__, __LINE__,  depth, __VA_ARGS__)
 }
 
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <ostream>
 #include <unordered_map>
 
@@ -8,7 +8,7 @@ namespace kiwi{
 // TODO: A better context would be Dict<string, Expr*>
 typedef std::unordered_map<std::string, class Expression*> Context;
 
-void print(std::ostream& out, class Expression* expr);
+std::ostream& print_expr(std::ostream& out, class Expression* expr);
 
 // void append_args(Function* fun, Expression* expr);
 

@@ -1,11 +1,29 @@
-#pragma once
+﻿#pragma once
 
 #include "Types.h"
 #include <string>
+#include <sstream>
 #include <cmath>
 
 namespace kiwi
 {
+
+template<typename T, typename... Args>
+std::ostream& print(std::ostream& out, T value, Args... args){
+    out << value;
+    return print(out, args...);
+}
+
+inline
+std::ostream& print(std::ostream& out){ return out; }
+
+template<typename T, typename... Args>
+std::string to_string(T value, Args... args){
+    std::stringstream ss;
+    print(ss, value, args...);
+    return ss.str();
+}
+
 inline
 std::string align_left(const std::string& name, uint8 col){
     if (name.size() > col)
@@ -43,7 +61,7 @@ std::string align_center(const std::string& name, uint8 col){
 }
 
 template<typename T>
-std::string to_string(T nb, int32 b){
+std::string to_string_padded(T nb, int32 b){
 
     int32 n = int32(std::log10(nb)) + 1;
 
@@ -57,7 +75,7 @@ std::string to_string(T nb, int32 b){
 }
 
 inline
-std::string to_string(float32 nb, int32 b){
+std::string to_string_padded(float32 nb, int32 b){
     int32 n = int32(std::log10(nb)) + 2;
     n = b - n;
     if (n > 0)
@@ -66,7 +84,7 @@ std::string to_string(float32 nb, int32 b){
 }
 
 inline
-std::string to_string(float64 nb, int32 b){
+std::string to_string_padded(float64 nb, int32 b){
     int32 n = int32(std::log10(nb)) + 2;
     n = b - n;
     if (n > 0)

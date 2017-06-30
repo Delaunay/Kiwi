@@ -1,9 +1,11 @@
-#pragma once
+﻿#pragma once
 #include <gtest/gtest.h>
 #include <iostream>
 
 #include "AST/Builder.h"
 #include "AST/TreeOperations.h"
+
+#include "Format.h"
 
 using namespace kiwi;
 
@@ -19,19 +21,19 @@ TEST(AST, Printing)
     Root g = RBuilder::add(w, x);
     Root f = RBuilder::add(v, RBuilder::borrow(x));
 
-    print(std::cout, f);
-    std::cout << std::endl;
+    std::stringstream ss1;
+    print_expr(ss1, f);
 
-    print(std::cout, g);
-    std::cout << std::endl;
+
+    std::stringstream ss2;
+    print_expr(ss2, g);
+
+    print(std::cout, "Result: ", ss1.str(), " and ", ss2.str()) << std::endl;
 }
 
 
 TEST(AST, Function)
 {
-    // def sqr(x):
-    //     return x * x
-
     Root x    = RBuilder::placeholder("x");
     Root body = RBuilder::mult(x, RBuilder::borrow(x));
     Root sqr  = RBuilder::function("sqr", body);
@@ -43,15 +45,17 @@ TEST(AST, Function)
     };
 
     // print function
-    std::cout << "decl: \n"; print(std::cout, sqr);
-    std::cout << std::endl;
+    std::stringstream ss1;
+    print_expr(ss1, sqr);
+    print(std::cout, "decl:\n", ss1.str()) << std::endl;
 
     // call function sqr(2)
     Root val  = RBuilder::value(3.0);
     Root sqr2 = RBuilder::call("sqr", {val.take_ownership()});
 
-    std::cout << "call: "; print(std::cout, sqr2);
-    std::cout << std::endl;
+    std::stringstream ss2;
+    print_expr(ss2, sqr2);
+    print(std::cout, "call: ", ss2.str()) << std::endl;
 
     EXPECT_DOUBLE_EQ(full_eval(ctx, sqr2), 9.0);
 }

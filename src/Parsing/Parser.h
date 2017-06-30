@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #include "Lexer.h"
 #include "../AST/Builder.h"
 
 //#define KIWI_DEBUG
 #include "../Debug.h"
-
+#include "../Logging/Log.h"
 
 #define EXPECT(c, message)\
     if (tok.type() != c){\
@@ -33,8 +33,8 @@ public:
     }
 
     // not tested
-    Root parse_function(){
-        printd("parse_function");
+    Root parse_function(int i){
+        log_cdebug(i);
 
         Root  lhs = nullptr;
         Token tok = _lexer.peek();
@@ -67,14 +67,14 @@ public:
         EXPECT(tok_newline, "new line expected");
         tok = nexttok();
 
-        Root body = parse();
+        Root body = parse(i + 1);
         fun->body = body;
 
         return fun;
     }
 
-    Root parse(){
-        printd("parse_parse");
+    Root parse(int i){
+        log_cdebug(i);
 
         Root  lhs = nullptr;
         Token tok = _lexer.peek();
@@ -83,7 +83,7 @@ public:
 
         if (tok.type() == '('){
             _lexer.consume();
-            lhs = parse();
+            lhs = parse(i + 1);
 
             tok = _lexer.peek();
 
@@ -92,13 +92,13 @@ public:
             }
         }
         else if (tok.type() == tok_float)
-            lhs = parse_value(tok.as_float());
+            lhs = parse_value(i + 1, tok.as_float());
 
         else if (tok.type() == tok_int)
-            lhs = parse_value(tok.as_integer());
+            lhs = parse_value(i + 1, tok.as_integer());
 
         else if (tok.type() == tok_identifier)
-            lhs = parse_identifier(tok.identifier());
+            lhs = parse_identifier(i + 1, tok.identifier());
 
         _lexer.consume();       // Eat ')'/tok_int...
         tok = _lexer.peek();
@@ -112,7 +112,7 @@ public:
         // operator
         if (tok.type() == '+'){
             _lexer.consume();
-            return parse_add(lhs);
+            return parse_add(i + 1, lhs);
         } else {
             dumptok(tok);
             printd("Is not a correct op");
@@ -120,15 +120,15 @@ public:
             if (lhs.get() == nullptr){
                 printd("nullptr");
             }
-            print(std::cout, lhs);
+            print_expr(std::cout, lhs);
             std::cout << std::endl;
         }
         return lhs;
     }
 
-    Root parse_add(Root lhs){
-        printd("parse_add");
-        Root rhs = parse();
+    Root parse_add(int i, Root lhs){
+        log_cdebug(i);
+        Root rhs = parse(i + 1);
 
         if (rhs.get() == nullptr)
             return lhs;
@@ -136,13 +136,13 @@ public:
         return RBuilder::add(lhs, rhs);
     }
 
-    Root parse_value(double val){
-        printd("parse_val");
+    Root parse_value(int i, double val){
+        log_cdebug(i);
         return RBuilder::value(val);
     }
 
-    Root parse_identifier(std::string name){
-        printd("parse_identifier");
+    Root parse_identifier(int i, std::string name){
+        log_cdebug(i);
         return RBuilder::placeholder(name);
     }
 

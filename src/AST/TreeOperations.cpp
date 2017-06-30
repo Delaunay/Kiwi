@@ -1,4 +1,4 @@
-#include "Visitor.h"
+﻿#include "Visitor.h"
 #include "TreeOperations.h"
 #include "Builder.h"
 
@@ -54,9 +54,10 @@ public:
         out(out)
     {}
 
-    static void run(std::ostream& out, Expression* expr){
+    static std::ostream& run(std::ostream& out, Expression* expr){
         Printing eval(out);
-        return eval.traverse(expr, 1);
+        eval.traverse(expr, 1);
+        return out;
     }
 
     void function(Function* x, int indentation){
@@ -504,7 +505,7 @@ Expression* copy(Expression* expr, bool keep_borrowed){
     return Copy::run(expr, keep_borrowed);
 }
 
-void print(std::ostream& out, Expression* expr){
+std::ostream& print_expr(std::ostream& out, Expression* expr){
     return Printing::run(out, expr);
 }
 
