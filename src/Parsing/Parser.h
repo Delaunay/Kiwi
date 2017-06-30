@@ -34,7 +34,7 @@ public:
 
     // not tested
     Root parse_function(int i){
-        log_cdebug(i);
+        log_cdebug(i, "");
 
         Root  lhs = nullptr;
         Token tok = _lexer.peek();
@@ -74,7 +74,7 @@ public:
     }
 
     Root parse(int i){
-        log_cdebug(i);
+        log_cdebug(i, "");
 
         Root  lhs = nullptr;
         Token tok = _lexer.peek();
@@ -127,7 +127,7 @@ public:
     }
 
     Root parse_add(int i, Root lhs){
-        log_cdebug(i);
+        log_cdebug(i, "");
         Root rhs = parse(i + 1);
 
         if (rhs.get() == nullptr)
@@ -137,12 +137,12 @@ public:
     }
 
     Root parse_value(int i, double val){
-        log_cdebug(i);
+        log_cdebug(i, "");
         return RBuilder::value(val);
     }
 
     Root parse_identifier(int i, std::string name){
-        log_cdebug(i);
+        log_cdebug(i, "");
         return RBuilder::placeholder(name);
     }
 

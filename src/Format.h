@@ -8,14 +8,15 @@
 namespace kiwi
 {
 
+inline std::ostream& print(std::ostream& out){
+    return out;
+}
+
 template<typename T, typename... Args>
 std::ostream& print(std::ostream& out, T value, Args... args){
     out << value;
     return print(out, args...);
 }
-
-inline
-std::ostream& print(std::ostream& out){ return out; }
 
 template<typename T, typename... Args>
 std::string to_string(T value, Args... args){
