@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SFML/Graphics.hpp>
 
@@ -16,12 +16,50 @@ public:
     typedef std::vector<StringType>  ArgNames;
     typedef int                      IndexType;
 
+    template<typename T>
+    static sf::Text make_text(const T& str, const sf::Color& color){
+        sf::Text txt(str, default_font(), default_font_size());
+        txt.setFillColor(color);
+        return txt;
+    }
+
     RenderNode(NodeTag tag):
         tag(tag)
     {}
 
-    static StringType make_string(const std::string& str){
-        return StringType(str, default_font(), default_font_size());
+    template<typename T>
+    static StringType make_string(const T& str){
+        return make_text(str, {255, 255, 255});
+    }
+
+    template<typename T>
+    static StringType make_keyword(const T& str){
+        return make_text(str, {255, 155, 155});
+    }
+
+    template<typename T>
+    static StringType make_placeholder_name(const T& str){
+        return make_text(str, {255, 155, 255});
+    }
+
+    template<typename T>
+    static StringType make_function_name(const T& str){
+        return make_text(str, {155, 255, 255});
+    }
+
+    template<typename T>
+    static StringType make_error_message(const T& str){
+        return make_text(str, {255, 155, 155});
+    }
+
+    template<typename T>
+    static StringType make_builtin_name(const T& str){
+        return make_text(str, {155, 255, 155});
+    }
+
+    template<typename T>
+    static StringType make_argument_name(const T& str){
+        return make_text(str, {155, 155, 155});
     }
 
     NodeTag tag;

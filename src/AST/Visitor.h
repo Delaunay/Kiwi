@@ -28,7 +28,6 @@ public:
     #define X(name, object)\
         case NodeTag::name:{\
             object* exp = static_cast<object*>(x);\
-            log_debug("Calling: " #name);\
             return static_cast<Visitor&>(*this).name(exp, args...);\
         }
         KIWI_AST_NODES

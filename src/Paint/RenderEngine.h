@@ -33,11 +33,11 @@ public:
     { }
 
     sf::RenderWindow& rw;
-
     StyleManager style;
     float outline = 1;
-
-
+    bool box_extracted = false;
+    std::vector<std::pair<sf::FloatRect, Node*>> bounding_boxes;
+    sf::FloatRect top_box = {10000, 10000, -10000, -10000};
     Node* current_expression = nullptr;
     sf::Vector2f original_pos = {0, 0};
 
@@ -71,12 +71,8 @@ public:
         box_extracted = true;
     }
 
-    bool box_extracted = false;
-    std::vector<sf::FloatRect> bounding_boxes;
-    sf::FloatRect top_box = {10000, 10000, -10000, -10000};
-
-    void add_bounding_box(float x, float y, float w, float h){
-        bounding_boxes.emplace_back(x, y, w, h);
+    void add_bounding_box(Node* parent, float x, float y, float w, float h){
+        bounding_boxes.emplace_back(sf::FloatRect(x, y, w, h), parent);
 
         top_box.top    = MIN(x, top_box.top);
         top_box.left   = MIN(y, top_box.left);
@@ -104,7 +100,7 @@ public:
 
     // helpers
     // ------------------------------------------------------------------------
-    sf::Vector2f render(sf::Text item, sf::Vector2f pos){
+    sf::Vector2f render(Node* parent, sf::Text item, sf::Vector2f pos){
         //log_trace("Rendering: " + item.getString());
         item.setPosition(pos.x, pos.y);
 
@@ -116,7 +112,7 @@ public:
         draw_bounding_box(x, y, w, h);
 
         if (!box_extracted)
-            add_bounding_box(x, y, w, h);
+            add_bounding_box(parent, x, y, w, h);
 
         rw.draw(item);
         pos.x += w;
@@ -141,7 +137,7 @@ public:
 
         // generic::Function<RenderNode>*
         Function* f = static_cast<Function*>(node);
-        f->args.push_back(sf::Text("x", default_font(), default_font_size()));
+        f->add_arg("x");
 
         return sqr;
     }
@@ -155,71 +151,71 @@ public:
     }
 
     sf::Vector2f function(Function* x, sf::Vector2f pos, int idt){
-        pos = render(style.def(), pos);
-        pos = render(x->name, pos);
-        pos = render(style.get('('), pos);
+        pos = render(x, style.def(), pos);
+        pos = render(x, x->name, pos);
+        pos = render(x, style.get('('), pos);
 
         int n = int(x->args_size()) - 1;
         if (n >= 0){
             for(int i = 0; i < n; ++i){
-                pos = render(x->arg(i), pos);
-                pos = render(style.get(','), pos);
+                pos = render(x, x->arg(i), pos);
+                pos = render(x, style.get(','), pos);
             }
-            pos = render(x->arg(n), pos);
+            pos = render(x, x->arg(n), pos);
         }
 
-        pos = render(style.get(')'), pos);
+        pos = render(x, style.get(')'), pos);
 
 
         if (x->type != nullptr && x->type->return_type != nullptr){
-            pos = render(style.arrow(), pos);
+            pos = render(x, style.arrow(), pos);
             pos = traverse(x->type->return_type, pos, idt);
         }
 
-        pos = render(style.get(':'), pos);
+        pos = render(x, style.get(':'), pos);
         pos = new_line(pos);
         pos = indent(pos, idt + 1);
         return traverse(x->body, pos, idt + 1);
     }
 
     sf::Vector2f new_line(sf::Vector2f pos){
-        return pos + sf::Vector2f(0, style.height());
+        return {original_pos.x, pos.y + style.height()};
     }
 
     sf::Vector2f indent(sf::Vector2f pos, int idt){
-        return sf::Vector2f(style.width() * 4 * idt , pos.y);
+        return sf::Vector2f(original_pos.x + style.width() * 4 * idt , pos.y);
     }
 
     sf::Vector2f function_call(FunctionCall* x, sf::Vector2f pos, int idt){
-        pos = render(x->name, pos);
-        pos = render(style.get('('), pos);
+        pos = render(x, x->name, pos);
+        pos = render(x, style.get('('), pos);
 
         int n = x->args_size() - 1;
         for(int i = 0; i < n; ++i){
             pos = traverse(x->arg(i), pos, idt);
-            pos = render(style.get(','), pos);
+            pos = render(x, style.get(','), pos);
         }
 
         pos = traverse(x->arg(n), pos, idt);
-        pos = render(style.get(')'), pos);
+        pos = render(x, style.get(')'), pos);
         return pos;
     }
 
     sf::Vector2f unary_call(UnaryCall* x, sf::Vector2f pos, int idt){
         if (!x->right)
-            pos = render(x->name, pos);
+            pos = render(x, x->name, pos);
 
         pos = traverse(x->arg(0), pos, idt);
 
         if (x->right)
-            pos = render(x->name, pos);
+            pos = render(x, x->name, pos);
 
         return pos;
     }
 
     sf::Vector2f binary_call(BinaryCall* x, sf::Vector2f pos, int idt){
         pos = traverse(x->lhs, pos, idt);
-        pos = render(x->name, pos);
+        pos = render(x, x->name, pos);
         pos = traverse(x->rhs, pos, idt);
         return pos;
     }
@@ -229,39 +225,39 @@ public:
     }
 
     sf::Vector2f arrow(Arrow* x, sf::Vector2f pos, int idt){
-        pos = render(style.get('('), pos);
+        pos = render(x, style.get('('), pos);
 
         int n = int(x->args.size()) - 1;
         for(int i = 0; i < n; ++i){
             pos = traverse(x->arg(i), pos, idt);
-            pos = render(style.get(','), pos);
+            pos = render(x, style.get(','), pos);
         }
         pos = traverse(x->arg(n), pos, idt);
-        pos = render(style.get(')'), pos);
-        pos = render(style.arrow(), pos);
+        pos = render(x, style.get(')'), pos);
+        pos = render(x, style.arrow(), pos);
         pos = traverse(x->return_type, pos, idt);
         return pos;
     }
 
     sf::Vector2f type(Type* x, sf::Vector2f pos, int){
-        return render(x->name, pos);
+        return render(x, x->name, pos);
     }
 
     sf::Vector2f builtin(Builtin* e, sf::Vector2f pos, int){
-        return render(e->name, pos);
+        return render(e, e->name, pos);
     }
 
     sf::Vector2f error(ErrorNode* e, sf::Vector2f pos, int){
-        return render(e->message, pos);
+        return render(e, e->message, pos);
     }
 
     sf::Vector2f value(Value* x, sf::Vector2f pos, int){
         sf::Text txt(std::to_string(x->as<f64>()), style.font(), 10);
-        return render(txt, pos);
+        return render(x, txt, pos);
     }
 
     sf::Vector2f placeholder(Placeholder* x, sf::Vector2f pos, int){
-        return render(x->name, pos);
+        return render(x, x->name, pos);
     }
 };
 

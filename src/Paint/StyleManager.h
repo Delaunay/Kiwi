@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Fonts.h"
+#include "RenderNode.h"
 #include <SFML/Graphics.hpp>
 
 namespace kiwi{
@@ -38,13 +39,11 @@ struct StyleManager{
     const sf::Text& open_parenthesis(){ return fun_open;}
     const sf::Text& close_parenthesis(){ return fun_close;}
 
-    const sf::Text text(const std::string& str){
-        return sf::Text(str, font(), font_size());
-    }
+    template<typename T>
+    sf::Text text(const T& str){ return RenderNode::make_string(str); }
 
-    const sf::Text text(const std::wstring& str){
-        return sf::Text(str,font(), font_size());
-    }
+    template<typename T>
+    sf::Text keyword(const T& str){ return RenderNode::make_keyword(str); }
 
     const sf::Font& font()   {  return _font;       }
     unsigned int font_size() {  return _font_size;   }
@@ -53,7 +52,7 @@ private:
     sf::Font _font = default_font();
     unsigned int _font_size = default_font_size();
 
-    sf::Text fun_def   = text("def ");
+    sf::Text fun_def   = keyword("def ");
     sf::Text fun_open  = text("(");
     sf::Text fun_close = text(")");
     sf::Text fun_col   = text(":");

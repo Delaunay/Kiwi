@@ -83,6 +83,30 @@ public:
         return StringType(str);
     }
 
+    static StringType make_keyword(const std::string& str){
+        return StringType(str);
+    }
+
+    static StringType make_placeholder_name(const std::string& str){
+        return StringType(str);
+    }
+
+    static StringType make_function_name(const std::string& str){
+        return StringType(str);
+    }
+
+    static StringType make_error_message(const std::string& str){
+        return StringType(str);
+    }
+
+    static StringType make_builtin_name(const std::string& str){
+        return StringType(str);
+    }
+
+    static StringType make_argument_name(const std::string& str){
+        return StringType(str);
+    }
+
     Expression(NodeTag tag):
         tag(tag)
     {}
@@ -131,11 +155,11 @@ public:
     NODE_TYPES
 
     Function(const std::string& name, Node* body):
-        Node(NodeTag::function), name(Node::make_string(name)), body(body)
+        Node(NodeTag::function), name(Node::make_function_name(name)), body(body)
     {}
 
     Function(const std::string& name, Node* body, Node* type):
-        Node(NodeTag::function), name(Node::make_string(name)), body(body), type(static_cast<Arrow<Node>*>(type))
+        Node(NodeTag::function), name(Node::make_function_name(name)), body(body), type(static_cast<Arrow<Node>*>(type))
     {
         assert(type->tag == NodeTag::arrow && "Not a function type");
     }
@@ -143,8 +167,13 @@ public:
     IndexType args_size() const{
         return int(args.size());
     }
+
     const StringType& arg(IndexType index) const{
         return args[index];
+    }
+
+    void add_arg(const std::string& str){
+        args.push_back(Node::make_argument_name(str));
     }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
@@ -253,7 +282,7 @@ public:
     NODE_TYPES
 
     Placeholder(const std::string& name):
-        Node(NodeTag::placeholder), name(Node::make_string(name))
+        Node(NodeTag::placeholder), name(Node::make_placeholder_name(name))
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
@@ -295,7 +324,7 @@ public:
     NODE_TYPES
 
     Builtin(const std::string& name):
-        Node(NodeTag::builtin), name(Node::make_string(name))
+        Node(NodeTag::builtin), name(Node::make_builtin_name(name))
     {}
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)
@@ -309,7 +338,7 @@ public:
     NODE_TYPES
 
     Type(const std::string& name):
-        Node(NodeTag::type), name(Node::make_string(name))
+        Node(NodeTag::type), name(Node::make_type_name(name))
     {}
 
     Type():
@@ -343,7 +372,7 @@ public:
     NODE_TYPES
 
     ErrorNode(const std::string& message, Node* partial=nullptr):
-        Node(NodeTag::error), message(Node::make_string(message)), partial(partial)
+        Node(NodeTag::error), message(Node::make_error_message(message)), partial(partial)
     {}
 
     Node* partial{nullptr};    // partial parsed Node

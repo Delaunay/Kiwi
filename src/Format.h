@@ -13,13 +13,13 @@ inline std::ostream& print(std::ostream& out){
 }
 
 template<typename T, typename... Args>
-std::ostream& print(std::ostream& out, T value, Args... args){
+std::ostream& print(std::ostream& out, T value, const Args& ... args){
     out << value;
     return print(out, args...);
 }
 
 template<typename T, typename... Args>
-std::string to_string(T value, Args... args){
+std::string to_string(T value, const Args& ... args){
     std::stringstream ss;
     print(ss, value, args...);
     return ss.str();

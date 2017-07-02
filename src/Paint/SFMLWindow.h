@@ -53,7 +53,7 @@ public:
     void init(){
         _window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
                        "Kiwi", sf::Style::Default, _settings);
-        _window.setVerticalSyncEnabled(true);
+        //_window.setVerticalSyncEnabled(true);
         _window.setActive(true);
 
         //*
@@ -74,22 +74,25 @@ public:
         start_clock();
         static_cast<Derived&>(*this).load_assets();
 
-        log_trace("Asset loaded in: ", stop_clock(), "s");
+        log_trace("Asset loaded in: ", stop_clock(), "ms");
 
         while(_window.isOpen())
         {
-            number_image += 1;
 
-            log_trace("Events");
+
+            //log_trace("Events");
             static_cast<Derived&>(*this).process_events();
             static_cast<Derived&>(*this).process_network();
 
-            log_trace("Clear");
+            //log_trace("Clear");
             static_cast<Derived&>(*this).clear(_window);
-            log_trace("Draw");
+            //log_trace("Draw");
             static_cast<Derived&>(*this).draw(_window);
-            log_trace("Render");
+            //log_trace("Render");
+
+            // start_clock();
             static_cast<Derived&>(*this).render(_window);
+            // log_trace("render took: ", stop_clock());
 
             // don't use 99% of CPU
             sf::sleep(sf::microseconds(1));
@@ -128,51 +131,57 @@ public:
         glClearColor(0, 0, 0, 0);
     }
 
-    void draw(sf::RenderWindow& screen){
-        sf::RectangleShape rect;
-        rect.setFillColor(sf::Color(100, 100, 100));
-        rect.setPosition(sf::Vector2f(100, 100));
-        rect.setSize(sf::Vector2f(100, 100));
-
-        screen.draw(rect);
-
-        /*
-        std::string utf8_source = "...";
-        std::basic_string<sf::Uint32> tmp;
-        sf::Uint8::toUtf32(source.begin(), source.end(), std::back_inserter(tmp));
-        sf::String final = tmp;*/
-
-        /*
-        sf::Text test;
-        test.setFont(default_font());
-        test.setString(L"Hello World");
-        test.setFillColor(sf::Color(50, 100, 100));
-        test.setOutlineColor(sf::Color(255, 255, 255));
-        test.setOutlineThickness(1);
-        screen.draw(test);
-
-        sf::Text test2;
-        test2.setPosition(sf::Vector2f(0, test.getLocalBounds().height));
-        test2.setFont(default_font());
-        test2.setString(L"Héllo World");
-        test2.setFillColor(sf::Color(50, 100, 100));
-        //test.setOutlineColor(sf::Color(100, 50, 100));
-        //test.setOutlineThickness(1);
-        screen.draw(test2);//*/
-
-
-        log_trace("IMGUI update");
-        ImGui::SFML::Update(_window, _deltaClock.restart());
+    void draw_imgui(sf::RenderWindow& screen){
+        ImGui::SFML::Update(screen, _deltaClock.restart());
 
         ImGui::Begin("Hello, world!");
           ImGui::Button("Look at this pretty button");
         ImGui::End();
+    }
 
-        log_trace("Rendering...");
-        _engine.render(sqr, {10, 10});
+    void draw_rectangle(sf::RenderWindow& screen){
+        sf::RectangleShape rect;
+        rect.setFillColor(sf::Color(100, 100, 100));
+        rect.setPosition(sf::Vector2f(100, 100));
+        rect.setSize(sf::Vector2f(100, 100));
+        screen.draw(rect);
+    }
 
-        log_trace(std::to_string(_engine.bounding_boxes.size()));
-        log_trace("Done");
+    void draw_fps(sf::RenderWindow& screen){
+        static sf::Text fps_txt = [](){
+            sf::Text txt;
+            txt.setFont(default_font());
+            txt.setPosition({WINDOW_WIDTH - 12 * 20, 0});
+            txt.setFillColor({100, 100, 100});
+            return txt;
+        }();
+
+        static int number_image = 0;
+        number_image += 1;
+
+        double value = stop_fps_clock();
+        if (value > 10 * 1000){
+            start_fps_clock();
+            number_image = 0;
+        }
+
+        fps_txt.setString(to_string("FPS: ", number_image / (value / 1000)));
+        screen.draw(fps_txt);
+    }
+
+    void draw_source(sf::RenderWindow& screen){
+        _engine.render(sqr, {50, 50});
+    }
+
+    void draw(sf::RenderWindow& screen){
+        draw_fps(screen);
+        draw_rectangle(screen);
+
+        draw_imgui(screen);
+
+        //start_clock();
+        draw_source(screen);
+        //log_info("draw_source took: ", stop_clock(), "ms");
     }
 
     void render(sf::RenderWindow& screen){
@@ -181,12 +190,35 @@ public:
     }
 
     void start_clock(){
-        start = std::chrono::steady_clock::now();
+        start_clock(start);
     }
 
     double stop_clock(){
+        return stop_clock(start);
+    }
+
+    void start_fps_clock(){
+        start_clock(start_fps);
+    }
+
+    double stop_fps_clock(){
+        return stop_clock(start_fps);
+    }
+
+    static void start_clock(TimePoint& start){
+        start = std::chrono::steady_clock::now();
+    }
+
+    static double stop_clock(TimePoint& start){
+        typedef std::chrono::duration<long long, std::nano> nanoseconds;
+        typedef std::chrono::duration<long long, std::micro> microseconds;
+        typedef std::chrono::duration<long long, std::milli> milliseconds;
+        typedef std::chrono::duration<double> seconds;
+        typedef std::chrono::duration<double, std::ratio<60> > minutes;
+        typedef std::chrono::duration<double, std::ratio<3600> > hours;
+
         auto end = std::chrono::steady_clock::now();
-        std::chrono::duration<double> dt = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        milliseconds dt = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         return dt.count();
     }
 
@@ -197,8 +229,7 @@ protected:
     RenderEngine          _engine;
 
     TimePoint start;
-    int number_image = 0;
-
+    TimePoint start_fps;
     generic::Root<RenderAST::Node>  sqr = RenderEngine::make_sqr();
 };
 

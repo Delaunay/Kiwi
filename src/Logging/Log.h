@@ -31,7 +31,7 @@ public:
 
     template<typename... Args>
     void log(LogLevel level, std::string file,
-             std::string function, int line, Args... args)
+             std::string function, int line, const Args& ... args)
     {
         if (log_level <= level)
             print(out, date(), " ", get_string(level), pretty_file(file), ":", function, ":l", line, "\t", args...) << std::endl;
@@ -39,7 +39,7 @@ public:
 
     template<typename... Args>
     void log_call_trace(LogLevel level, std::string file,
-             std::string function, int line, int depth, Args... args)
+             std::string function, int line, int depth, const Args& ... args)
     {
         if (log_level <= level)
             print(out, get_string(level), pretty_depth(depth), pretty_file(file), ":", function, ":l", line, "\t", args...) << std::endl;
@@ -123,9 +123,9 @@ public:
 
     static std::string header(){
         return
-        ".-----------------------------------------------------------------------------.\n"
-        "| YYYY-MM-DD HH:MM:SS |  SEVERITY   | FILE:FUNCTION:LINE   | MESSAGE          |\n"
-        "|---------------------+-------------+-----------------------------------------|\n";
+        "-----------------------------------------------------------------------------\n"
+        "YYYY-MM-DD HH:MM:SS |  SEVERITY | FILE:FUNCTION:LINE                  MESSAGE\n"
+        "--------------------+-----------+--------------------------------------------\n";
     }
 
     static Log& instance(){

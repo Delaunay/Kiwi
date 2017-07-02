@@ -1,4 +1,4 @@
-# required for C++11 features
+﻿# required for C++11 features
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 
 # project name + language used
@@ -10,6 +10,7 @@ if (MSVC)
     ADD_COMPILE_OPTIONS(/MD)
 ELSE(MSVC)
     ADD_COMPILE_OPTIONS(-fno-rtti)
+    MESSAGE(STATUS "Compilling without rtti -fno-rtti")
 ENDIF(MSVC)
 
 IF(${CMAKE_BUILD_TYPE} MATCHES "Debug")

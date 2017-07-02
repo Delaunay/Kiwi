@@ -1,4 +1,4 @@
-#include "Tokens.h"
+﻿#include "Tokens.h"
 #include "../Format.h"
 
 namespace kiwi
@@ -37,8 +37,8 @@ uint8 tok_name_size()
 std::ostream& Token::debug_print(std::ostream& out){
     out << align_right(tok_to_string(_type), tok_name_size());
 
-    out << " =>" << " [l:" << to_string(_line, 4)
-                  << ", c:" << to_string(_col, 4) << "] " << _identifier ;
+    out << " =>" << " [l:" << to_string_padded(_line, 4)
+                  << ", c:" << to_string_padded(_col, 4) << "] " << _identifier ;
     return out;
 }
 
