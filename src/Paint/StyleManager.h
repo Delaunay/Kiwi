@@ -55,7 +55,7 @@ private:
     sf::Text fun_def   = keyword("def ");
     sf::Text fun_open  = text("(");
     sf::Text fun_close = text(")");
-    sf::Text fun_col   = text(":");
+    sf::Text fun_col   = text(": ");
     sf::Text fun_com   = text(", ");
     sf::Text _space    = text(" ");
     sf::Text _arrow    = text(L" \u2192 ");

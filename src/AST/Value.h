@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstdio>
 #include <memory>
@@ -6,8 +6,7 @@
 
 #include "Expression.h"
 
-//#define KIWI_DEBUG
-#include "../Debug.h"
+#include "../Logging/Log.h"
 
 namespace kiwi{
 
@@ -92,26 +91,26 @@ public:
     VTABLEV(void visit(class DynamicVisitor* v) override;)
 
     template<typename T>
-    T as(){
-        debug_if(type != type_id<T>() , this->dump(std::cout));
+    T as() const{
+        debug_if(type != type_id<T>(), this);
 
         assert(type == type_id<T>() && "wrong Value cast");
         return reinterpret_cast<const Model<T>*>(_self.get())->_data;
     }
 
     template<typename T>
-    T as(T dummy){
-        debug_if(type != type_id<T>() , this->dump(std::cout));
+    T as(T dummy) const{
+        debug_if(type != type_id<T>(), this);
 
         assert(type == type_id<T>() && "wrong Value cast");
         return reinterpret_cast<const Model<T>*>(_self.get())->_data;
     }
 
-    std::ostream& dump(std::ostream& out){
+    std::ostream& dump(std::ostream& out) const{
         return print(out);
     }
 
-    std::ostream& print(std::ostream& out, bool ptype = false){
+    std::ostream& print(std::ostream& out, bool ptype = false) const{
         switch(type){
         #define X(n)\
             case BuiltinType::n:{\
@@ -155,6 +154,11 @@ private:
 
     std::shared_ptr<const Concept> _self;
 };
+
+template<typename Node>
+std::ostream& operator<< (std::ostream& out, const Value<Node>* v){
+    return v->print(out);
+}
 
 }
 

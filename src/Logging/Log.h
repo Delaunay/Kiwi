@@ -16,7 +16,7 @@ namespace kiwi{
     KIWI_LEVEL(all, All, "     ALL     ")\
     KIWI_LEVEL(trace, Trace, "     TRACE   ")\
     KIWI_LEVEL(debug, Debug, " [?] DEBUG   ")\
-    KIWI_LEVEL(warning, Warning, " /!\\ WARNING ")\
+    KIWI_LEVEL(warn, Warning, " /!\\ WARNING ")\
     KIWI_LEVEL(info, Info, " [i] INFO    ")\
     KIWI_LEVEL(error, Error, " [!] ERROR   ")
 
@@ -34,7 +34,9 @@ public:
              std::string function, int line, const Args& ... args)
     {
         if (log_level <= level)
-            print(out, date(), " ", get_string(level), pretty_file(file), ":", function, ":l", line, "\t", args...) << std::endl;
+            print(out,
+                  date(), " ", get_string(level), pretty_file(file), ":",
+                  function, ":l", line, "\t", args...) << std::endl;
     }
 
     template<typename... Args>
@@ -42,7 +44,9 @@ public:
              std::string function, int line, int depth, const Args& ... args)
     {
         if (log_level <= level)
-            print(out, get_string(level), pretty_depth(depth), pretty_file(file), ":", function, ":l", line, "\t", args...) << std::endl;
+            print(out,
+                  get_string(level), pretty_depth(depth), pretty_file(file), ":",
+                  function, ":l", line, "\t", args...) << std::endl;
     }
 
     static std::string date(){
@@ -141,23 +145,34 @@ private:
     }
 };
 
-#define LOG_INTERNAL(level, ...)\
-    kiwi::Log::instance().log(level, __FILE__, __func__, __LINE__,  __VA_ARGS__)
 
-#define log_warn(...)  LOG_INTERNAL(LogLevel::warning, __VA_ARGS__)
-#define log_info(...)  LOG_INTERNAL(LogLevel::info,    __VA_ARGS__)
-#define log_error(...) LOG_INTERNAL(LogLevel::error,   __VA_ARGS__)
-#define log_debug(...) LOG_INTERNAL(LogLevel::debug,   __VA_ARGS__)
-#define log_trace(...) LOG_INTERNAL(LogLevel::trace,   __VA_ARGS__)
+#ifndef __linux__
+#   define GET_FUN_NAME_EXT __FUNCSIG__
+#else
+#   define GET_FUN_NAME_EXT __PRETTY_FUNCTION__
+#endif
+#define GET_FUN_NAME_SHORT __FUNCTION__
+#define GET_FUN_NAME GET_FUN_NAME_SHORT
+
+#define LOG_INTERNAL(level, ...)\
+    kiwi::Log::instance().log(level, __FILE__, GET_FUN_NAME, __LINE__,  __VA_ARGS__)
+
+#define log_warn(...)  LOG_INTERNAL(LogLevel::warn,  __VA_ARGS__)
+#define log_info(...)  LOG_INTERNAL(LogLevel::info,  __VA_ARGS__)
+#define log_error(...) LOG_INTERNAL(LogLevel::error, __VA_ARGS__)
+#define log_debug(...) LOG_INTERNAL(LogLevel::debug, __VA_ARGS__)
+#define log_trace(...) LOG_INTERNAL(LogLevel::trace, __VA_ARGS__)
 
 #define LOG_INTERNAL_CALL(level, depth, ...)\
-    kiwi::Log::instance().log_call_trace(level, __FILE__, __func__, __LINE__,  depth, __VA_ARGS__)
+    kiwi::Log::instance().log_call_trace(level, __FILE__, GET_FUN_NAME, __LINE__,  depth, __VA_ARGS__)
 
-#define log_cwarn(depth, ...)  LOG_INTERNAL_CALL(LogLevel::warning,depth,  __VA_ARGS__)
-#define log_cinfo(depth, ...)  LOG_INTERNAL_CALL(LogLevel::info,   depth,  __VA_ARGS__)
-#define log_cerror(depth, ...) LOG_INTERNAL_CALL(LogLevel::error , depth,  __VA_ARGS__)
-#define log_cdebug(depth, ...) LOG_INTERNAL_CALL(LogLevel::debug,  depth,  __VA_ARGS__)
-#define log_ctrace(depth, ...) LOG_INTERNAL_CALL(LogLevel::trace,  depth,  __VA_ARGS__)
+#define log_cwarn(depth, ...)  LOG_INTERNAL_CALL(LogLevel::warn,  depth, __VA_ARGS__)
+#define log_cinfo(depth, ...)  LOG_INTERNAL_CALL(LogLevel::info,  depth, __VA_ARGS__)
+#define log_cerror(depth, ...) LOG_INTERNAL_CALL(LogLevel::error, depth, __VA_ARGS__)
+#define log_cdebug(depth, ...) LOG_INTERNAL_CALL(LogLevel::debug, depth, __VA_ARGS__)
+#define log_ctrace(depth, ...) LOG_INTERNAL_CALL(LogLevel::trace, depth, __VA_ARGS__)
+
+#define debug_if(pred, ...) {if (pred) { log_debug(__VA_ARGS__); }}
 
 }
 

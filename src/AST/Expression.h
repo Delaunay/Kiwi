@@ -140,7 +140,7 @@ public:
         Node(NodeTag::arrow), args(args), return_type(expr)
     {}
 
-    int args_size()       { return args.size(); }
+    int args_size()  { return args.size(); }
     Node* arg(int i) { return args[i]; }
 
     VTABLEV(void visit(class DynamicVisitor* v) override;)

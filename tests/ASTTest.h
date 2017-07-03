@@ -55,7 +55,7 @@ TEST(AST, Function)
 
     std::stringstream ss2;
     print_expr(ss2, sqr2);
-    print(std::cout, "call: ", ss2.str()) << std::endl;
+    print(std::cout, "call: ", sqr2) << std::endl;
 
     EXPECT_DOUBLE_EQ(full_eval(ctx, sqr2), 9.0);
 }

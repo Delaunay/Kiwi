@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <unordered_map>
 #include <ostream>
@@ -101,6 +101,11 @@ inline
 Token& dummy(){
     static Token dy = Token(tok_incorrect, 0, 0);
     return dy;
+}
+
+inline
+std::ostream& operator<<(std::ostream& out, class Token& tok){
+    return tok.print(out);
 }
 
 // Make something that look like clang's error underlining.

@@ -155,17 +155,29 @@ public:
         pos = render(x, x->name, pos);
         pos = render(x, style.get('('), pos);
 
+        int na = 0;
+
+        if (x->type != nullptr)
+            na = x->type->args_size() - 1;
+
         int n = int(x->args_size()) - 1;
+
+        assert(n == na && "Arrow type size mistmatch");
+
         if (n >= 0){
+
             for(int i = 0; i < n; ++i){
                 pos = render(x, x->arg(i), pos);
+                pos = render(x, style.get(':'), pos);
+                pos = traverse(x->type->arg(i), pos, idt);
                 pos = render(x, style.get(','), pos);
             }
             pos = render(x, x->arg(n), pos);
+            pos = render(x, style.get(':'), pos);
+            pos = traverse(x->type->arg(na), pos, idt);
         }
 
         pos = render(x, style.get(')'), pos);
-
 
         if (x->type != nullptr && x->type->return_type != nullptr){
             pos = render(x, style.arrow(), pos);
@@ -191,6 +203,7 @@ public:
         pos = render(x, style.get('('), pos);
 
         int n = x->args_size() - 1;
+
         for(int i = 0; i < n; ++i){
             pos = traverse(x->arg(i), pos, idt);
             pos = render(x, style.get(','), pos);
@@ -215,7 +228,9 @@ public:
 
     sf::Vector2f binary_call(BinaryCall* x, sf::Vector2f pos, int idt){
         pos = traverse(x->lhs, pos, idt);
+        pos = render(x, style.get(' '), pos);
         pos = render(x, x->name, pos);
+        pos = render(x, style.get(' '), pos);
         pos = traverse(x->rhs, pos, idt);
         return pos;
     }

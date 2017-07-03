@@ -33,7 +33,7 @@ public:
         KIWI_AST_NODES
     #undef X
         default:
-            log_error("Calling Unreachable Realm");
+            log_error("Calling Unreachable Realm (tag: ", int(x->tag), ")");
             KIWI_UNREACHABLE();
             return RetType();
         }

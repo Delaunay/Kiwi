@@ -6,8 +6,9 @@
 #include <algorithm>
 #include <functional>
 
-//#define KIWI_DEBUG
-#include "../Debug.h"
+#include "../Logging/Log.h"
+#undef log_trace
+#define log_trace(...)
 
 namespace kiwi{
 
@@ -201,22 +202,22 @@ public:
         std::size_t count = ctx.count(x->name);
 
         if (count == 0){
-            printd("Function does not exist");
+            log_error("Function does not exist");
             return 0;
         }
 
         Expression* efun = ctx.at(x->name);
 
         if (efun->tag != NodeTag::function){
-            printd("Calling a non-function");
+            log_error("Calling a non-function");
             return 0;
         }
 
         Function* fun = static_cast<Function*>(efun);
 
         if (fun->args_size() != x->args_size()){
-            printd("argument size mismatch:" <<
-                   fun->args_size()  << " " << x->args_size());
+            log_error("argument size mismatch:",
+                      fun->args_size(), " ", x->args_size());
             return 0;
         } else {
             // create eval context
@@ -224,10 +225,10 @@ public:
 
             for(int i = 0; i < fun->args_size(); ++i){
                 fun_ctx[fun->arg(i)] = x->arg(i);
-                printd(fun->arg(i) << " "; print(std::cout, x->arg(i)); std::cout);
+                log_trace(fun->arg(i), " ", x->arg(i));
             }
 
-            printd("Context built "; print(std::cout, fun->body); std::cout);
+            log_trace("Context built ", fun->body);
             return full_eval(fun_ctx, fun->body);
         }
     }
@@ -507,6 +508,10 @@ Expression* copy(Expression* expr, bool keep_borrowed){
 
 std::ostream& print_expr(std::ostream& out, Expression* expr){
     return Printing::run(out, expr);
+}
+
+std::ostream& operator<<(std::ostream& out, class Expression* expr){
+    return print_expr(out, expr);
 }
 
 double full_eval(const Context& ctx, Expression* expr){

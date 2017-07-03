@@ -8,7 +8,7 @@ namespace kiwi{
 // TODO: A better context would be Dict<string, Expr*>
 typedef std::unordered_map<std::string, class Expression*> Context;
 
-std::ostream& print_expr(std::ostream& out, class Expression* expr);
+std::ostream& print_expr(std::ostream& out, kiwi::Expression *expr);
 
 // void append_args(Function* fun, Expression* expr);
 
@@ -20,5 +20,7 @@ void free(class Expression* expr);
 
 // Copy a tree
 class Expression* copy(class Expression* expr, bool keep_borrowed = false);
+
+std::ostream& operator<<(std::ostream& out, class Expression* expr);
 
 }

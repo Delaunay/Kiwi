@@ -50,11 +50,13 @@ public:
     ~SFMLWindow()
     {}
 
-    void init(){
-        _window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
+    void init(){ init(_window); }
+
+    void init(sf::RenderWindow& screen){
+        screen.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
                        "Kiwi", sf::Style::Default, _settings);
         //_window.setVerticalSyncEnabled(true);
-        _window.setActive(true);
+        screen.setActive(true);
 
         //*
         if(!gladLoadGL()) {
@@ -64,8 +66,8 @@ public:
 
         log_debug("glad loaded");
 
-        ImGui::SFML::Init(_window);
-        glViewport(0, 0, _window.getSize().x, _window.getSize().y);
+        ImGui::SFML::Init(screen);
+        glViewport(0, 0, screen.getSize().x, screen.getSize().y);
     }
 
     void run()
@@ -212,7 +214,7 @@ public:
     static double stop_clock(TimePoint& start){
         typedef std::chrono::duration<long long, std::nano> nanoseconds;
         typedef std::chrono::duration<long long, std::micro> microseconds;
-        typedef std::chrono::duration<long long, std::milli> milliseconds;
+        typedef std::chrono::duration<double, std::milli> milliseconds;
         typedef std::chrono::duration<double> seconds;
         typedef std::chrono::duration<double, std::ratio<60> > minutes;
         typedef std::chrono::duration<double, std::ratio<3600> > hours;

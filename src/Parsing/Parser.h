@@ -2,14 +2,14 @@
 
 #include "Lexer.h"
 #include "../AST/Builder.h"
-
-//#define KIWI_DEBUG
-#include "../Debug.h"
 #include "../Logging/Log.h"
+
+#undef log_trace
+#define log_trace(...)
 
 #define EXPECT(c, message)\
     if (tok.type() != c){\
-        printd(message);\
+        log_error(message);\
     }
 
 namespace kiwi{
@@ -79,7 +79,7 @@ public:
         Root  lhs = nullptr;
         Token tok = _lexer.peek();
 
-        dumptok(tok);
+        log_trace(tok);
 
         if (tok.type() == '('){
             _lexer.consume();
@@ -88,7 +88,7 @@ public:
             tok = _lexer.peek();
 
             if (tok.type() != ')'){
-                printd("Expected closing parenthesis");
+                log_error("Expected closing parenthesis");
             }
         }
         else if (tok.type() == tok_float)
@@ -103,7 +103,7 @@ public:
         _lexer.consume();       // Eat ')'/tok_int...
         tok = _lexer.peek();
 
-        dumptok(tok);
+        log_trace(tok);
 
         // end of expr
         if (tok.type() == tok_eof || tok.type() == ')')
@@ -114,11 +114,11 @@ public:
             _lexer.consume();
             return parse_add(i + 1, lhs);
         } else {
-            dumptok(tok);
-            printd("Is not a correct op");
+            log_trace(tok);
+            log_error("Is not a correct op");
 
             if (lhs.get() == nullptr){
-                printd("nullptr");
+                log_error("nullptr");
             }
             print_expr(std::cout, lhs);
             std::cout << std::endl;
