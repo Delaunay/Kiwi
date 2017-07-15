@@ -30,3 +30,6 @@ Makefile*
 /old/
 */.idea/*
 *.autosave
+dependencies/SDL/
+dependencies/SDL_ttf/
+

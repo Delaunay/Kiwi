@@ -2,12 +2,14 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 
 # project name + language used
-PROJECT(kiwi)
+PROJECT(kiwi CXX C)
 
+# Compiler Stuff
+# ====================================
 # required for gtest which uses /MD
 if (MSVC)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_COMPILE_OPTIONS(/MD)
+    ADD_COMPILE_OPTIONS(/MD)  #  -l409
 ELSE(MSVC)
     ADD_COMPILE_OPTIONS(-fno-rtti)
     MESSAGE(STATUS "Compilling without rtti -fno-rtti")
@@ -17,11 +19,11 @@ IF(${CMAKE_BUILD_TYPE} MATCHES "Debug")
     MESSAGE(STATUS "Building Debug Version")
 ELSE()
     MESSAGE(STATUS "Building Release Version")
-    if (MSVC)
-        ADD_COMPILE_OPTIONS(/O2)
-    ELSE(MSVC)
-        ADD_COMPILE_OPTIONS(-O2)
-    ENDIF(MSVC)
+    #if (MSVC)
+    #    ADD_COMPILE_OPTIONS(/O2)
+    #ELSE(MSVC)
+    #    ADD_COMPILE_OPTIONS(-O2)
+    #ENDIF(MSVC)
 ENDIF()
 
 # specify where compiled files must go
@@ -85,8 +87,15 @@ FIND_PACKAGE(gtest QUIET)
 #ENDIF()
 
 # Configuration
-FIND_PACKAGE(SFML 2 COMPONENTS system window graphics audio)
-FIND_PACKAGE(OpenGL)
+# FIND_PACKAGE(SFML 2 COMPONENTS system window graphics audio)
+# FIND_PACKAGE(OpenGL)
+
+SET(SDL2_PATH ./dependencies/SDL)
+SET(SDL2_TTF_PATH ./dependencies/SDL_ttf)
+
+SET(SDL2_BUILDING_LIBRARY ON)
+FIND_PACKAGE(SDL2 REQUIRED)
+FIND_PACKAGE(SDL2_ttf)
 
 # Find revision ID and hash of the sourcetree
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
@@ -98,7 +107,9 @@ INCLUDE(cmake/genrev.cmake)
 # Dependencies to be compiled
 ADD_SUBDIRECTORY(dependencies)
 
+
 # How to compile main lib
+# =========================
 ADD_SUBDIRECTORY(src)
 
 # Compile tests ?

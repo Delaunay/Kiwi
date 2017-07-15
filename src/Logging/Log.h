@@ -33,10 +33,15 @@ public:
     void log(LogLevel level, std::string file,
              std::string function, int line, const Args& ... args)
     {
+#define BIG_SCREEN ":"
+#define SMALL_SCREEN "\n\t"
+#define FILE_SEPARATOR BIG_SCREEN
+#define MSG_SEPARATOR "\t"
+
         if (log_level <= level)
             print(out,
-                  date(), " ", get_string(level), pretty_file(file), ":",
-                  function, ":l", line, "\t", args...) << std::endl;
+                  date(), " ", get_string(level), pretty_file(file), FILE_SEPARATOR,
+                  function, ":", line, MSG_SEPARATOR, args...) << std::endl;
     }
 
     template<typename... Args>
@@ -155,7 +160,7 @@ private:
 #define GET_FUN_NAME GET_FUN_NAME_SHORT
 
 #define LOG_INTERNAL(level, ...)\
-    kiwi::Log::instance().log(level, __FILE__, GET_FUN_NAME, __LINE__,  __VA_ARGS__)
+    kiwi::Log::instance().log(kiwi::level, __FILE__, GET_FUN_NAME, __LINE__,  __VA_ARGS__)
 
 #define log_warn(...)  LOG_INTERNAL(LogLevel::warn,  __VA_ARGS__)
 #define log_info(...)  LOG_INTERNAL(LogLevel::info,  __VA_ARGS__)

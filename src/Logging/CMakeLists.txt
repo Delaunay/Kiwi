@@ -1,5 +1,4 @@
-
-SET(LOGGING_SRC
+﻿SET(LOGGING_SRC
     Log.h
     Log.cpp
 )

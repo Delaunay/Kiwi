@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // USER IMPLEMENTATION
 // This file contains compile-time options for ImGui.
 // Other options (memory allocation overrides, callbacks, etc.) can be set at runtime via the ImGuiIO structure - ImGui::GetIO().
@@ -55,6 +55,7 @@ namespace ImGui
 }
 */
 
+/*
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/Color.hpp>
 
@@ -82,3 +83,4 @@ namespace ImGui
             static_cast<sf::Uint8>(w * 255.f));                         \
     }
 
+*/

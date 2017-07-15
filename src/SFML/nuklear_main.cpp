@@ -1,6 +1,4 @@
-/*#include "Window.h"
-
-
+﻿/*#include "Window.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
@@ -67,41 +65,95 @@ public:
 
 
 //#include "NuklearWindow.h"
+/*
 #include "SFMLWindow.h"
 
 #include "../Logging/Log.h"
 
 class App : public kiwi::SFMLWindow<App>{
 
-};
+};*/
+
+//kiwi::NuklearWindow app;
+
+/*
+log_warn("Doing weird stuff");
+log_trace("Doing weird stuff");
+log_error("Doing weird stuff");
+log_info("Doing weird stuff");
+log_debug("Doing weird stuff");
+
+for(int i = 0; i < 7; ++i)
+    log_rec(i, "Doing weird stuff");
+
+for(int i = 0; i < 8; ++i)
+    log_rec(7 - i, "Doing weird stuff");
+
+
+
+App app;
+
+app.init();
+
+app.run();
+
+*/
+
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+#include <iostream>
 
 int main(){
+    if (SDL_Init(SDL_INIT_VIDEO) != 0){
+        std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        return 1;
+    }
 
-    //kiwi::NuklearWindow app;
+    SDL_Window *win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
+    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    if (ren == nullptr){
+        SDL_DestroyWindow(win);
+        std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
 
     /*
-    log_warn("Doing weird stuff");
-    log_trace("Doing weird stuff");
-    log_error("Doing weird stuff");
-    log_info("Doing weird stuff");
-    log_debug("Doing weird stuff");
-
-    for(int i = 0; i < 7; ++i)
-        log_rec(i, "Doing weird stuff");
-
-    for(int i = 0; i < 8; ++i)
-        log_rec(7 - i, "Doing weird stuff");
-    */
-
-
-    App app;
-
-    app.init();
-
-    app.run();
+    SDL_Event e;
+    bool quit = false;
+    while (!quit){
+        while (SDL_PollEvent(&e)){
+            if (e.type == SDL_QUIT){
+                quit = true;
+            }
+        }
+        //Render the scene
+        SDL_RenderClear(ren);
+        //renderTexture(image, ren, x, y);
+        SDL_RenderPresent(ren);
+    }*/
 
 
+    SDL_Event e;
+    bool quit = false;
+    while(!quit && SDL_WaitEvent(&e)){
+        if (e.type == SDL_QUIT){
+            quit = true;
+        }
 
+        SDL_RenderClear(ren);
+        //renderTexture(image, ren, x, y);
+        SDL_RenderPresent(ren);
+    }
+
+
+
+    if (win == nullptr){
+        std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
     return 0;
 }
 

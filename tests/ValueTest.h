@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <gtest/gtest.h>
 #include "AST/LightAST.h"
@@ -16,5 +16,4 @@ TEST(Value, val)
     std::cout << std::endl;
     LightAST::Value("hello").dump(std::cout);
     std::cout << std::endl;
-
 }
