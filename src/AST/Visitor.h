@@ -27,6 +27,7 @@ public:
         switch(x->tag){
     #define X(name, object)\
         case NodeTag::name:{\
+            log_trace(#name);\
             object* exp = static_cast<object*>(x);\
             return static_cast<Visitor&>(*this).name(exp, args...);\
         }

@@ -40,7 +40,7 @@ public:
 
         if (log_level <= level)
             print(out,
-                  date(), " ", get_string(level), pretty_file(file), FILE_SEPARATOR,
+                  date(), get_string(level), pretty_file(file), FILE_SEPARATOR,
                   function, ":", line, MSG_SEPARATOR, args...) << std::endl;
     }
 

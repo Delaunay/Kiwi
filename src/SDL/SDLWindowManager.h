@@ -10,6 +10,12 @@
 #include "SDLWindow.h"
 #include "String.h"
 
+#include <unordered_map>
+#include <list>
+
+//#undef log_info
+//#define log_info(...)
+
 
 typedef TTF_Font SDL_Font;
 
@@ -17,11 +23,13 @@ namespace kiwi{
 class WindowManager{
 private:
     WindowManager(){
+        log_trace("Window Manager is being initialized");
         CHECK(SDL_Init(SDL_INIT_VIDEO));
         CHECK(TTF_Init());
 
         //SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+        log_trace("Window Manager was initialized");
     }
 
 public:
@@ -35,13 +43,15 @@ public:
         return c;
     }
 
-    static SDLWindow new_window(const String& str, i32 x, i32 y, i32 w, i32 h, u32 flag = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE){
-        return WindowManager::manager().make_window(str, x, y, w, h, flag);
+    template<typename T>
+    static T* new_window(const String& str, i32 x, i32 y, i32 w, i32 h, u32 flag = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE){
+        return WindowManager::manager().make_window<T>(str, x, y, w, h, flag);
     }
 
-    static SDLWindow new_window(const String& str, i32 w, i32 h, u32 flag = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE){
+    template<typename T>
+    static T* new_window(const String& str, i32 w, i32 h, u32 flag = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE){
         return WindowManager::manager().
-                make_window(str, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag);
+                make_window<T>(str, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flag);
     }
 
     void window_exposed(u32 id){
@@ -50,26 +60,47 @@ public:
 
     void window_mouse_enter(u32 id){
         log_info("mouse_enter ", id);
-        SDL_SetWindowTitle(_mouse_focus_window, "Not In Focus");
-        _mouse_focus_window = _windows[id];
-        SDL_SetWindowTitle(_mouse_focus_window, get_state(id));
+
+        if (mouse_focus())
+            SDL_SetWindowTitle(smouse_focus(), "Not In Focus");
+
+        set_mouse_focus(window(id));
+        SDL_SetWindowTitle(smouse_focus(), get_state(id));
     }
 
     void window_mouse_leave(u32 id){
         log_info("mouse_leave ", id);
-        SDL_SetWindowTitle(_mouse_focus_window, get_state(id));
+
+        if (mouse_focus())
+            SDL_SetWindowTitle(smouse_focus(), get_state(id));
     }
 
     void window_gained_focus(u32 id){
         log_info("gained_focus ", id);
-        SDL_SetWindowTitle(_keyboard_focus_window, "Not In Focus");
-        _keyboard_focus_window = _windows[id];
-        SDL_SetWindowTitle(_keyboard_focus_window, get_state(id));
+
+        if (keyboard_focus())
+            SDL_SetWindowTitle(skeyboard_focus(), "Not In Focus");
+
+        set_keyboard_focus(window(id));
+        SDL_SetWindowTitle(skeyboard_focus(), get_state(id));
     }
     void window_lost_focus(u32 id){
         log_info("lost_focus ", id);
-        SDL_SetWindowTitle(_keyboard_focus_window, get_state(id));
+        SDL_SetWindowTitle(*window(id), "Not In Focus");
     }
+
+    void set_keyboard_focus(SDLWindow* w) { _keyboard_focus_window = w;}
+    void set_mouse_focus(SDLWindow* w)    { _mouse_focus_window = w;}
+
+    SDLWindow* keyboard_focus(){ return _keyboard_focus_window; }
+    SDLWindow* mouse_focus()   { return _mouse_focus_window; }
+    SDLWindow* window(u32 id)  {
+        log_info("get id");
+        return _windows[id];
+    }
+
+    SDL_Window* skeyboard_focus(){ return *_keyboard_focus_window; }
+    SDL_Window* smouse_focus()   { return *_mouse_focus_window; }
 
     void window_shown(u32 id){
         log_info("shown ", id);
@@ -100,18 +131,46 @@ public:
 
     void window_close(u32 id){
         log_info("close ", id);
-        SDL_HideWindow(_keyboard_focus_window);
-        _visible_windows -= 1;
 
-        if (_visible_windows == 0)
-            _is_running = false;
+        // you can close with keyboard shortcut
+        if (keyboard_focus() || mouse_focus()){
+
+            SDLWindow* target = window(id);
+            SDL_HideWindow(*target);
+
+            //*
+            delete target;
+            _windows.erase(id);//*/
+            _visible_windows -= 1;
+
+
+            if (keyboard_focus() == target){
+                _keyboard_focus_window = nullptr;
+            }
+            if (mouse_focus() == target){
+                _mouse_focus_window = nullptr;
+            }
+            if (_visible_windows == 0)
+                _is_running = false;
+        }
+
+        log_info("close - done");
     }
     void window_take_focus(u32 id){
         log_info("take_focus ", id);
     }
 
+
     void handle_window_event(SDL_WindowEvent event){
-        u32 id = event.windowID - 1;
+        u32 id = event.windowID;
+        SDLWindow* w = _windows[id];
+
+        if (!w){
+            return;
+        }
+
+        w->handle_window(event);
+
         switch(event.event){
             case SDL_WINDOWEVENT_EXPOSED     : return window_exposed(id);
 
@@ -137,14 +196,15 @@ public:
             case SDL_WINDOWEVENT_TAKE_FOCUS  : return window_take_focus(id);
             //case SDL_WINDOWEVENT_HIT_TEST:
         }
+        log_info("unhandled window event");
     }
 
     const char* get_state(u32 id){
-        if (_windows[id] == _mouse_focus_window && _windows[id] == _keyboard_focus_window)
+        if (window(id) == mouse_focus() && window(id) == keyboard_focus())
             return "Mouse & Keyboard";
-        if (_windows[id] == _mouse_focus_window)
+        if (window(id) == mouse_focus())
             return "Mouse";
-        if (_windows[id] == _keyboard_focus_window)
+        if (window(id) == keyboard_focus())
             return "Keyboard";
         return "Not in Focus";
     }
@@ -156,40 +216,51 @@ public:
         SDL_Event event;
         while(is_running() && SDL_WaitEvent(&event)){
             switch (event.type){
-            case SDL_WINDOWEVENT:
+            case SDL_WINDOWEVENT:{
                 handle_window_event(event.window);
                 break;
+            }
 
             case SDL_MOUSEMOTION:
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
-            case SDL_MOUSEWHEEL:
-                _mouse_focus_window.handle_event(event);
-                _mouse_focus_window.render();
+            case SDL_MOUSEWHEEL:{
+                if (mouse_focus()){
+                    mouse_focus()->handle_event(event);
+                    mouse_focus()->render();
+                }
                 break;
-
+            }
             case SDL_DROPFILE:
             case SDL_DROPTEXT:
             case SDL_DROPBEGIN:
-            case SDL_DROPCOMPLETE:
+            case SDL_DROPCOMPLETE:{
+                if (mouse_focus()){
+                    mouse_focus()->handle_event(event);
+                    mouse_focus()->render();
+                }
                 SDL_free(event.drop.file);
                 break;
-
+            }
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                _keyboard_focus_window.handle_event(event);
-                _keyboard_focus_window.render();
-                break;
-
-            // SDL_SetTextInputRect
-            // SDL_StartTextInput
-            // SDL_StopTextInput
-            // Char by char
             case SDL_TEXTEDITING:
-
-            // Grouped input
-            case SDL_TEXTINPUT:
+            case SDL_TEXTINPUT:{
+                if (keyboard_focus()){
+                    keyboard_focus()->handle_event(event);
+                    keyboard_focus()->render();
+                    break;
+                }
                 break;
+            }
+            case SDL_QUIT:
+                log_info("SDL_QUIT");
+                break;
+
+            default:
+                log_info("unhandled event");
+                break;
+
             }
         }
     }
@@ -202,28 +273,29 @@ public:
         _is_running = false;
     }
 
-    SDLWindow last(){
-        return _windows[_windows.size() - 1];
-    }
 
-    SDLWindow emplace_back(SDL_Window* win){
-        _windows.push_back(win);
-        return last();
+    template<typename T>
+    T* push_back(SDL_Window* win){
+        // _windows.push_back(new T(win));
+        T* e = new T(win);
+        _windows[SDL_GetWindowID(win)] = e;
+        return e;
     }
 
 private:
-    SDLWindow make_window(const String& str, i32 x, i32 y, i32 w, i32 h, u32 flag){
+    template<typename T>
+    T* make_window(const String& str, i32 x, i32 y, i32 w, i32 h, u32 flag){
         SDL_Window* sdlwin = CHECK(SDL_CreateWindow(str, x, y, w, h, flag));
-        SDLWindow win = emplace_back(sdlwin);
-        log_debug("Window ID: ", win.id());
+        T* win = push_back<T>(sdlwin);
+        log_debug("Window ID: ", win->id());
         _visible_windows += 1;
         return win;
     }
 
     bool _is_running = false;
-    std::vector<SDLWindow> _windows;
-    SDLWindow _mouse_focus_window;
-    SDLWindow _keyboard_focus_window;
+    std::unordered_map<int, SDLWindow*> _windows;
+    SDLWindow* _mouse_focus_window = nullptr;
+    SDLWindow* _keyboard_focus_window = nullptr;
     u32 _visible_windows = 0;
 };
 

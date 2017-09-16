@@ -7,3 +7,6 @@
 [submodule "dependencies/SDL"]
 	path = dependencies/SDL
 	url = https://github.com/spurious/SDL-mirror.git
+[submodule "dependencies/eigen"]
+	path = dependencies/eigen
+	url = https://github.com/RLovelett/eigen.git

@@ -1,4 +1,5 @@
 ﻿INCLUDE_DIRECTORIES(../../dependencies/SDL/include)
+INCLUDE_DIRECTORIES(../../dependencies/eigen)
 INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${SDL2_TTF_INCLUDE_DIR})
 
@@ -6,6 +7,10 @@ SET(SDL_SRC
     Point.h
     String.h
     String.cpp
+    RenderNode.h
+    RenderTreeVisitor.h
+    RenderEngine.h
+    StyleManager.h
     SDLEvent.h
     SDLEvent.cpp
     SDLString.h
@@ -17,8 +22,6 @@ SET(SDL_SRC
     SDLWindow.h
     SDLWindow.cpp
     SDLMain.cpp)
-
-MESSAGE(STATUS ${SDL2_LIBRARY})
 
 SET(${CXX_STANDARD_REQUIRED} ON)
 ADD_EXECUTABLE(sdl_main ${SDL_SRC})

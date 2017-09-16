@@ -9,8 +9,12 @@
 #   include <SDL_ttf.h>
 #endif
 
+#include "SDLHelper.h"
 #include "String.h"
 #include "Point.h"
+
+#undef log_trace
+#define log_trace(...)
 
 namespace kiwi{
 
@@ -25,51 +29,79 @@ enum RenderingType{
 struct SDLString{
 public:
     SDL_Surface* render_utf8(RenderingType kind, const String& txt, SDL_Font* font, SDL_Color color){
+        CHECK(font);
         switch(kind){
-        case RenderingType::Solid  : return TTF_RenderUTF8_Solid(font, txt, color);
-        case RenderingType::Blended: return TTF_RenderUTF8_Blended(font, txt, color);
-        case RenderingType::Shaded : return TTF_RenderUTF8_Shaded(font, txt, color, {0, 0, 0});
+        case RenderingType::Solid  : return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
+        case RenderingType::Blended: return CHECK(TTF_RenderUTF8_Blended(font, txt, color));
+        case RenderingType::Shaded : return CHECK(TTF_RenderUTF8_Shaded(font, txt, color, {0, 0, 0}));
         }
-        return TTF_RenderUTF8_Solid(font, txt, color);
+        return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
     }
 
     SDL_Surface* render_utf8(RenderingType kind, const String& txt, SDL_Font* font, SDL_Color color, SDL_Color color_bg){
+        CHECK(font);
         switch(kind){
-        case RenderingType::Solid  : return TTF_RenderUTF8_Solid(font, txt, color);
-        case RenderingType::Blended: return TTF_RenderUTF8_Blended(font, txt, color);
-        case RenderingType::Shaded : return TTF_RenderUTF8_Shaded(font, txt, color, color_bg);
+        case RenderingType::Solid  : return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
+        case RenderingType::Blended: return CHECK(TTF_RenderUTF8_Blended(font, txt, color));
+        case RenderingType::Shaded : return CHECK(TTF_RenderUTF8_Shaded(font, txt, color, color_bg));
         }
-        return TTF_RenderUTF8_Solid(font, txt, color);
+        return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
     }
 
-    SDLString(const char* txt, SDL_Font* font, SDL_Color color):
-        txt(txt), surface(render_utf8(Blended, txt, font, color))
-    {
-        TTF_SizeText(font, txt, &width, &height);
+    static SDL_Font* default_font(){
+        static SDL_Font* font = CHECK(TTF_OpenFont(HOME "DejaVuSansMonoPowerline.ttf", 24));
+        return font;
     }
+
+    template<typename T>
+    SDLString(const T& txt, SDL_Color color, SDL_Font* font = default_font()):
+        txt(txt), surface(render_utf8(Blended, string(), font, color))
+    {
+        log_trace("Creating String, ");
+        TTF_SizeText(font, string(), &_width, &_height);
+    }
+
+    SDLString(SDLString&& str):
+        txt(std::move(str.txt)), surface(str.surface),
+        _width(str._width), _height(str._height)
+    {
+        SDL_DestroyTexture(str.texture);
+        str.surface = nullptr;
+        str.texture = nullptr;
+    }
+
+    SDLString(const SDLString &str) = delete;
 
     ~SDLString(){
         SDL_FreeSurface(surface);
         SDL_DestroyTexture(texture);
     }
 
-    void render(SDL_Renderer *renderer, Point2i pos){
+    void render(SDL_Renderer *renderer, Point2i pos) const{
         SDL_Rect box;
         box.x = pos.x;
         box.y = pos.y;
-        box.w = width;
-        box.h = height;
+        box.w = _width;
+        box.h = _height;
 
+        log_trace("Creating texture ", string());
+        SDL_DestroyTexture(texture);
         texture = CHECK(SDL_CreateTextureFromSurface(renderer, surface));
+        log_trace("Texture created");
         CHECK(SDL_RenderCopy(renderer, texture, NULL, &box));
     }
 
+    int width()   const { return _width;  }
+    int height()  const { return _height; }
+
+    const char* string()  const { return txt.c_str(); }
+
 private:
-    const char  *txt     = nullptr;
+    std::string txt;
     SDL_Surface *surface = nullptr;
-    SDL_Texture *texture = nullptr;
-    int width = 0;
-    int height = 0;
+    mutable SDL_Texture *texture = nullptr;
+    int _width = 0;
+    int _height = 0;
 };
 
 }
