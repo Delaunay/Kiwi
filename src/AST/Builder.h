@@ -68,47 +68,88 @@ public:
         return new Builtin(name);
     }
 
+
+	bool is_zero(f64 value) {
+		return std::abs(as<f64>(value)) <= 1e-12;
+	}
+
+	bool is_one(f64 value) {
+		return is_zero(value - 1);
+	}
+
     static Parent add(const Parent& lhs, const Parent& rhs){
-        // Constant folding
+        /*/ Constant folding
         if (lhs->tag == NodeTag::value){
             Value* vlhs = static_cast<Value*>(lhs.get());
-            if (std::abs(as<f64>(vlhs)) <= 1e-12){
+            if (is_zero(as<f64>(vlhs))){
                 return rhs;
             }
 
             if (rhs->tag == NodeTag::value){
                 Value* vrhs = static_cast<Value*>(rhs.get());
-                return new Value(as<f64>(vrhs) + as<f64>(vlhs));
+                return value(as<f64>(vrhs) + as<f64>(vlhs));
             }
         }
 
         if (rhs->tag == NodeTag::value){
             Value* vrhs = static_cast<Value*>(rhs.get());
-            if (std::abs(as<f64>(vrhs)) <= 1e-12){
+            if (is_zero(as<f64>(vrhs))){
                 return lhs;
             }
-        }
+        }*/
 
-        Parent root = new BinaryCall("+",
-                                     lhs.take_ownership(),
-                                     rhs.take_ownership());
-
+        Parent root = new BinaryCall("+", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
+
     static Parent mult(const Parent& lhs, const Parent& rhs){
+		/*/ Constant folding
+		if (lhs->tag == NodeTag::value) {
+			Value* vlhs = static_cast<Value*>(lhs.get());
+			f64 flhs = as<f64>(vlhs);
+
+			if (is_one(flhs)) {
+				return rhs;
+			}
+
+			if (is_zero(flhs)) {
+				return value(0);
+			}
+
+			if (rhs->tag == NodeTag::value) {
+				Value* vrhs = static_cast<Value*>(rhs.get());
+				return value(as<f64>(vrhs) * flhs);
+			}
+		}
+
+		if (rhs->tag == NodeTag::value) {
+			Value* vrhs = static_cast<Value*>(rhs.get());
+			f64 frhs = as<f64>(vrhs);
+
+			if (is_one(frhs)) {
+				return lhs;
+			}
+
+			if (is_zero(frhs)) {
+				return value(0);
+			}
+		}*/
+
         Parent root = new BinaryCall("*", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
+
     static Parent div(const Parent& lhs, const Parent& rhs){
         Parent root = new BinaryCall("/", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
+
     static Parent sub(const Parent& lhs, const Parent& rhs){
         Parent root = new BinaryCall("-", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);

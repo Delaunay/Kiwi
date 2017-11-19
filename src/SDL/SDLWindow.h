@@ -44,7 +44,7 @@ public:
     }
 
     void handle_event(const SDL_Event& event){
-        log_info("event handling");
+        //log_info("event handling");
         switch (event.type){
         case SDL_MOUSEWHEEL:      return handle_mouse_wheel(event.wheel);
 

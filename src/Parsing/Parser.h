@@ -7,9 +7,9 @@
 #undef log_trace
 #define log_trace(...)
 
-#define EXPECT(c, message)\
+#define EXPECT(c, ...)\
     if (tok.type() != c){\
-        log_error(message);\
+        log_error(__VA_ARGS__);\
     }
 
 namespace kiwi{
@@ -32,6 +32,13 @@ public:
         return _lexer.peek();
     }
 
+
+	/*/ Top level declarations
+	Root parse_declaration() {
+	
+
+	}*/
+
     // not tested
     Root parse_function(int i){
         log_cdebug(i, "");
@@ -40,32 +47,77 @@ public:
         Token tok = _lexer.peek();
 
         EXPECT(tok_def, "not a function");
-
         tok = nexttok();
-        EXPECT(tok_identifier, "expected function name");
 
+        EXPECT(tok_identifier, "expected function name");
         std::string name = tok.identifier();
+
         Tree::Function* fun = static_cast<Tree::Function*>(
                     RBuilder::function(name, nullptr).get());
 
         tok = nexttok();
-        EXPECT('(', "'(' expected");
+		
+        EXPECT('(', "expected '(' got '", tok.type(), "'");
         tok = nexttok();
 
+		Expression::Args args;
+
+		// FIXME missing )
         while(tok.type() != ')'){
-            EXPECT(tok_identifier, "expected arg name");
-            fun->args.push_back(tok.identifier());
-            tok = nexttok();
 
-            if (tok.type() == ',')
-                tok = nexttok();
+            //EXPECT(tok_identifier, "expected arg name");
+
+			// handle the case where no values are present after a ','
+            if (tok.type() == tok_identifier){
+				fun->args.push_back(tok.identifier());
+				tok = nexttok();
+
+				// Type annotation is optional
+				if (tok.type() == ':') {
+					tok = nexttok();
+
+					EXPECT(tok_identifier, "expected type name");
+					log_info("Type is `", tok.identifier(), "`");
+					args.push_back(new Tree::Type(tok.identifier()));
+
+					tok = nexttok();
+				}
+
+				// Has next ?
+				if (tok.type() == ',')
+					tok = nexttok();
+			}
         }
+		EXPECT(')', "expected ')' got, '", tok.type(), "'");
+		tok = nexttok();
 
-        EXPECT(':', "':' expected");
-        tok = nexttok();
+		//std::cout << "========================================================\n";
+		//std::cout << tok.type() << std::endl;
 
-        EXPECT(tok_newline, "new line expected");
+		// return type annotation
+		if (tok.type() == tok_arrow){
+			tok = nexttok();
+			EXPECT(tok_identifier, "expected type name, got '", tok.type(), "'");
+			log_info("Type is `", tok.identifier(), "`");
+
+			fun->type = reinterpret_cast<Tree::Arrow*>(RBuilder::arrow(args, RBuilder::builtin(tok.identifier())).take_ownership());
+			tok = nexttok();
+
+			//std::cout << int(fun->type) << std::endl;
+
+			std::cout << "========================================" << std::endl;
+			std::stringstream ss;
+			print_expr(ss, fun->type);
+			std::cout << ss.str() << std::endl << "========================================";
+		}
+
+        EXPECT(':', "':' expected, got '", int(tok.type()), "'");
         tok = nexttok();
+        EXPECT(tok_newline, "new line expected, got'", tok.type(), "'");
+
+        tok = nexttok();
+		EXPECT(tok_indent, "indent expected, got'", int(tok.type()), "'");
+		tok = nexttok();
 
         Root body = parse(i + 1);
         fun->body = body;
@@ -113,16 +165,19 @@ public:
         if (tok.type() == '+'){
             _lexer.consume();
             return parse_add(i + 1, lhs);
-        } else {
+        } // FIXME 
+		else {
             log_trace(tok);
-            log_error("Is not a correct op");
+            log_error("`", int(tok.type()), "` is not a correct op");
 
             if (lhs.get() == nullptr){
                 log_error("nullptr");
-            }
-            print_expr(std::cout, lhs);
-            std::cout << std::endl;
+            } else {
+				//print_expr(std::cout, lhs);
+				//std::cout << std::endl;
+			}
         }
+
         return lhs;
     }
 

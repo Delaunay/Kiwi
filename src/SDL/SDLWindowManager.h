@@ -95,7 +95,7 @@ public:
     SDLWindow* keyboard_focus(){ return _keyboard_focus_window; }
     SDLWindow* mouse_focus()   { return _mouse_focus_window; }
     SDLWindow* window(u32 id)  {
-        log_info("get id");
+        //log_info("get id");
         return _windows[id];
     }
 

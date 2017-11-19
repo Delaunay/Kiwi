@@ -22,8 +22,6 @@ typedef double float64;
 
 typedef unsigned char uchar;
 
-
-
 typedef std::uint64_t u64;
 typedef std::int64_t i64;
 

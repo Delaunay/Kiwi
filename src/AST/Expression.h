@@ -74,6 +74,9 @@ T acess(T* ptr){
 
 class Expression{
 public:
+	//typedef typename std::string Identifier;
+
+
     typedef typename std::string              StringType;
     typedef typename std::vector<Expression*> Args;
     typedef typename std::vector<StringType>  ArgNames;
@@ -83,9 +86,13 @@ public:
         return StringType(str);
     }
 
-    static StringType make_keyword(const std::string& str){
-        return StringType(str);
-    }
+	static StringType make_keyword(const std::string& str) {
+		return StringType(str);
+	}
+
+	static StringType make_type_name(const std::string& str) {
+		return StringType(str);
+	}
 
     static StringType make_placeholder_name(const std::string& str){
         return StringType(str);
@@ -116,6 +123,24 @@ public:
     NodeTag tag;
     PARENT(Expression* parent = nullptr;)
 };
+
+/*
+class KiwiObject {
+public:
+	typedef std::unordered_map<std::string, KiwiObject> AttributeTable;
+
+	bool is_callable() {
+		return _attributes.count("__callable__") == 1;
+	}
+
+	const AttributeTable& attributes() {
+		return _attributes;
+	}
+
+private:
+	AttributeTable _attributes;
+};*/
+
 
 namespace generic{
 

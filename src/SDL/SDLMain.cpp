@@ -34,9 +34,7 @@ public:
     }
 };
 
-
-
-
+#include "../Parsing/Optional.h"
 
 int main(){
 
@@ -50,7 +48,6 @@ int main(){
     log_debug("Done!");
     return 0;
 }
-
 
 namespace kiwi{
 

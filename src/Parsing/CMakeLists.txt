@@ -1,4 +1,4 @@
-
+﻿
 SET(LEXER_SRC
     Parsing.h
     Stream.h
@@ -10,6 +10,8 @@ SET(LEXER_SRC
     Lexer.cpp
     Parser.h
     Parser.cpp
+    Expected.h
+    Optional.h
 )
 
 SET(${CXX_STANDARD_REQUIRED} ON)

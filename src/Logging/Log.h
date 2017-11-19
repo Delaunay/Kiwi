@@ -7,6 +7,7 @@
 #include <string>
 
 #include <algorithm>
+#include <regex>
 
 #include "../Format.h"
 
@@ -33,15 +34,15 @@ public:
     void log(LogLevel level, std::string file,
              std::string function, int line, const Args& ... args)
     {
-#define BIG_SCREEN ":"
+#define BIG_SCREEN " "
 #define SMALL_SCREEN "\n\t"
 #define FILE_SEPARATOR BIG_SCREEN
-#define MSG_SEPARATOR "\t"
+#define MSG_SEPARATOR " "
 
         if (log_level <= level)
             print(out,
                   date(), get_string(level), pretty_file(file), FILE_SEPARATOR,
-                  function, ":", line, MSG_SEPARATOR, args...) << std::endl;
+				  simplify_function_name(function), " ", line, MSG_SEPARATOR, args...) << std::endl;
     }
 
     template<typename... Args>
@@ -50,9 +51,19 @@ public:
     {
         if (log_level <= level)
             print(out,
-                  get_string(level), pretty_depth(depth), pretty_file(file), ":",
-                  function, ":l", line, "\t", args...) << std::endl;
+                  get_string(level), pretty_depth(depth), pretty_file(file), " ",
+				  simplify_function_name(function), ":", line, " ", args...) << std::endl;
     }
+
+	std::string simplify_function_name(const std::string& function) {
+		// Match namespace like name `kiwi::Class::method`
+		std::regex e("([A-Za-z])[A-Za-z0-9]*::");
+
+		std::string result;
+		std::regex_replace(std::back_inserter(result), function.begin(), function.end(), e, "$1.");
+
+		return result;
+	}
 
     static std::string date(){
         static std::string date_buffer = std::string(20, ' ');
@@ -156,7 +167,9 @@ private:
 #else
 #   define GET_FUN_NAME_EXT __PRETTY_FUNCTION__
 #endif
+
 #define GET_FUN_NAME_SHORT __FUNCTION__
+
 #define GET_FUN_NAME GET_FUN_NAME_SHORT
 
 #define LOG_INTERNAL(level, ...)\

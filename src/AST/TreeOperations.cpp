@@ -67,12 +67,31 @@ public:
 
         if (n >= 0){
             for(int i = 0; i < n; ++i){
-                out << x->arg(i) << ", ";
+
+				out << x->arg(i);
+				if (x->type) {
+					out << ": ";
+					traverse(x->type->arg(i), indentation);
+				}
+
+				out << ", ";
             }
             out << x->arg(n);
+			if (x->type) {
+				out << ": ";
+				traverse(x->type->arg(n), indentation);
+			}
         }
 
-        out << "):\n" << std::string(indentation * 4, ' ');
+		out << ")";
+
+		if (x->type) {
+			out << " -> ";
+			traverse(x->type->return_type, indentation);
+		}
+
+		out << ":\n" << std::string(indentation * 4, ' ');
+
         traverse(x->body, indentation + 1);
     }
 
