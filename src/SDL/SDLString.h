@@ -31,30 +31,34 @@ public:
     SDL_Surface* render_utf8(RenderingType kind, const String& txt, SDL_Font* font, SDL_Color color){
         CHECK(font);
         switch(kind){
-        case RenderingType::Solid  : return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
-        case RenderingType::Blended: return CHECK(TTF_RenderUTF8_Blended(font, txt, color));
-        case RenderingType::Shaded : return CHECK(TTF_RenderUTF8_Shaded(font, txt, color, {0, 0, 0}));
+        case RenderingType::Solid  : return CHECK(TTF_RenderUTF8_Solid(font, txt.c_str(), color));
+        case RenderingType::Blended: return CHECK(TTF_RenderUTF8_Blended(font, txt.c_str(), color));
+        case RenderingType::Shaded : return CHECK(TTF_RenderUTF8_Shaded(font, txt.c_str(), color, {0, 0, 0}));
         }
-        return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
+        return CHECK(TTF_RenderUTF8_Solid(font, txt.c_str(), color));
     }
 
     SDL_Surface* render_utf8(RenderingType kind, const String& txt, SDL_Font* font, SDL_Color color, SDL_Color color_bg){
         CHECK(font);
         switch(kind){
-        case RenderingType::Solid  : return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
-        case RenderingType::Blended: return CHECK(TTF_RenderUTF8_Blended(font, txt, color));
-        case RenderingType::Shaded : return CHECK(TTF_RenderUTF8_Shaded(font, txt, color, color_bg));
+        case RenderingType::Solid  : return CHECK(TTF_RenderUTF8_Solid(font, txt.c_str(), color));
+        case RenderingType::Blended: return CHECK(TTF_RenderUTF8_Blended(font, txt.c_str(), color));
+        case RenderingType::Shaded : return CHECK(TTF_RenderUTF8_Shaded(font, txt.c_str(), color, color_bg));
         }
-        return CHECK(TTF_RenderUTF8_Solid(font, txt, color));
+        return CHECK(TTF_RenderUTF8_Solid(font, txt.c_str(), color));
     }
 
-    static SDL_Font* default_font(){
+    static SDL_Font* default_font() {
         static SDL_Font* font = CHECK(TTF_OpenFont(HOME "DejaVuSansMonoPowerline.ttf", 24));
         return font;
     }
 
+    static SDL_Color default_color() {
+        return SDL_Color{255, 255, 255};
+    }
+
     template<typename T>
-    SDLString(const T& txt, SDL_Color color, SDL_Font* font = default_font()):
+    SDLString(const T& txt, SDL_Color color = default_color(), SDL_Font* font = default_font()):
         txt(txt), surface(render_utf8(Blended, string(), font, color))
     {
         log_trace("Creating String, ");

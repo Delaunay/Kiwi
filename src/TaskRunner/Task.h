@@ -27,7 +27,7 @@ public:
     if (status() != Status::PENDING)
       return None
 
-          set_status(Status::RUNNING);
+    set_status(Status::RUNNING);
     _start = std::chrono::high_resolution_clock::now();
     Output out = run(in);
     _end = std::chrono::high_resolution_clock::now();

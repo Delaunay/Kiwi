@@ -6,7 +6,9 @@
 
 SET(TASK_RUNNER_SRC
     Task.h
-    main.cpp)
+    main.cpp
+    reddit.cpp
+)
 
 SET(${CXX_STANDARD_REQUIRED} ON)
 ADD_EXECUTABLE(task_main ${TASK_RUNNER_SRC})

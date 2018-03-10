@@ -8,76 +8,77 @@
 
 namespace kiwi {
 
-template<typename T, typename Tree>
+template<typename NodeTrait>
 class Builder{
 public:
-    typedef T Parent;
-    typedef typename T::ptr_type Expr;
+    NODE_TYPES;
 
-    typedef typename Tree::Call Call;
-    typedef typename Tree::Node Node;
-    #define X(name, object) typedef typename Tree::object object;
-        KIWI_AST_NODES
-    #undef X
-
-    static Parent function(const std::string op, const Parent& body){
-        Function* root = new Function(op, body.take_ownership());
+    using ExpressionPtr = generic::Root<Expression<NodeTrait>>;
+    using TypePtr = generic::Root<Type<NodeTrait>>;
+   
+    static ExpressionPtr function(const std::string op, const ExpressionPtr& body){
+        Function<NodeTrait>* root = new Function<NodeTrait>(op, body.take_ownership());
         // append_args(root, body.get());
         PARENT(body->parent = root);
-        return Parent(root);
+        return ExpressionPtr(root);
     }
 
-    static Parent function(const std::string op, const Parent& body, const Parent& type){
-        Function* root = new Function(op, body.take_ownership(), type.take_ownership());
+    static ExpressionPtr function(const std::string op, const ExpressionPtr& body, const TypePtr& type){
+        if (type) { assert(type->tag == NodeTypeTag::arrow && "Function Type is represented by an arrow"); }
+        
+        Arrow<NodeTrait>* arrow = static_cast<Arrow<NodeTrait>*>(type.take_ownership());
+
+        print_type(std::cout, arrow) << std::endl;
+        Function<NodeTrait>* root = new Function<NodeTrait>(op, body.take_ownership(), arrow);
+
         PARENT(body->parent = root);
-        return Parent(root);
+        PARENT(type->parent = root);
+        return ExpressionPtr(root);
     }
 
-    static Parent call(const std::string& op, std::vector<Expr> args){
-        return new FunctionCall(op, args);
+    static ExpressionPtr call(const std::string& op, std::vector<Expression<NodeTrait>*> args){
+        return ExpressionPtr(new FunctionCall<NodeTrait>(op, args));
     }
-    static Parent unary_call(const std::string& op, const Parent& expr){
-        return new UnaryCall(op, expr.take_ownership());
+    static ExpressionPtr unary_call(const std::string& op, const ExpressionPtr& expr){
+        return new UnaryCall<NodeTrait>(op, expr.take_ownership());
     }
-    static Parent binary_call(const std::string& op,
-                              const Parent& lhs, const Parent& rhs){
-        return new BinaryCall(op, lhs.take_ownership(), rhs.take_ownership());
-    }
-
-    static Parent error(const std::string& message){
-        return new ErrorNode(message);
+    static ExpressionPtr binary_call(const std::string& op, const ExpressionPtr& lhs, const ExpressionPtr& rhs){
+        return new BinaryCall<NodeTrait>(op, lhs.take_ownership(), rhs.take_ownership());
     }
 
-    static Parent value(double value){
-        return new Value(value);
+    static ExpressionPtr error(const std::string& message){
+        return new ErrorNode<NodeTrait>(message);
     }
 
-    static Parent placeholder(const std::string& name){
-        return new Placeholder(name);
+    static ExpressionPtr value(double value){
+        return new Value<NodeTrait>(value);
     }
 
-    static Parent borrow(const Parent& expr){
-        return new Borrow(expr.get());
+    static ExpressionPtr placeholder(const std::string& name){
+        return new Placeholder<NodeTrait>(name);
     }
 
-    static Parent arrow(std::vector<Node*> args, const Parent& return_type){
-        return new Arrow(args, return_type);
+    static ExpressionPtr borrow(const ExpressionPtr& expr){
+        return new Borrow<NodeTrait>(expr.get());
+    }
+    
+    static TypePtr arrow(std::vector<Type<NodeTrait>*> args, const TypePtr& return_type){
+        return new Arrow<NodeTrait>(args, return_type);
     }
 
-    static Parent builtin(const std::string& name){
-        return new Builtin(name);
+    static TypePtr builtin(const std::string& name){
+        return new Builtin<NodeTrait>(name);
     }
-
 
 	bool is_zero(f64 value) {
-		return std::abs(as<f64>(value)) <= 1e-12;
+		return std::abs(value) <= 1e-12;
 	}
 
 	bool is_one(f64 value) {
 		return is_zero(value - 1);
 	}
 
-    static Parent add(const Parent& lhs, const Parent& rhs){
+    static ExpressionPtr add(const ExpressionPtr& lhs, const ExpressionPtr& rhs){
         /*/ Constant folding
         if (lhs->tag == NodeTag::value){
             Value* vlhs = static_cast<Value*>(lhs.get());
@@ -98,13 +99,13 @@ public:
             }
         }*/
 
-        Parent root = new BinaryCall("+", lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = new BinaryCall<NodeTrait>("+", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
 
-    static Parent mult(const Parent& lhs, const Parent& rhs){
+    static ExpressionPtr mult(const ExpressionPtr& lhs, const ExpressionPtr& rhs){
 		/*/ Constant folding
 		if (lhs->tag == NodeTag::value) {
 			Value* vlhs = static_cast<Value*>(lhs.get());
@@ -137,21 +138,21 @@ public:
 			}
 		}*/
 
-        Parent root = new BinaryCall("*", lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = new BinaryCall<NodeTrait>("*", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
 
-    static Parent div(const Parent& lhs, const Parent& rhs){
-        Parent root = new BinaryCall("/", lhs.take_ownership(), rhs.take_ownership());
+    static ExpressionPtr div(const ExpressionPtr& lhs, const ExpressionPtr& rhs){
+        ExpressionPtr root = new BinaryCall<NodeTrait>("/", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
 
-    static Parent sub(const Parent& lhs, const Parent& rhs){
-        Parent root = new BinaryCall("-", lhs.take_ownership(), rhs.take_ownership());
+    static ExpressionPtr sub(const ExpressionPtr& lhs, const ExpressionPtr& rhs){
+        ExpressionPtr root = new BinaryCall<NodeTrait>("-", lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;

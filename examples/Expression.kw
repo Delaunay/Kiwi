@@ -1,0 +1,60 @@
+
+Type Expression(T: DataType, n: Size, m: Size, Expr<: Expression(T, n, m, _)):
+	pass
+	
+Type Matrix(T: DataType, n: Size, m: Size) 
+		<- Expression(T, n, m, Matrix(T, n, m))
+	
+	def __init__(self):
+		self._data = memory_alloc(T, n * m)
+		
+		
+	def eval(self, x: Offset, y: Offset) -> T:
+		return self._data[x + y * n]
+		
+
+Type SumExpression(T: DataType, n: Size, m: Size,
+				   A <: Expression(T, n, m, _), a: A, b: A
+		<- Expression(T, n, m, SumExpression(T, n, m, A, a, b)):
+	
+	def eval(self, x: Offset, y: Offset) -> T:
+		return a.eval(x, y) + b.eval(x, y)
+		
+		
+		
+		
+
+
+
+Type Expression(T: DataType, d: Size, shape: Vector(Size, d),  expr <: Expression(T, d, shape, _)):
+	pass
+	
+Type Tensor(T: DataType, d: Size, shape: Vector(Size, d)) 
+		<- Expression(T, d, shape, Tensor(T, d, shape)):
+	pass
+	
+Type Matrix(T: DataType, n: Size, m: Size) 
+		<- Tensor(T, 2, [n, m]):
+	pass
+	
+Type Vector(T: DataType, n: Size) 
+		<- Tensor(T, 1, [n]):
+	pass
+	
+Type Scalar(T: DataType) 
+		<- Tensor(T, 1, [1]):
+	pass
+	
+Type SumExpression(T: DataType, d: Size, shape: Vector(T, d), 
+				   a <: Expression(T, d, shape, _),
+				   b <: Expression(T, d, shape, _)
+		<- Expression(T, d, shape, SumExpression(T, d, shape)):
+	
+	def eval(self, coord: Vector(Size, d)):
+		return a(*coord) + b(*coord)
+		
+
+		
+		
+		
+		

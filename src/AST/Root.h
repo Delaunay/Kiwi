@@ -7,6 +7,7 @@
 
 namespace kiwi {
 
+template <typename T>
 class Expression;
 
 /* Root represent the root of our tree, when a node is created

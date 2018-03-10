@@ -13,6 +13,12 @@
 
 namespace kiwi{
 
+#define BIG_SCREEN " "
+#define SMALL_SCREEN "\n\t"
+#define FILE_SEPARATOR BIG_SCREEN
+#define MSG_SEPARATOR " "
+#define SIMPLIFY_NAMES simplify_function_name
+
 #define KIWI_LOG_LEVEL \
     KIWI_LEVEL(all, All, "     ALL     ")\
     KIWI_LEVEL(trace, Trace, "     TRACE   ")\
@@ -34,15 +40,10 @@ public:
     void log(LogLevel level, std::string file,
              std::string function, int line, const Args& ... args)
     {
-#define BIG_SCREEN " "
-#define SMALL_SCREEN "\n\t"
-#define FILE_SEPARATOR BIG_SCREEN
-#define MSG_SEPARATOR " "
-
         if (log_level <= level)
             print(out,
                   date(), get_string(level), pretty_file(file), FILE_SEPARATOR,
-				  simplify_function_name(function), " ", line, MSG_SEPARATOR, args...) << std::endl;
+				  SIMPLIFY_NAMES(function), " ", line, MSG_SEPARATOR, args...) << std::endl;
     }
 
     template<typename... Args>
@@ -52,9 +53,10 @@ public:
         if (log_level <= level)
             print(out,
                   get_string(level), pretty_depth(depth), pretty_file(file), " ",
-				  simplify_function_name(function), ":", line, " ", args...) << std::endl;
+				  SIMPLIFY_NAMES(function), ":", line, " ", args...) << std::endl;
     }
 
+	// replace something like `kiwi::Class::method` by `k.C.method`
 	std::string simplify_function_name(const std::string& function) {
 		// Match namespace like name `kiwi::Class::method`
 		std::regex e("([A-Za-z])[A-Za-z0-9]*::");
@@ -132,6 +134,10 @@ public:
         s[d + 1] = '-';
         s[d + 2] = '>';
         return s;
+    }
+
+    void set_log_level(LogLevel level) {
+        log_level = level;
     }
 
 private:

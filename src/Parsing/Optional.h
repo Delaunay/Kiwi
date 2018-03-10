@@ -5,6 +5,16 @@
 #include "../Logging/Log.h"
 
 namespace kiwi {
+	
+	template<typename T>
+	class Option;
+	
+	template<typename T>
+	Option<T> some(const T& v);
+	
+	template<typename T>
+	Option<T> none();
+	
 	class EmptyOption: public std::exception {
 	public:
 		EmptyOption() {
@@ -23,9 +33,19 @@ namespace kiwi {
 			_is_defined(false), _dummy(Dummy())
 		{}
 
-		Option(const T& v):
-			_is_defined(true), _data(v)
-		{}
+        Option(const T& v) :
+            _is_defined(true), _data(v)
+        {}
+
+        Option(const Option<T>& v) :
+            _is_defined(v._is_defined), _data(v._is_defined ? v._data: v._dummy)
+        {}
+
+        ~Option() {
+            if (_is_defined) {
+                _data.T::~T();
+            }
+        }
 
 		T& get(){
 			if (is_defined()) {

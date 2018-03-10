@@ -81,11 +81,14 @@ public:
         if (keyboard_focus())
             SDL_SetWindowTitle(skeyboard_focus(), "Not In Focus");
 
+		window(id)->set_focus(true);
         set_keyboard_focus(window(id));
         SDL_SetWindowTitle(skeyboard_focus(), get_state(id));
     }
     void window_lost_focus(u32 id){
         log_info("lost_focus ", id);
+
+		window(id)->set_focus(true);
         SDL_SetWindowTitle(*window(id), "Not In Focus");
     }
 
@@ -285,7 +288,7 @@ public:
 private:
     template<typename T>
     T* make_window(const String& str, i32 x, i32 y, i32 w, i32 h, u32 flag){
-        SDL_Window* sdlwin = CHECK(SDL_CreateWindow(str, x, y, w, h, flag));
+        SDL_Window* sdlwin = CHECK(SDL_CreateWindow(str.c_str(), x, y, w, h, flag));
         T* win = push_back<T>(sdlwin);
         log_debug("Window ID: ", win->id());
         _visible_windows += 1;

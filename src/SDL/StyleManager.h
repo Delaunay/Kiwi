@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-
 #include "RenderNode.h"
+
 namespace kiwi{
 
 struct StyleManager{
@@ -48,10 +48,10 @@ public:
     const StringType& close_parenthesis() const{ return fun_close;}
 
     template<typename T>
-    StringType text(const T& str){ return RenderNode::make_string(str); }
+    StringType text(const T& str){ return RenderTrait::make_string(str); }
 
     template<typename T>
-    StringType keyword(const T& str){ return RenderNode::make_keyword(str); }
+    StringType keyword(const T& str){ return RenderTrait::make_keyword(str); }
 
     const FontType& font()   const {  return _font;       }
     unsigned int font_size() const {  return _font_size;   }

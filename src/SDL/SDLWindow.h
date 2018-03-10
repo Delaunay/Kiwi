@@ -111,19 +111,12 @@ public:
     }
 
     virtual void render(){
-        // Clear Black
-//        log_debug("1 ", id());
         SDL_SetRenderDrawColor(_renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-//        log_debug("2 ", id());
         SDL_RenderClear(_renderer);
-//        log_debug("3 ", id());
         SDL_SetRenderDrawColor(_renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-//        log_debug("4 ", id());
+
         draw(_renderer);
-//        log_debug("5 ", id());
         SDL_RenderPresent(_renderer);
-//        log_debug("6 ", id());
-//        log_debug("--------------------------------------");
     }
 
     i32 id(){ return SDL_GetWindowID(_handle); }
@@ -186,6 +179,8 @@ public:
     SDL_Renderer* renderer() { return _renderer; }
 
 protected:
+	void set_focus(bool val) { _focus = true; }
+
     mutable SDL_Window* _handle = nullptr;
 
     SDL_Renderer *_renderer = nullptr;
@@ -193,6 +188,7 @@ protected:
     SDL_Font*     _font     = nullptr;
     SDL_Surface*  _txt      = nullptr;
     SDL_Texture*  _message  = nullptr;
+	bool		  _focus	= false;
 };
 
 }

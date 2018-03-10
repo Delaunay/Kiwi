@@ -4,8 +4,8 @@
 #include "../AST/Builder.h"
 #include "../Logging/Log.h"
 
-#undef log_trace
-#define log_trace(...)
+//#undef log_trace
+//#define log_trace(...)
 
 #define EXPECT(c, ...)\
     if (tok.type() != c){\
@@ -16,10 +16,20 @@ namespace kiwi{
 
 class Parser{
 public:
-    typedef typename generic::Root<Expression> Root;
-    typedef typename generic::DummyRoot<Expression> DummyRoot;
-    typedef Builder<Root, LightAST> RBuilder;
-    typedef LightAST Tree;
+    typedef typename generic::Root<Expression<LightExpression>> Root;
+    typedef typename generic::DummyRoot<Expression<LightExpression>> DummyRoot;
+    using RBuilder = Builder<LightExpression>;
+
+    /*
+    typedef typename Call<LightExpression> Call;
+
+    #define X(name, object) typedef object<LightExpression> object;
+        KIWI_AST_NODES
+    #undef X
+
+    #define X(name, object) typedef object<LightExpression> object;
+        KIWI_TYPE_NODES
+    #undef X*/
 
     Parser(AbstractBuffer& buffer):
         _lexer(buffer)
@@ -52,7 +62,7 @@ public:
         EXPECT(tok_identifier, "expected function name");
         std::string name = tok.identifier();
 
-        Tree::Function* fun = static_cast<Tree::Function*>(
+        Function<ASTTrait>* fun = static_cast<Function<ASTTrait>*>(
                     RBuilder::function(name, nullptr).get());
 
         tok = nexttok();
@@ -60,7 +70,7 @@ public:
         EXPECT('(', "expected '(' got '", tok.type(), "'");
         tok = nexttok();
 
-		Expression::Args args;
+        LightExpression::Args args;
 
 		// FIXME missing )
         while(tok.type() != ')'){
@@ -78,7 +88,7 @@ public:
 
 					EXPECT(tok_identifier, "expected type name");
 					log_info("Type is `", tok.identifier(), "`");
-					args.push_back(new Tree::Type(tok.identifier()));
+					args.push_back(RBuilder::builtin(tok.identifier()));
 
 					tok = nexttok();
 				}
@@ -100,15 +110,16 @@ public:
 			EXPECT(tok_identifier, "expected type name, got '", tok.type(), "'");
 			log_info("Type is `", tok.identifier(), "`");
 
-			fun->type = reinterpret_cast<Tree::Arrow*>(RBuilder::arrow(args, RBuilder::builtin(tok.identifier())).take_ownership());
+			fun->type = reinterpret_cast<Arrow<ASTTrait>*>(
+                RBuilder::arrow(args, RBuilder::builtin(tok.identifier())).take_ownership());
+
 			tok = nexttok();
 
 			//std::cout << int(fun->type) << std::endl;
-
-			std::cout << "========================================" << std::endl;
-			std::stringstream ss;
-			print_expr(ss, fun->type);
-			std::cout << ss.str() << std::endl << "========================================";
+			//std::cout << "========================================" << std::endl;
+			//std::stringstream ss;
+			//print_expr(ss, fun->type);
+			//std::cout << ss.str() << std::endl << "========================================";
 		}
 
         EXPECT(':', "':' expected, got '", int(tok.type()), "'");
@@ -156,7 +167,7 @@ public:
         tok = _lexer.peek();
 
         log_trace(tok);
-
+        tok.debug_print(std::cout) << std::endl;
         // end of expr
         if (tok.type() == tok_eof || tok.type() == ')')
             return lhs;
@@ -168,7 +179,8 @@ public:
         } // FIXME 
 		else {
             log_trace(tok);
-            log_error("`", int(tok.type()), "` is not a correct op");
+            tok.debug_print(std::cout) << std::endl;
+            log_error("`", int(tok.type()), "` is not a correct op (id=", tok.identifier(), ")");
 
             if (lhs.get() == nullptr){
                 log_error("nullptr");

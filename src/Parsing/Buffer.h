@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../Types.h"
+#include "Optional.h"
 #include "Stream.h"
 
 /*
@@ -81,30 +82,48 @@ public:
 
 class FileBuffer : public AbstractBuffer
 {
-public:
-    FileBuffer(const std::string& name):
-        _file_name(name)
+private:
+    FileBuffer(const std::string& name, FILE* file):
+        _file_name(name), _file(file)
     {
-        _file = fopen(_file_name.c_str(), "r");
+        _data.reserve(2048);
+        
+        char c = ' ';
+        while ((c = fgetc(_file)) != EOF) {
+            _data.push_back(c);
+            std::cout << c;
+        }
 
-        if (!_file)
-            throw FileError();
         init();
-    }
-
-    ~FileBuffer(){
         fclose(_file);
     }
 
+public:
+    static Option<FileBuffer> open_buffer(const char* name) {
+        FILE* file = fopen(name, "r");
+
+        if (file == nullptr) {
+            return none<FileBuffer>();
+        }
+
+        return FileBuffer(name, file);
+    }
+
     virtual char getc(){
-        return ::getc(_file);
+        if (_pos >= _data.size())
+            return EOF;
+
+        _pos += 1;
+        return _data[_pos - 1];
     }
 
     virtual const std::string& file_name(){ return _file_name;  }
 
 private:
-    std::string _file_name;
-    FILE*       _file{nullptr};
+    uint32              _pos{ 0 };
+    std::string         _file_name;
+    FILE*               _file{nullptr};
+    std::vector<char>   _data;
 };
 
 class StringBuffer: public AbstractBuffer

@@ -1,64 +1,122 @@
 ﻿#pragma once
 
-#ifndef WIN32
-#   include <algorithm>
-#define MIN(x, y) std::min(x, y)
-#define MAX(x, y) std::max(x, y)
-#else
-#define MIN(x, y) (((x) > (y)) ? (y) : (x))
-#define MAX(x, y) (((x) < (y)) ? (y) : (x))
-#endif
 
 #include "../AST/Builder.h"
 #include "../Logging/Log.h"
 
 #include "RenderTreeVisitor.h"
 #include "StyleManager.h"
+#include "RenderingUtils.h"
 
 namespace kiwi{
 
+    class TypeRenderEngine : public RenderTypeVisitor<TypeRenderEngine, Point, Point, int> {
+    public:
+        typedef SDL_Renderer* RenderSurface;
+        typedef SDLString StringType;
+        typedef SDL_Font* FontType;
 
-class RenderEngine: public RenderTreeVisitor<RenderEngine, Point, Point, int>{
+        using Builder = Builder<RenderTrait>;
+        using ExpressionPtr = Builder::ExpressionPtr;
+        using TypePtr = Builder::TypePtr;
+
+        TypeRenderEngine(RenderingContext& ctx, bool box_extracted) :
+            ctx(ctx), box_extracted(box_extracted)
+        {}
+
+        Point render_string(Type<RenderTrait>* x, const StringType& str, Point pos) {
+            Rectangle bbox(0, 0, 0, 0);
+            std::tie(pos, bbox) = ctx.render(str, pos);
+
+            if (!box_extracted)
+                x->bound_box = bbox;
+
+            return pos;
+        }
+
+        Point arrow(Arrow<RenderTrait>* x, Point pos, int idt) {
+            pos = render_string(x, ctx.style.get('('), pos);
+
+            int n = int(x->args.size()) - 1;
+            for (int i = 0; i < n; ++i) {
+                pos = traverse(x->arg(i), pos, idt);
+                pos = render_string(x, ctx.style.get(','), pos);
+            }
+            pos = traverse(x->arg(n), pos, idt);
+            pos = render_string(x, ctx.style.get(')'), pos);
+            pos = render_string(x, ctx.style.arrow(), pos);
+            pos = traverse(x->return_type, pos, idt);
+            return pos;
+        }
+
+        Point builtin(Builtin<RenderTrait>* e, Point pos, int) {
+            return render_string(e, e->name, pos);
+        }
+
+        Point error(ErrorType<RenderTrait>* e, Point pos, int) {
+            return render_string(e, e->message, pos);
+        }
+
+        Point unkown(Unknown<RenderTrait>* e, Point pos, int) {
+            return pos;
+        }
+
+        Point record(Record<RenderTrait>* e, Point pos, int) {
+            return pos;
+        }
+
+        Point error(ErrorNode<RenderTrait>* e, Point pos, int) {
+            return pos;
+        }
+
+        RenderingContext& ctx;
+        bool box_extracted;
+    };
+
+class ExpressionRenderEngine: public RenderTreeVisitor<ExpressionRenderEngine, Point, Point, int>{
 public:
     typedef SDL_Renderer* RenderSurface;
     typedef SDLString StringType;
     typedef SDL_Font* FontType;
-    typedef generic::Root<RenderAST::Node> Root;
-    typedef Builder<Root, RenderAST> NBuilder;
-    typedef typename RenderAST::Call Call;
 
-    #define X(name, object) typedef typename RenderAST::object object;
-        KIWI_AST_NODES
-    #undef X
+    using Builder = Builder<RenderTrait>;
+    using ExpressionPtr = Builder::ExpressionPtr;
+    using TypePtr = Builder::TypePtr;
 
-    RenderEngine(RenderSurface& rw, Point pos = {0, 0}):
-        rw(rw), original_pos(pos)
+    ExpressionRenderEngine(RenderSurface& rw, Point pos = {0, 0}):
+        rw(rw), original_pos(pos), box_extracted(false), ctx(rw, pos), type_engine(ctx, box_extracted)
     { }
 
-    RenderSurface& rw;
-    float outline = 1;
-    bool box_extracted = false;
-    std::vector<std::pair<Rectangle, Node*>> bounding_boxes;
-    const StyleManager& style = StyleManager::style_manager();
-    Rectangle top_box = {10000, 10000, -10000, -10000};
-    Node* current_expression = nullptr;
-    Point original_pos = {0, 0};
+    RenderSurface&              rw;
+    Point                       original_pos = { 0, 0 };
+    bool                        box_extracted = false;
+    RenderingContext            ctx;
+    TypeRenderEngine            type_engine;
+
+
+    std::vector<Expression<RenderTrait>*> bounding_boxes;
+    const StyleManager&                   style = StyleManager::style_manager();
+    Rectangle                             top_box = {10000, 10000, -10000, -10000};
+    Expression<RenderTrait>*              current_expression = nullptr;
+    
+    
 
     // Check if `render` inputs have changed
     // if so we need to recompute the bouding boxes and
     // update positions
-    bool has_input_changed(Node* expr, Point pos){
+    bool has_input_changed(Expression<RenderTrait>* expr, Point pos){
         return (current_expression != expr || pos != original_pos);
     }
 
-    void render(Node* expr, Point pos){
+    void render(Expression<RenderTrait>* expr, Point pos){
         if (has_input_changed(expr, pos)){
             current_expression = expr;
             original_pos = pos;
             bounding_boxes.clear();
             box_extracted = false;
+            type_engine.box_extracted = false;
         } else if (box_extracted){
-            draw_bounding_box(top_box,
+            ctx.draw_bounding_box(top_box,
                               Color{0, 0, 100},
                               Color{000, 200, 100});
         }
@@ -72,94 +130,57 @@ public:
         }
 
         box_extracted = true;
+        type_engine.box_extracted = true;
     }
 
-    void add_bounding_box(Node* parent, float x, float y, float w, float h){
-        bounding_boxes.emplace_back(Rectangle(x, y, w, h), parent);
-
-        top_box.x      = MIN(x, top_box.x);
-        top_box.y      = MIN(y, top_box.y);
-        top_box.width  = MAX(x + w, top_box.width);
-        top_box.height = MAX(y + h, top_box.height);
+    Point render_expr(Expression<RenderTrait>* tp, Point pos, int idt) {
+        return traverse(tp, pos, idt);
     }
 
-    void draw_bounding_box(Rectangle bb,
-                           Color fill = Color(0, 100, 0),
-                           Color out = Color(200, 100, 100)){
-        SDL_Rect shape = {bb.x, bb.y, bb.width, bb.height};
-        SDL_SetRenderDrawColor(rw, out.r, out.g, out.b, out.a);
-
-        //bbs.setOutlineThickness(outline);
-        //bbs.setOutlineColor(out);
-
-        SDL_RenderDrawRect(rw, &shape);
-        //rw.draw(bbs);
+    Point render_type(Type<RenderTrait>* tp, Point pos, int idt) {
+        return type_engine.traverse(tp, pos, idt);
     }
 
-    void draw_bounding_box(float x, float y, float w, float h,
-                          Color fill = Color{0, 100, 0},
-                          Color out  = Color{200, 100, 100}){
+    static ExpressionPtr make_sqr(){
+        ExpressionPtr x    = Builder::placeholder("x");
+        ExpressionPtr body = Builder::mult(x, Builder::borrow(x));
 
-        return draw_bounding_box(Rectangle(x, y, w, h), fill, out);
-    }
+        TypePtr dbl = Builder::builtin("double");
+        TypePtr fun_type = Builder::arrow({dbl.get()}, dbl.get());
 
-
-    // helpers
-    // ------------------------------------------------------------------------
-    Point render(Node* parent, const StringType& item, Point pos){
-        log_trace("Rendering: ", item.string());
-
-        float x = pos.x;
-        float y = pos.y;
-        float w = MAX(item.width(), style.width());
-        float h = MAX(item.height(), style.height()) - outline;
-
-        draw_bounding_box(x, y, w, h);
-
-        if (!box_extracted)
-            add_bounding_box(parent, x, y, w, h);
-
-        item.render(rw, pos);
-        pos.x += w;
-        log_trace("Rendered");
-        return pos;
-    }
-
-    Point new_line(Point pos, int indent){
-        pos.y += style.height();
-        pos.x = original_pos.x + style.width() * indent;
-        return pos;
-    }
-
-    static Root make_sqr(){
-        Root x    = NBuilder::placeholder("x");
-        Root body = NBuilder::mult(x, NBuilder::borrow(x));
-
-        Root dbl = NBuilder::builtin("double");
-        Root fun_type = NBuilder::arrow({dbl.get()}, dbl.get());
-
-        Root sqr  = NBuilder::function("sqr", body, fun_type);
-        RenderNode* node = sqr.get();
+        ExpressionPtr sqr  = Builder::function("sqr", body, fun_type);
+        Expression<RenderTrait>* node = sqr.get();
 
         // generic::Function<RenderNode>*
-        Function* f = static_cast<Function*>(node);
+        Function<RenderTrait>* f = static_cast<Function<RenderTrait>*>(node);
         f->add_arg("x");
 
         return sqr;
     }
 
     // ------------------------------------------------------------------------
-    static Point run(RenderSurface& rw, RenderNode* expr, Point pos){
+    static std::vector<Expression<RenderTrait>*> run(RenderSurface& rw, Expression<RenderTrait>* expr, Point pos){
         log_trace("Initializing");
-        RenderEngine eval(rw, pos);
+        ExpressionRenderEngine eval(rw, pos);
         log_trace("Tree Renderer starting");
-        return eval.traverse(expr, pos, 0);
+		eval.render_expr(expr, pos, 0);
+		return eval.bounding_boxes;
     }
 
-    Point function(Function* x, Point pos, int idt){
-        pos = render(x, style.def(), pos);
-        pos = render(x, x->name, pos);
-        pos = render(x, style.get('('), pos);
+    Point render_string(Expression<RenderTrait>* x, const StringType& str, Point pos) {
+        Rectangle bbox(0, 0, 0, 0);
+        std::tie(pos, bbox) = ctx.render(str, pos);     
+
+        if (!box_extracted) 
+            x->bound_box = bbox;
+
+        return pos;
+    }
+
+    Point function(Function<RenderTrait>* x, Point pos, int idt){
+        pos = render_string(x, style.def(), pos);     
+        pos = render_string(x, x->name, pos);         
+        pos = render_string(x, style.get('('), pos);  
 
         int na = 0;
 
@@ -168,120 +189,90 @@ public:
 
         int n = int(x->args_size()) - 1;
 
+        log_info(n, " ", na);
         assert(n == na && "Arrow type size mistmatch");
 
         if (n >= 0){
             for(int i = 0; i < n; ++i){
                 log_trace("argument ", i + 1);
-                pos = render(x, x->arg(i), pos);
-                pos = render(x, style.get(':'), pos);
-                pos = traverse(x->type->arg(i), pos, idt);
-                pos = render(x, style.get(','), pos);
+                pos = render_string(x, x->arg(i), pos);
+                pos = render_string(x, style.get(':'), pos);
+                pos = render_type(x->type->arg(i), pos, idt);
+                pos = render_string(x, style.get(','), pos);
             }
             log_trace("argument ", n);
-            pos = render(x, x->arg(n), pos);
-            pos = render(x, style.get(':'), pos);
-            pos = traverse(x->type->arg(na), pos, idt);
+            pos = render_string(x, x->arg(n), pos);
+            pos = render_string(x, style.get(':'), pos);
+            pos = render_type(x->type->arg(na), pos, idt);
         }
 
-        pos = render(x, style.get(')'), pos);
+        pos = render_string(x, style.get(')'), pos);
 
         if (x->type != nullptr && x->type->return_type != nullptr){
-            pos = render(x, style.arrow(), pos);
-            pos = traverse(x->type->return_type, pos, idt);
+            pos = render_string(x, style.arrow(), pos);
+            pos = render_type(x->type->return_type, pos, idt);
         }
 
-        pos = render(x, style.get(':'), pos);
-        pos = new_line(pos);
-        pos = indent(pos, idt + 1);
-        return traverse(x->body, pos, idt + 1);
+        pos = render_string(x, style.get(':'), pos);
+        pos = ctx.new_line(pos);
+        pos = ctx.indent(pos, idt + 1);
+        return render_expr(x->body, pos, idt + 1);
     }
 
-    Point new_line(Point pos){
-        return Point(original_pos.x, pos.y + style.height());
-    }
-
-    Point indent(Point pos, int idt){
-        return Point(original_pos.x + style.width() * 4 * idt , pos.y);
-    }
-
-    Point function_call(FunctionCall* x, Point pos, int idt){
-        pos = render(x, x->name, pos);
-        pos = render(x, style.get('('), pos);
+    Point function_call(FunctionCall<RenderTrait>* x, Point pos, int idt){
+        pos = render_string(x, x->name, pos);
+        pos = render_string(x, style.get('('), pos);
 
         int n = x->args_size() - 1;
 
         for(int i = 0; i < n; ++i){
-            pos = traverse(x->arg(i), pos, idt);
-            pos = render(x, style.get(','), pos);
+            pos = render_expr(x->arg(i), pos, idt);
+            pos = render_string(x, style.get(','), pos);
         }
 
-        pos = traverse(x->arg(n), pos, idt);
-        pos = render(x, style.get(')'), pos);
+        pos = render_expr(x->arg(n), pos, idt);
+        pos = render_string(x, style.get(')'), pos);
         return pos;
     }
 
-    Point unary_call(UnaryCall* x, Point pos, int idt){
+    Point unary_call(UnaryCall<RenderTrait>* x, Point pos, int idt){
         if (!x->right)
-            pos = render(x, x->name, pos);
+            pos = render_string(x, x->name, pos);
 
-        pos = traverse(x->arg(0), pos, idt);
+        pos = render_expr(x->arg(0), pos, idt);
 
         if (x->right)
-            pos = render(x, x->name, pos);
+            pos = render_string(x, x->name, pos);
 
         return pos;
     }
 
-    Point binary_call(BinaryCall* x, Point pos, int idt){
-        pos = traverse(x->lhs, pos, idt);
-        pos = render(x, style.get(' '), pos);
-        pos = render(x, x->name, pos);
-        pos = render(x, style.get(' '), pos);
-        pos = traverse(x->rhs, pos, idt);
+    Point binary_call(BinaryCall<RenderTrait>* x, Point pos, int idt){
+        pos = render_expr(x->lhs, pos, idt);
+        pos = render_string(x, style.get(' '), pos);
+        pos = render_string(x, x->name, pos);
+        pos = render_string(x, style.get(' '), pos);
+        pos = render_expr(x->rhs, pos, idt);
         return pos;
     }
 
-    Point borrow(Borrow* b, Point pos, int idt){
-        return traverse(b->expr, pos, idt);
+    Point borrow(Borrow<RenderTrait>* b, Point pos, int idt){
+        return render_expr(b->expr, pos, idt);
     }
 
-    Point arrow(Arrow* x, Point pos, int idt){
-        pos = render(x, style.get('('), pos);
-
-        int n = int(x->args.size()) - 1;
-        for(int i = 0; i < n; ++i){
-            pos = traverse(x->arg(i), pos, idt);
-            pos = render(x, style.get(','), pos);
-        }
-        pos = traverse(x->arg(n), pos, idt);
-        pos = render(x, style.get(')'), pos);
-        pos = render(x, style.arrow(), pos);
-        pos = traverse(x->return_type, pos, idt);
-        return pos;
+    Point error(ErrorNode<RenderTrait>* e, Point pos, int){
+        return render_string(e, e->message, pos);
     }
 
-    Point type(Type* x, Point pos, int){
-        return render(x, x->name, pos);
-    }
-
-    Point builtin(Builtin* e, Point pos, int){
-        return render(e, e->name, pos);
-    }
-
-    Point error(ErrorNode* e, Point pos, int){
-        return render(e, e->message, pos);
-    }
-
-    Point value(Value* x, Point pos, int){
+    Point value(Value<RenderTrait>* x, Point pos, int){
         std::string str = std::to_string(x->as<f64>());
         const char* c_str = str.c_str();
         StringType txt(c_str, Color(255, 255, 255));
-        return render(x, txt, pos);
+        return render_string(x, txt, pos);
     }
 
-    Point placeholder(Placeholder* x, Point pos, int){
-        return render(x, x->name, pos);
+    Point placeholder(Placeholder<RenderTrait>* x, Point pos, int){
+        return render_string(x, x->name, pos);
     }
 };
 

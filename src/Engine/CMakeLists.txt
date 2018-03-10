@@ -1,0 +1,26 @@
+﻿INCLUDE(../../cmake/macros/GroupSources.cmake)
+
+GroupSources(src/Engine)
+
+FILE(GLOB_RECURSE ENGINE_SOURCE *.cpp)
+FILE(GLOB_RECURSE ENGINE_HEADERS *.h *.inc)
+
+FIND_PACKAGE(Vulkan)
+
+INCLUDE_DIRECTORIES(../../dependencies/eigen/)
+INCLUDE_DIRECTORIES(../../dependencies/glm/)
+INCLUDE_DIRECTORIES(../../dependencies/gli/)
+INCLUDE_DIRECTORIES(../../dependencies/assimp/include)
+INCLUDE_DIRECTORIES(../../dependencies/)
+INCLUDE_DIRECTORIES(${Vulkan_INCLUDE_DIR})
+
+SET(ENGINE_DEPENDENCIES
+	${Vulkan_LIBRARY}
+    assimp
+    zlib
+)
+
+#SET(${CXX_STANDARD_REQUIRED} ON)
+#ADD_EXECUTABLE(engine ${ENGINE_SOURCE} ${ENGINE_HEADERS})
+#TARGET_LINK_LIBRARIES(engine PUBLIC ${ENGINE_DEPENDENCIES})
+#SET_PROPERTY(TARGET engine PROPERTY CXX_STANDARD 17)

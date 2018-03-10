@@ -6,18 +6,69 @@
 
 #include "RenderEngine.h"
 
+#include "../AST/Root.h"
+
+#include "../Parsing/Buffer.h"
+#include "../Parsing/Parser.h"
+#include "../Parsing/Optional.h"
+
 #include "../Logging/Log.h"
 
-class MyWindow: public kiwi::SDLWindow {
+using namespace kiwi;
+using ASTExpressionPtr = generic::Root<Expression<ASTTrait>>;
+using RenderExpressionPtr = generic::Root<Expression<RenderTrait>>;
+
+#if __linux__
+
+#else
+#include <direct.h>
+#define GetCurrentDir _getcwd
+
+template<std::size_t size = 2048>
+std::string get_working_directory() {
+    char path[size];
+
+    for (int i = 0; i < size; ++i)
+        path[i] = '\0';
+
+    if (_getcwd(path, size)) {
+        return "";
+    }
+
+    return std::string(path);
+}
+#endif
+
+
+class MyWindow: public SDLWindow {
 private:
-    friend class kiwi::WindowManager;
+    friend class WindowManager;
     MyWindow(SDL_Window* handle):
       SDLWindow(handle)
-    {}
+    {
+        log_debug("Initalizing Parser");
+        Option<FileBuffer> file = FileBuffer::open_buffer("M:\\projects\\Kiwi\\examples\\Test.kw");
+
+        if (file.is_empty()) {
+            log_error("File not found");
+        } else{
+            Parser parser(file.get());
+
+            log_debug("Parsing");
+            ASTExpressionPtr expr = parser.parse_function(0);
+
+            print_expr<ASTTrait>(std::cout, expr) << std::endl;
+
+            render_expr = convert(expr);
+        }
+    }
 
 public:
 
-    kiwi::RenderEngine::Root sqr_node = kiwi::RenderEngine::make_sqr();
+    RenderExpressionPtr render_expr;
+
+
+    //kiwi::ExpressionRenderEngine::ExpressionPtr sqr_node = kiwi::ExpressionRenderEngine::make_sqr();
 
 
     void render() override {
@@ -30,22 +81,31 @@ public:
     }
 
     void draw(SDL_Renderer *renderer) override {
-        kiwi::RenderEngine::run(_renderer, sqr_node.get(), {50, 50});
+        if (render_expr)
+            ExpressionRenderEngine::run(_renderer, render_expr.get(), {50, 50});
     }
 };
 
-#include "../Parsing/Optional.h"
+int main(){/**
+    FILE* file = fopen("M:\\projects\\Kiwi\\examples\\Test.kw", "r");
 
-int main(){
+    char c = ' ';
+    while ((c = fgetc(file)) != EOF) {
+        std::cout << c;
+    }*/
+    kiwi::Log::instance().set_log_level(kiwi::LogLevel::all);
 
+
+    //*
     log_debug("Trying to create a window");
+
     kiwi::SDLWindow* w1 = kiwi::WindowManager::new_window<MyWindow>(
-                "A, B, C", 800, 500, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+                u8"TIDE", 800, 500, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     log_debug("Launching event loop");
     kiwi::WindowManager::manager().run();
 
-    log_debug("Done!");
+    log_debug("Done!");//*/
     return 0;
 }
 

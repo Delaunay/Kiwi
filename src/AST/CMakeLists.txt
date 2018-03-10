@@ -4,6 +4,8 @@ SET(AST_SRC
     Root.h
     Expression.h
     Expression.cpp
+    TypeExpression.h
+    TypeExpression.cpp
     Value.h
     Builder.h
     Builder.cpp
@@ -14,4 +16,4 @@ SET(AST_SRC
 
 SET(${CXX_STANDARD_REQUIRED} ON)
 ADD_LIBRARY(ast ${AST_SRC})
-SET_PROPERTY(TARGET ast PROPERTY CXX_STANDARD 14)
+SET_PROPERTY(TARGET ast PROPERTY CXX_STANDARD 17)

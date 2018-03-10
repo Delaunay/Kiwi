@@ -21,8 +21,8 @@ int main()
 
     Parser::Root op = parser.parse(0);
 
-
-    std::stringstream ss; print_expr(ss, op);
+    std::stringstream ss; 
+    print_expr<LightExpression>(ss, op);
 
     print(std::cout, "Parsed expr: ", ss.str()) << std::endl;
 

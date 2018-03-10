@@ -22,7 +22,7 @@ TEST(Parser, AddParsing)
     Root op    = parser.parse(0);
 
     std::stringstream ss;
-    print_expr(ss, op);
+    print_expr<LightExpression>(ss, op);
     std::string code_ret1 = ss.str();
 
 //    std::cout << "Parsed expr: " << code_ret1 << std::endl;
@@ -33,7 +33,7 @@ TEST(Parser, AddParsing)
     Root op2 = parser2.parse(0);
 
     std::stringstream ss2;
-    print_expr(ss2, op2);
+    print_expr<LightExpression>(ss2, op2);
     std::string code_ret2 = ss2.str();
 
     EXPECT_EQ(code_ret2, code_ret1);
@@ -55,7 +55,7 @@ TEST(Parser, FunctionWithAnnotation)
 	Root op = parser.parse_function(0);
 
 	std::stringstream ss;
-	print_expr(ss, op);
+	print_expr<LightExpression>(ss, op);
 
 	std::cout << ss.str() << std::endl;
 }
@@ -74,13 +74,10 @@ TEST(Parser, FunctionWithoutAnnoation)
 	Root op = parser.parse_function(0);
 
 	std::stringstream ss;
-	print_expr(ss, op);
+	print_expr<LightExpression>(ss, op);
 
 	std::cout << ss.str() << std::endl;
 }
-
-
-
 
 TEST(Optional, Some) {
 	auto a = some<int>(10);

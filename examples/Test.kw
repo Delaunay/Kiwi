@@ -1,0 +1,2 @@
+def inc(x: Double) -> Double:
+    x + 1

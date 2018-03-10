@@ -67,31 +67,28 @@ template<> inline BuiltinType type_id<typetype>(){ return BuiltinType::type; }
     KIWI_TYPE_TYPE
 #undef X
 
-template<typename T>
-Expression* type(){
-    static generic::Type<Expression> t(name(type_id<T>()));
+template<typename T, typename NodeTrait>
+Expression<NodeTrait>* type(){
+    static generic::Type<Expression<NodeTrait>> t(name(type_id<T>()));
     return &t;
 }
 
-namespace generic{
-
-//
-template<typename Node>
-class Value: public Node{
+template<typename NodeTrait>
+class Value: public Expression<NodeTrait>{
 public:
-    NODE_TYPES
+    NODE_TYPES;
 
     template<typename T>
     Value(T x):
-        Node(NodeTag::value),
+        Expression<NodeTrait>(NodeTag::value),
         _self(std::make_shared<Model<T>>(std::move(x))),
         type(kiwi::type_id<T>())
     {}
 
-    VTABLEV(void visit(class DynamicVisitor* v) override;)
+    VTABLEV(void visit(class DynamicVisitor* v) override;);
 
     template<typename T>
-    T as() const{
+    const T& as() const{
         debug_if(type != type_id<T>(), this);
 
         assert(type == type_id<T>() && "wrong Value cast");
@@ -99,7 +96,7 @@ public:
     }
 
     template<typename T>
-    T as(T dummy) const{
+    const T& as(const T& dummy) const{
         debug_if(type != type_id<T>(), this);
 
         assert(type == type_id<T>() && "wrong Value cast");
@@ -149,21 +146,20 @@ private:
             _data(std::move(x))
         {}
 
-        T                 _data;
+        T _data;
     };
 
     std::shared_ptr<const Concept> _self;
 };
 
-template<typename Node>
-std::ostream& operator<< (std::ostream& out, const Value<Node>* v){
+template<typename NodeTrait>
+std::ostream& operator<< (std::ostream& out, const Value<NodeTrait>* v){
     return v->print(out);
 }
 
-}
-
-template<typename T, typename E>
-T as (generic::Value<E>* expr){
+template<typename T, typename NodeTrait>
+const T& as(Value<NodeTrait>* expr){
     return expr->as(T());
 }
+
 }

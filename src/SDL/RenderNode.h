@@ -7,23 +7,23 @@
 
 namespace kiwi{
 
-class RenderNode{
+class RenderTrait{
 public:
     typedef SDL_Color                SDLColor;
     typedef SDLString                StringType;
-    typedef std::vector<RenderNode*> Args;
+    typedef std::vector<Type<RenderTrait>*> Args;
     typedef std::vector<StringType>  ArgNames;
     typedef int                      IndexType;
+
+    static std::string to_string(StringType const& str) {
+        return str.string();
+    }
 
     template<typename T>
     static StringType make_text(const T& str, const SDLColor& color){
         StringType txt(str, color, StringType::default_font());
         return txt;
     }
-
-    RenderNode(NodeTag tag):
-        tag(tag)
-    {}
 
     template<typename T>
     static StringType make_string(const T& str){
@@ -60,11 +60,10 @@ public:
         return make_text(str, {155, 155, 155});
     }
 
-    NodeTag tag;
-    PARENT(RenderNode* parent = nullptr;)
+	Rectangle bound_box {10000, 10000, -10000, -10000};
 };
 
 //typedef AST<RenderNode> RenderTree;
-typedef AST<RenderNode> RenderAST;
+typedef AST<RenderTrait> RenderAST;
 
 }

@@ -210,12 +210,14 @@ public:
 
   Token make_token(int8 t) {
     _token = Token(t, line(), col());
+    _token.debug_print(std::cout) << std::endl;
     return _token;
   }
 
   Token make_token(int8 t, const std::string &identifier) {
     _token = Token(t, line(), col());
     _token.identifier() = identifier;
+    _token.debug_print(std::cout) << std::endl;
     return _token;
   }
 
