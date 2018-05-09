@@ -1,7 +1,7 @@
 
 # tests need source header
 INCLUDE_DIRECTORIES(../src)
-
+INCLUDE_DIRECTORIES(../dependencies)
 #IF(NOT ${GTEST_FOUND})
 #    SET(GTEST_LIBRARIES gtest)
 #ENDIF()

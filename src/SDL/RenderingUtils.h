@@ -1,14 +1,11 @@
 #pragma once
 
-#ifndef WIN32
-#   include <algorithm>
-#   define MIN(x, y) std::min(float(x), float(y))
-#   define MAX(x, y) std::max(float(x), float(y))
-#else
-#   define MIN(x, y) (((x) > (y)) ? (y) : (x))
-#   define MAX(x, y) (((x) < (y)) ? (y) : (x))
+#if defined(WIN32) && !defined(NOMINMAX)
+#   define NOMINMAX
 #endif
 
+
+#include <algorithm>
 #include "../Logging/Log.h"
 #include "../AST/Root.h"
 
@@ -32,41 +29,41 @@ namespace kiwi {
         typedef SDL_Renderer* RenderSurface;
         typedef SDLString StringType;
 
-        RenderingContext(RenderSurface& rw, Point pos, const StyleManager& style = StyleManager::style_manager()) :
+        RenderingContext(RenderSurface& rw, Point2f pos, const StyleManager& style = StyleManager::style_manager()) :
             rw(rw), original_pos(pos), style(style)
         {}
 
-        Rectangle bounding_box(float x, float y, float w, float h) {
-            top_box.x = MIN(x, top_box.x);
-            top_box.y = MIN(y, top_box.y);
-            top_box.width = MAX(x + w, top_box.width);
-            top_box.height = MAX(y + h, top_box.height);
-            return Rectangle(x, y, w, h);
+        Point4f bounding_box(f32 x, f32 y, f32 w, f32 h) {
+            top_box.x = std::min(x, top_box.x);
+            top_box.y = std::min(y, top_box.y);
+            top_box.width = std::max(x + w, top_box.width);
+            top_box.height = std::max(y + h, top_box.height);
+            return Point4f(x, y, w, h);
         }
 
-        void draw_bounding_box(Rectangle bb,
+        void draw_bounding_box(Point4f bb,
             Color fill = Color(0, 100, 0),
             Color out = Color(200, 100, 100)) {
-            SDL_Rect shape = { bb.x, bb.y, bb.width, bb.height };
+            SDL_Rect shape = { i32(bb.x), i32(bb.y), i32(bb.width), i32(bb.height) };
             SDL_SetRenderDrawColor(rw, out.r, out.g, out.b, out.a);
             SDL_RenderDrawRect(rw, &shape);
         }
 
-        void draw_bounding_box(float x, float y, float w, float h,
+        void draw_bounding_box(f32 x, f32 y, f32 w, f32 h,
             Color fill = Color{ 0, 100, 0 },
             Color out = Color{ 200, 100, 100 }) {
-            return draw_bounding_box(Rectangle(x, y, w, h), fill, out);
+            return draw_bounding_box(Point4f(x, y, w, h), fill, out);
         }
 
         // helpers
         // ------------------------------------------------------------------------
-        std::tuple<Point, Rectangle> render(const StringType& item, Point pos, float outline = 1) {
+        std::tuple<Point2f, Point4f> render(const StringType& item, Point2f pos, f32 outline = 1) {
             log_trace("Rendering: ", item.string());
 
-            float x = pos.x;
-            float y = pos.y;
-            float w = MAX(item.width(), style.width());
-            float h = MAX(item.height(), style.height()) - outline;
+            f32 x = pos.x;
+            f32 y = pos.y;
+            f32 w = std::max(f32(item.width()), style.width());
+            f32 h = std::max(f32(item.height()), style.height()) - outline;
 
             draw_bounding_box(x, y, w, h);
 
@@ -76,28 +73,28 @@ namespace kiwi {
             return std::make_tuple(pos, bounding_box(x, y, w, h));
         }
 
-        Point new_line(Point pos, int indent) {
+        Point2f new_line(Point2f pos, int32 indent) {
             pos.y += style.height();
             pos.x = original_pos.x + style.width() * indent;
             return pos;
         }
 
-        Point new_line(Point pos) {
-            return Point(original_pos.x, pos.y + style.height());
+        Point2f new_line(Point2f pos) {
+            return Point2f(original_pos.x, pos.y + style.height());
         }
 
-        Point indent(Point pos, int idt) {
-            return Point(original_pos.x + style.width() * 4 * idt, pos.y);
+        Point2f indent(Point2f pos, int32 idt) {
+            return Point2f(original_pos.x + style.width() * 4 * idt, pos.y);
         }
 
-        Rectangle bound_box() { return top_box; }
+        Point4f bound_box() { return top_box; }
 
         StyleManager const& style;
 
     private:
         RenderSurface&      rw;
-        Point               original_pos = { 0, 0 };
-        Rectangle           top_box = { 10000, 10000, -10000, -10000 };
+        Point2f             original_pos = { 0, 0 };
+        Point4f             top_box = { 10000, 10000, -10000, -10000 };
     };
 
 }

@@ -1,6 +1,5 @@
 ﻿#define SDL_MAIN_HANDLED
 
-
 #include "SDLWindowManager.h"
 #include "SDLWindow.h"
 
@@ -47,25 +46,35 @@ private:
       SDLWindow(handle)
     {
         log_debug("Initalizing Parser");
-        Option<FileBuffer> file = FileBuffer::open_buffer("M:\\projects\\Kiwi\\examples\\Test.kw");
+        Option<FileBuffer> file = FileBuffer::open_buffer("M:\\projects\\Kiwi\\examples\\Testutf8.kw");
 
         if (file.is_empty()) {
             log_error("File not found");
         } else{
             Parser parser(file.get());
-
             log_debug("Parsing");
-            ASTExpressionPtr expr = parser.parse_function(0);
-
+             
+            // --------------------------------------------------------------------
+            auto result = parser.parse_declaration(0);
+            log_debug("Declaration `", std::get<0>(result), "` was parsed!");
+            ASTExpressionPtr expr = std::get<1>(result);
             print_expr<ASTTrait>(std::cout, expr) << std::endl;
+            /*/ --------------------------------------------------------------------
+            auto class_parsed = parser.parse_declaration(0);
+            log_debug("Declaration `", std::get<0>(class_parsed), "` was parsed!");
+            ASTExpressionPtr class_expr = std::get<1>(class_parsed);
+            print_expr<ASTTrait>(std::cout, class_expr) << std::endl;
+            // -------------------------------------------------------------------- */
 
             render_expr = convert(expr);
+            //render_class_expr = convert(class_expr);
         }
     }
 
 public:
 
     RenderExpressionPtr render_expr;
+    RenderExpressionPtr render_class_expr;
 
 
     //kiwi::ExpressionRenderEngine::ExpressionPtr sqr_node = kiwi::ExpressionRenderEngine::make_sqr();
@@ -86,6 +95,16 @@ public:
     }
 };
 
+#include <boost/process.hpp>
+#include <boost/asio.hpp>
+#include <thread>
+#include <sstream>
+
+using namespace boost::process;
+
+
+#define MONGO_DB_LOC "C:\\\"Program Files\"\\MongoDB\\Server\\3.6\\bin\\mongod.exe" 
+
 int main(){/**
     FILE* file = fopen("M:\\projects\\Kiwi\\examples\\Test.kw", "r");
 
@@ -93,6 +112,50 @@ int main(){/**
     while ((c = fgetc(file)) != EOF) {
         std::cout << c;
     }*/
+
+    /**/
+    
+    using namespace std::chrono_literals;
+
+    std::string cmd = "cmd.exe /C " MONGO_DB_LOC " --dbpath C:\\UserData\\mongo\\kiwi --bind_ip 127.0.0.1";
+    std::cout << cmd << std::endl;
+
+    boost::asio::io_service ios;
+    async_pipe ap(ios);
+
+    ipstream out_stream;
+    ipstream err_stream;
+    opstream in;
+
+    //  std_err > err_stream,
+    child child(cmd, std_out > out_stream, std_in < in); // std_out > out_stream,
+
+    // --dbpath
+    std::string out_line;
+
+    while (child.running()){
+        char c = ' ';
+
+        //for(auto k : "exit\n")
+        //    in.put(k);
+
+        while(out_stream && out_stream.get(c)){
+            std::cout << c;
+        }
+
+        //std::cout << "Sending Quit" << std::endl;
+        
+
+        std::this_thread::sleep_for(1s);
+    }
+
+    
+
+    std::cout << "end" << std::endl;
+    child.wait();
+    
+
+    /* * /
     kiwi::Log::instance().set_log_level(kiwi::LogLevel::all);
 
 

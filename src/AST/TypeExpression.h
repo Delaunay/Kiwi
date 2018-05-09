@@ -1,5 +1,4 @@
-#include <unordered_map>
-
+#include "../Types.h"
 //#define LINK_TO_PARENT
 //#define VTABLE_VISITOR
 
@@ -28,8 +27,8 @@
 namespace kiwi {
     #define KIWI_TYPE_NODES\
         X(builtin, Builtin)\
-        X(arrow, Arrow)\
-        X(record, Record)\
+        X(arrow, Arrow)    \
+        X(record, Record)  \
         X(unknown, Unknown)\
         X(error, ErrorType)
 
@@ -39,10 +38,13 @@ namespace kiwi {
     #undef X
     };
 
+    // Thanks gcc for forcing us to use such beautiful macro
     #define NODE_TYPES\
         typedef typename NodeTrait::StringType StringType;\
-        typedef typename NodeTrait::Args       Args;\
+        typedef typename NodeTrait::StringView StringView;\
+        typedef typename NodeTrait::StringArgument StringArgument;\
         typedef typename NodeTrait::ArgNames   ArgNames;\
+        typedef typename NodeTrait::ArgTypes   ArgTypes;\
         typedef typename NodeTrait::IndexType  IndexType;
 
     template <typename T>
@@ -72,14 +74,14 @@ namespace kiwi {
             Type<NodeTrait>(NodeTypeTag::arrow)
         {}
 
-        Arrow(const Args& args, Type<NodeTrait>* return_type) :
+        Arrow(const ArgTypes& args, Type<NodeTrait>* return_type) :
             Type<NodeTrait>(NodeTypeTag::arrow), args(args), return_type(return_type)
         {}
 
-        int args_size() { return args.size(); }
-        Type<NodeTrait>* arg(int i) { return args[i]; }
+        size_t args_size() { return args.size(); }
+        Type<NodeTrait>* arg(size_t i) { return args[i]; }
 
-        Args  args;
+        ArgTypes args;
         Type<NodeTrait>* return_type{ nullptr };
     };
 
@@ -96,6 +98,10 @@ namespace kiwi {
     //          my_x: Int
     //          my_y: Int
     //
+    //  Functional
+    //
+    //      class MyType(my_x: Int, my_u: Int)
+    //
     // We allow the users to defined methods. 
     // Methods are functions that always have at leat one argument
     // The first agurment is always a reference of type `object`
@@ -103,19 +109,45 @@ namespace kiwi {
     // virtual calls and as such we do not support OOP (:D)
     //
 
+    // (name: Type * name: Type)
     template<typename NodeTrait>
     class Record : public Type<NodeTrait> {
     public:
         NODE_TYPES;
 
-        Record() :
-            Type<NodeTrait>(NodeTypeTag::record)
+        Record(String const& name, bool is_union = false):
+            Type<NodeTrait>(NodeTypeTag::record), name(name), is_union(is_union)
         {}
 
-        const StringType name;
+        bool insert_attribute(String const& name, Type<NodeTrait*> type) {
+            using NameIndexResult = std::pair<Dict<String, size_t>::iterator, bool>;
 
-        std::unordered_map<StringType, Type<NodeTrait>> types;
-        std::unordered_map<StringType, Expression<NodeTrait>> attributes;
+            size_t size = index_name.size();
+            NameIndexResult result = name_index.insert(std::make_pair(name, size));
+
+            // insertion was successful
+            if (result.second) {
+                index_name.push_back(std::make_tuple(name, type));
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        size_t               get_index(StringType const& name) const { return name_index[name];           }
+        StringType const&    get_name(size_t index)            const { return index_name[index].first;    }
+        Type<NodeTrait>*     get_type(size_t index)            const { return index_name[index].second;   }
+        Type<NodeTrait>*     get_type(StringType const& name)  const { return get_type(get_index(name));  }
+
+        size_t size() const { return index_name.size();  }
+
+        const StringType name;
+        const bool is_union;
+
+    private:
+        Array<Tuple<StringType, Type<NodeTrait>*>> index_name;
+        Dict<StringType, size_t> name_index;
     };
 
     //  Builtin Types

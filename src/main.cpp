@@ -2,7 +2,7 @@
 #include <sstream>
 
 #include "AST/Builder.h"
-#include "AST/TreeOperations.h"
+#include "AST/TreeOps.h"
 
 #include "Parsing/Parsing.h"
 

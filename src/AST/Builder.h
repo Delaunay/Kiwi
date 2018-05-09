@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include "LightAST.h"
-#include "TreeOperations.h"
+#include "TreeOps.h"
 #include "Root.h"
 
 namespace kiwi {
@@ -16,19 +16,17 @@ public:
     using ExpressionPtr = generic::Root<Expression<NodeTrait>>;
     using TypePtr = generic::Root<Type<NodeTrait>>;
    
-    static ExpressionPtr function(const std::string op, const ExpressionPtr& body){
+    static ExpressionPtr function(String const & op, const ExpressionPtr& body){
         Function<NodeTrait>* root = new Function<NodeTrait>(op, body.take_ownership());
-        // append_args(root, body.get());
+
         PARENT(body->parent = root);
         return ExpressionPtr(root);
     }
 
-    static ExpressionPtr function(const std::string op, const ExpressionPtr& body, const TypePtr& type){
+    static ExpressionPtr function(const String op, const ExpressionPtr& body, const TypePtr& type){
         if (type) { assert(type->tag == NodeTypeTag::arrow && "Function Type is represented by an arrow"); }
         
         Arrow<NodeTrait>* arrow = static_cast<Arrow<NodeTrait>*>(type.take_ownership());
-
-        print_type(std::cout, arrow) << std::endl;
         Function<NodeTrait>* root = new Function<NodeTrait>(op, body.take_ownership(), arrow);
 
         PARENT(body->parent = root);
@@ -36,17 +34,19 @@ public:
         return ExpressionPtr(root);
     }
 
-    static ExpressionPtr call(const std::string& op, std::vector<Expression<NodeTrait>*> args){
+    static ExpressionPtr call(String const & op, Array<Expression<NodeTrait>*> args){
         return ExpressionPtr(new FunctionCall<NodeTrait>(op, args));
     }
-    static ExpressionPtr unary_call(const std::string& op, const ExpressionPtr& expr){
+
+    static ExpressionPtr unary_call(String const & op, const ExpressionPtr& expr){
         return new UnaryCall<NodeTrait>(op, expr.take_ownership());
     }
-    static ExpressionPtr binary_call(const std::string& op, const ExpressionPtr& lhs, const ExpressionPtr& rhs){
+
+    static ExpressionPtr binary_call(String const & op, const ExpressionPtr& lhs, const ExpressionPtr& rhs){
         return new BinaryCall<NodeTrait>(op, lhs.take_ownership(), rhs.take_ownership());
     }
 
-    static ExpressionPtr error(const std::string& message){
+    static ExpressionPtr error(String const & message){
         return new ErrorNode<NodeTrait>(message);
     }
 
@@ -54,7 +54,7 @@ public:
         return new Value<NodeTrait>(value);
     }
 
-    static ExpressionPtr placeholder(const std::string& name){
+    static ExpressionPtr placeholder(String const & name){
         return new Placeholder<NodeTrait>(name);
     }
 
@@ -62,11 +62,11 @@ public:
         return new Borrow<NodeTrait>(expr.get());
     }
     
-    static TypePtr arrow(std::vector<Type<NodeTrait>*> args, const TypePtr& return_type){
+    static TypePtr arrow(Array<Type<NodeTrait>*> args, const TypePtr& return_type){
         return new Arrow<NodeTrait>(args, return_type);
     }
 
-    static TypePtr builtin(const std::string& name){
+    static TypePtr builtin(String const & name){
         return new Builtin<NodeTrait>(name);
     }
 
@@ -99,7 +99,7 @@ public:
             }
         }*/
 
-        ExpressionPtr root = new BinaryCall<NodeTrait>("+", lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = new BinaryCall<NodeTrait>(StringArgument("+"), lhs.take_ownership(), rhs.take_ownership());
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
@@ -158,6 +158,4 @@ public:
         return root;
     }
 };
-
-
 }

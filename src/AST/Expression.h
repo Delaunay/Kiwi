@@ -28,6 +28,8 @@ namespace kiwi {
         X(unary_call, UnaryCall)\
         X(binary_call, BinaryCall)\
         X(function_call, FunctionCall)\
+        X(match, Match)\
+        X(name_space, Namespace)\
         X(borrow, Borrow)\
         X(error, ErrorNode)
 
@@ -38,19 +40,12 @@ namespace kiwi {
     };
 
     template<typename T>
-    T acess(T* ptr) {
+    T access(T* ptr) {
         if (ptr == nullptr) {
 
         }
         return ptr;
     }
-
-    // Thanks gcc for forcing us to use such beautiful macro
-    #define NODE_TYPES\
-        typedef typename NodeTrait::StringType StringType;\
-        typedef typename NodeTrait::Args       Args;\
-        typedef typename NodeTrait::ArgNames   ArgNames;\
-        typedef typename NodeTrait::IndexType  IndexType;
 
     // TODO: test typing system
     // TODO: Precedence table <= Or should I this is parsing stuff
@@ -63,6 +58,7 @@ namespace kiwi {
         {}
 
         const NodeTag tag;
+
         VTABLEV(virtual void visit(class DynamicVisitor* v) = 0;);
         PARENT(Expression<NodeTrait>* parent = nullptr;)
     };
@@ -73,11 +69,11 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        Function(const std::string& name, Expression<NodeTrait>* body) :
+        Function(StringArgument const&  name, Expression<NodeTrait>* body) :
             Expression<NodeTrait>(NodeTag::function), name(NodeTrait::make_function_name(name)), body(body)
         {}
 
-        Function(const std::string& name, Expression<NodeTrait>* body, Arrow<NodeTrait>* type) :
+        Function(StringArgument const& name, Expression<NodeTrait>* body, Arrow<NodeTrait>* type) :
             Expression<NodeTrait>(NodeTag::function), name(NodeTrait::make_function_name(name)), body(body), type(type)
         {
             if (type) { assert(type->tag == NodeTypeTag::arrow && "Not a function type"); }
@@ -87,19 +83,19 @@ namespace kiwi {
             return int(args.size());
         }
 
-        const StringType& arg(IndexType index) const {
+        const StringView& arg(IndexType index) const {
             return args[index];
         }
 
-        void add_arg(const std::string& str) {
+        void add_arg(StringArgument const& str) {
             args.push_back(NodeTrait::make_argument_name(str));
         }
 
         VTABLEV(void visit(class DynamicVisitor* v) override;);
 
-        StringType   name;
-        ArgNames     args;
-        Arrow<NodeTrait> *type{ nullptr };
+        StringView             name;
+        Array<StringType>      args;
+        Arrow<NodeTrait>      *type{ nullptr };
         Expression<NodeTrait> *body{ nullptr };
     };
 
@@ -113,17 +109,44 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        Arrow<NodeTrait>* type{ nullptr };
-        StringType   name;
-
-        std::size_t args_size() const;
-
-        Expression<NodeTrait>* arg(IndexType index);
-
     protected:
-        Call(NodeTag tag, const std::string& name) :
-            Expression<NodeTrait>(tag), name(NodeTrait::make_string(name))
+        Call(NodeTag tag, StringArgument const& name) :
+            Expression<NodeTrait>(tag), name(NodeTrait::make_call_name(name))
         {}
+
+        size_t args_size() const;
+        Expression<NodeTrait>* arg(IndexType index) const;
+
+    public:
+
+        StringView const  name;
+        Arrow<NodeTrait>* type{ nullptr };
+    };
+
+    template<typename NodeTrait>
+    class Namespace : public Expression<NodeTrait> {
+    public:
+        NODE_TYPES;
+
+        Namespace() :
+            Expression<NodeTrait>(NodeTag::name_space)
+        {}
+
+        const StringType name;
+
+        Dict<StringType, Expression<NodeTrait>*> attributes;
+    };
+
+    template<typename NodeTrait>
+    class Match : public Expression<NodeTrait> {
+    public:
+        NODE_TYPES;
+
+        Match() :
+            Expression<NodeTrait>(NodeTag::match)
+        {}
+
+        
     };
 
     template<typename NodeTrait>
@@ -131,13 +154,13 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        UnaryCall(const std::string& name, Expression<NodeTrait>* expr) :
+        UnaryCall(StringArgument const& name, Expression<NodeTrait>* expr) :
             Call<NodeTrait>(NodeTag::unary_call, name), expr(expr)
         {}
 
         IndexType args_size() const { return 1; }
 
-        Expression<NodeTrait>* arg(IndexType index) {
+        Expression<NodeTrait>* arg(IndexType index) const {
             switch (index) {
             case 0:  return expr;
             default: return expr;
@@ -145,6 +168,7 @@ namespace kiwi {
         }
 
         VTABLEV(void visit(class DynamicVisitor* v) override;);
+
         Expression<NodeTrait>* expr;
         bool right = false; // operator is left/right associative
     };
@@ -154,13 +178,13 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        BinaryCall(const std::string& name, Expression<NodeTrait>* lhs, Expression<NodeTrait>* rhs) :
+        BinaryCall(StringArgument const& name, Expression<NodeTrait>* lhs, Expression<NodeTrait>* rhs) :
             Call<NodeTrait>(NodeTag::binary_call, name), lhs(lhs), rhs(rhs)
         {}
 
         IndexType args_size() const { return 2; }
 
-        Expression<NodeTrait>* arg(IndexType index) {
+        Expression<NodeTrait>* arg(IndexType index) const {
             switch (index) {
             case 0:  return lhs;
             case 1:  return rhs;
@@ -179,7 +203,7 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        FunctionCall(const std::string& name, const std::vector<Expression<NodeTrait>*> &args) :
+        FunctionCall(StringArgument const& name, const Array<Expression<NodeTrait>*> &args) :
             Call<NodeTrait>(NodeTag::function_call, name), args(args)
         {}
 
@@ -192,7 +216,8 @@ namespace kiwi {
         }
 
         VTABLEV(void visit(class DynamicVisitor* v) override;);
-        std::vector<Expression<NodeTrait>*> args;
+
+        const Array<Expression<NodeTrait>*> args;
     };
 
     template<typename NodeTrait>
@@ -200,7 +225,7 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        Placeholder(const std::string& name) :
+        Placeholder(StringArgument const& name) :
             Expression<NodeTrait>(NodeTag::placeholder), name(NodeTrait::make_placeholder_name(name))
         {}
 
@@ -229,6 +254,7 @@ namespace kiwi {
         {}
 
         VTABLEV(void visit(class DynamicVisitor* v) override;);
+
         Expression<NodeTrait>* expr{ nullptr };
     };
 
@@ -254,18 +280,18 @@ namespace kiwi {
     public:
         NODE_TYPES;
 
-        ErrorNode(const std::string& message, const std::string& code = "", Expression<NodeTrait>* partial = nullptr) :
+        ErrorNode(StringArgument const& message, StringArgument const& code = "", Expression<NodeTrait>* partial = nullptr) :
             Expression<NodeTrait>(NodeTag::error), message(NodeTrait::make_error_message(message)), code(code), partial(partial)
         {}
 
         Expression<NodeTrait>* partial{ nullptr };    // partial parsed Node
         Expression<NodeTrait>* expected{ nullptr };   // suggested node
-        StringType code;           // code the parser should use to solve the issue
-        StringType message;        // error message
+        StringView code;           // code the parser should use to solve the issue
+        StringView message;        // error message
     };
 
     template<typename NodeTrait>
-    Expression<NodeTrait>* Call<NodeTrait>::arg(IndexType index) {
+    Expression<NodeTrait>* Call<NodeTrait>::arg(IndexType index) const {
         switch (Expression<NodeTrait>::tag) {
         case NodeTag::unary_call:
             return static_cast<UnaryCall<NodeTrait>&>(*this).arg(index);

@@ -1,3 +1,5 @@
+INCLUDE(../../cmake/macros/GroupSources.cmake)
+GroupSources(src/AST)
 
 SET(AST_SRC
     AST.h
@@ -11,9 +13,22 @@ SET(AST_SRC
     Builder.cpp
     Visitor.h
     LightAST.h
-    TreeOperations.h
-    TreeOperations.cpp)
+    StringDatabase.h
+    StringDatabase.cpp
+    Module.h
+    Module.cpp
+    TreeOps.h
+    TreeOps/PrintExpression.h
+    TreeOps/EvalExpression.h
+    TreeOps/PartialEvalExpression.h
+    TreeOps/FreeExpression.h
+    TreeOps/JsonConversion.h
+    TreeOps/CopyExpression.h
+    TreeOps/Operators.h
+    TreeOps/Operators.cpp
+    ../Types.h)
 
 SET(${CXX_STANDARD_REQUIRED} ON)
 ADD_LIBRARY(ast ${AST_SRC})
+TARGET_LINK_LIBRARIES(ast json11) 
 SET_PROPERTY(TARGET ast PROPERTY CXX_STANDARD 17)

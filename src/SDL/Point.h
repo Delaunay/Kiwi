@@ -18,7 +18,7 @@ struct Point2{
 
 typedef Point2<int>   Point2i;
 typedef Point2<float> Point2f;
-typedef Point2i       Point;
+typedef Point2f       Point;
 
 template<typename T>
 Point2<T> operator+ (Point2<T> a, Point2<T> b){
@@ -70,7 +70,8 @@ template<typename T> Point4<T> operator+ (Point4<T> a, Point4<T> b){
 typedef Point4<int>   Point4i;
 typedef Point4<float> Point4f;
 typedef Color4<Uint8> Color;
-typedef Point4i       Rectangle;
+
+//typedef Point4i       Rectangle;
 
 //typedef Eigen::Matrix<float, 4, 1> Color;
 //typedef Eigen::Matrix<float, 2, 1> Point;

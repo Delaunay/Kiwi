@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <cstdint>
+#include <unordered_map>
+#include <vector>
 
 namespace kiwi
 {
@@ -36,4 +38,15 @@ typedef std::int8_t i8;
 
 typedef float f32;
 typedef double f64;
+
+template<typename... Args>
+using Tuple = std::tuple<Args...>;
+using String = std::string;
+
+template<typename Key, typename Value>
+using Dict = std::unordered_map<Key, Value>;
+
+template<typename Value>
+using Array = std::vector<Value>;
+
 }

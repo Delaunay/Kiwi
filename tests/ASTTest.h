@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "AST/Builder.h"
-#include "AST/TreeOperations.h"
+#include "AST/TreeOps.h"
 
 #include "Format.h"
 

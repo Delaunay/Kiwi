@@ -21,4 +21,5 @@ ENDIF(BUILD_TESTING)
 # ------------------------------------------------------------------------------
 
 # ADD_SUBDIRECTORY(SDL)
+ADD_SUBDIRECTORY(json11)
 

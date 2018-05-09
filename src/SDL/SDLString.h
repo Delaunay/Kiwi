@@ -81,12 +81,12 @@ public:
         SDL_DestroyTexture(texture);
     }
 
-    void render(SDL_Renderer *renderer, Point2i pos) const{
+    void render(SDL_Renderer *renderer, Point2f pos) const{
         SDL_Rect box;
-        box.x = pos.x;
-        box.y = pos.y;
-        box.w = _width;
-        box.h = _height;
+        box.x = i32(pos.x);
+        box.y = i32(pos.y);
+        box.w = i32(_width);
+        box.h = i32(_height);
 
         log_trace("Creating texture ", string());
         SDL_DestroyTexture(texture);

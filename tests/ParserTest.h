@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <sstream>
 
+#include "AST/TreeOps.h"
 #include "Parsing/Parsing.h"
-#include "AST/TreeOperations.h"
 #include "Parsing/Optional.h"
 
 #include <iostream>
@@ -52,10 +52,10 @@ TEST(Parser, FunctionWithAnnotation)
 	StringBuffer reader(code);
 	Parser       parser(reader);
 
-	Root op = parser.parse_function(0);
+	Tuple<String, Root> op = parser.parse_function(0);
 
 	std::stringstream ss;
-	print_expr<LightExpression>(ss, op);
+	print_expr<LightExpression>(ss, std::get<1>(op));
 
 	std::cout << ss.str() << std::endl;
 }
@@ -71,10 +71,9 @@ TEST(Parser, FunctionWithoutAnnoation)
 	StringBuffer reader(code);
 	Parser       parser(reader);
 
-	Root op = parser.parse_function(0);
-
-	std::stringstream ss;
-	print_expr<LightExpression>(ss, op);
+    Tuple<String, Root> op = parser.parse_function(0);
+    std::stringstream ss;
+    print_expr<LightExpression>(ss, std::get<1>(op));
 
 	std::cout << ss.str() << std::endl;
 }
@@ -104,12 +103,12 @@ TEST(Optional, None) {
 
 	EXPECT_EQ(a.is_defined(), false);
 	EXPECT_EQ(a.is_empty(), true);
-	EXPECT_THROW(a.get(), EmptyOption);
+	EXPECT_THROW(a.get(), EmptyOptionException);
 
 	a.foreach([](const int& i) -> void { std::cout << i << std::endl;  });
 
 	Option<int> map_ret = a.map<int>([](const int& d) -> int { return d; });
-	EXPECT_THROW(map_ret.get(), EmptyOption);
+	EXPECT_THROW(map_ret.get(), EmptyOptionException);
 
 	int fold_ret = a.fold<int>(
 		[]() { return 11;  }, 
@@ -120,7 +119,7 @@ TEST(Optional, None) {
 }
 
 TEST(Either, Right) {
-	auto a = right<int, float>(10);
+	auto a = right<int, f32>(10);
 
 	EXPECT_EQ(a.is_right(), true);
 	EXPECT_EQ(a.is_left(), false);
@@ -137,12 +136,12 @@ TEST(Either, Right) {
 }
 
 TEST(Either, Left) {
-	auto a = left<int, float>(11.2);
+	auto a = left<int, f32>(11.2f);
 
 	EXPECT_EQ(a.is_right(), false);
 	EXPECT_EQ(a.is_left(), true);
 
-	EXPECT_FLOAT_EQ(a.left(), 11.2);
+	EXPECT_FLOAT_EQ(a.left(), 11.2f);
 	EXPECT_THROW(a.right(), EitherError);
 
 	bool fold_ret = a.fold<bool>(

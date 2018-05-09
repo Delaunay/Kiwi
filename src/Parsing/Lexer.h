@@ -8,6 +8,7 @@
 
 //#define KIWI_DEBUG
 #include "../Debug.h"
+#include "../Types.h"
 
 /*
  *  Lexer is a stream of tokens
@@ -107,7 +108,16 @@ public:
       }
 
       return make_token('-');
-      ;
+    }
+
+    // utf8 Arrow
+    if (uint8(c) == uint8(0xE2)) {
+        if (utf8_match(c, u8"→")) {
+            consumec();
+            return make_token(tok_arrow);
+        }
+
+        return make_token(tok_incorrect);
     }
 
     // Numbers
@@ -125,6 +135,19 @@ public:
     c = peekc();
     consumec();
     return make_token(c);
+  }
+
+  bool utf8_match(uint8 current_c, char const* target_) {
+      uint8 const* target = reinterpret_cast<uint8 const*>(target_);
+
+      for (size_t i = 0, n = strlen(target_); i < n; ++i) {
+          if (current_c != target[i]) {
+              log_error("Expected `", target[i], "` got `", current_c, "` .");
+              return false;
+          }
+          current_c = nextc();
+      }
+      return true;
   }
 
   Token read_identifier(char c) {

@@ -33,11 +33,13 @@
     X(tok_eof,        -9)\
     X(tok_def,        -10)\
     X(tok_docstring,  -11)\
-    X(tok_arrow,      -12)
+    X(tok_arrow,      -12)\
+    X(tok_record,     -13)
 
 #define KIWI_KEYWORDS \
-    X("def", tok_def)\
-    X("->", tok_arrow)
+    X("def"   , tok_def)\
+    X("class" , tok_record)\
+    X("->"    , tok_arrow)
     
 namespace kiwi{
 

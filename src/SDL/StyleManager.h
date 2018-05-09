@@ -32,17 +32,19 @@ public:
         }
     }
 
-    const StringType& def()  const { return fun_def;}
-    const StringType& arrow()const { return _arrow;}
-    const StringType& space()const { return _space;}
+    const StringType& def()   const { return fun_def;}
+    const StringType& arrow() const { return _arrow;}
+    const StringType& space() const { return _space;}
 
-    float width()const { return glyph_width;}
-    float height()const { return glyph_height;}
+    f32 width() const { return glyph_width;}
+    f32 height() const { return glyph_height;}
 
-    float width(const StringType& txt) const{ return txt.width();}
-    float height(const StringType&) const{ return glyph_height;}
+    f32 width (const StringType& txt) const { return f32(txt.width());}
+    f32 height(const StringType&)     const { return f32(glyph_height);}
 
-    Point size(const StringType& txt) const{ return Point(width(txt), height(txt));}
+    Point2f size(const StringType& txt) const{ 
+        return Point(width(txt), height(txt));
+    }
 
     const StringType& open_parenthesis() const{ return fun_open;}
     const StringType& close_parenthesis() const{ return fun_close;}
@@ -54,11 +56,11 @@ public:
     StringType keyword(const T& str){ return RenderTrait::make_keyword(str); }
 
     const FontType& font()   const {  return _font;       }
-    unsigned int font_size() const {  return _font_size;   }
+    uint32 font_size() const {  return _font_size;   }
 
 private:
     FontType _font = SDLString::default_font();
-    unsigned int _font_size = 12;
+    uint32   _font_size = 12;
 
     StringType fun_def   = keyword("def ");
     StringType fun_open  = text("(");
@@ -68,8 +70,8 @@ private:
     StringType _space    = text(" ");
     StringType _arrow    = text(u8" \u2192 ");
 
-    float glyph_width = _space.width();   // space.getCharacterSize();
-    float glyph_height = _space.height(); // space.getGlobalBounds().height;
+    f32 glyph_width = f32(_space.width());   // space.getCharacterSize();
+    f32 glyph_height = f32(_space.height()); // space.getGlobalBounds().height;
 };
 
 }

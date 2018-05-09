@@ -25,7 +25,7 @@ namespace kiwi{
         {}
 
         Point render_string(Type<RenderTrait>* x, const StringType& str, Point pos) {
-            Rectangle bbox(0, 0, 0, 0);
+            Point4f bbox(0, 0, 0, 0);
             std::tie(pos, bbox) = ctx.render(str, pos);
 
             if (!box_extracted)
@@ -93,14 +93,11 @@ public:
     RenderingContext            ctx;
     TypeRenderEngine            type_engine;
 
-
     std::vector<Expression<RenderTrait>*> bounding_boxes;
     const StyleManager&                   style = StyleManager::style_manager();
-    Rectangle                             top_box = {10000, 10000, -10000, -10000};
+    Point4f                               top_box = {10000, 10000, -10000, -10000};
     Expression<RenderTrait>*              current_expression = nullptr;
     
-    
-
     // Check if `render` inputs have changed
     // if so we need to recompute the bouding boxes and
     // update positions
@@ -168,7 +165,7 @@ public:
     }
 
     Point render_string(Expression<RenderTrait>* x, const StringType& str, Point pos) {
-        Rectangle bbox(0, 0, 0, 0);
+        Point4f bbox(0, 0, 0, 0);
         std::tie(pos, bbox) = ctx.render(str, pos);     
 
         if (!box_extracted) 
@@ -182,18 +179,17 @@ public:
         pos = render_string(x, x->name, pos);         
         pos = render_string(x, style.get('('), pos);  
 
-        int na = 0;
+        size_t na = 0;
 
         if (x->type != nullptr)
             na = x->type->args_size() - 1;
 
-        int n = int(x->args_size()) - 1;
+        size_t n = size_t(i32(x->args_size()) - 1);
 
-        log_info(n, " ", na);
         assert(n == na && "Arrow type size mistmatch");
 
         if (n >= 0){
-            for(int i = 0; i < n; ++i){
+            for(size_t i = 0; i < n; ++i){
                 log_trace("argument ", i + 1);
                 pos = render_string(x, x->arg(i), pos);
                 pos = render_string(x, style.get(':'), pos);
@@ -202,7 +198,7 @@ public:
             }
             log_trace("argument ", n);
             pos = render_string(x, x->arg(n), pos);
-            pos = render_string(x, style.get(':'), pos);
+            pos = render_string(x, style.get(':'), pos); 
             pos = render_type(x->type->arg(na), pos, idt);
         }
 
@@ -223,7 +219,7 @@ public:
         pos = render_string(x, x->name, pos);
         pos = render_string(x, style.get('('), pos);
 
-        int n = x->args_size() - 1;
+        size_t n = x->args_size() - 1;
 
         for(int i = 0; i < n; ++i){
             pos = render_expr(x->arg(i), pos, idt);
@@ -236,8 +232,10 @@ public:
     }
 
     Point unary_call(UnaryCall<RenderTrait>* x, Point pos, int idt){
-        if (!x->right)
+        if (!x->right) {
             pos = render_string(x, x->name, pos);
+            pos = render_string(x, style.get(' '), pos);
+        }
 
         pos = render_expr(x->arg(0), pos, idt);
 

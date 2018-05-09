@@ -15,9 +15,9 @@ namespace kiwi {
 	template<typename T>
 	Option<T> none();
 	
-	class EmptyOption: public std::exception {
+	class EmptyOptionException: public std::exception {
 	public:
-		EmptyOption() {
+        EmptyOptionException() {
 			log_debug(what());
 		}
 
@@ -38,7 +38,7 @@ namespace kiwi {
         {}
 
         Option(const Option<T>& v) :
-            _is_defined(v._is_defined), _data(v._is_defined ? v._data: v._dummy)
+            _is_defined(v._is_defined), _data(v._is_defined ? v._data: T())
         {}
 
         ~Option() {
@@ -47,18 +47,26 @@ namespace kiwi {
             }
         }
 
-		T& get(){
+        bool operator==(T const& b) const {
+            return is_defined() && b.is_defined() && get() == b.get();
+        }
+
+        bool operator!=(T const& b) const {
+            return !(*this == b);
+        }
+
+		T& get() const {
 			if (is_defined()) {
-				return _data;
+				return const_cast<T&>(_data);
 			}
-			throw EmptyOption();
+			throw EmptyOptionException();
 		}
 
-		bool is_defined() {
+		bool is_defined() const {
 			return _is_defined;
 		}
 
-		bool is_empty() {
+		bool is_empty() const {
 			return !is_defined();
 		}
 
@@ -94,6 +102,16 @@ namespace kiwi {
 			Dummy _dummy;
 		};
 	};
+
+    template<typename T>
+    bool operator==(Option<T> const& a, Option<T> const& b) {
+        return a.is_defined() && b.is_defined() && a.get() == b.get();
+    }
+
+    template<typename T>
+    bool operator!=(Option<T> const& a, Option<T> const& b) {
+        return !(a == b);
+    }
 
 	template<typename T>
 	Option<T> some(const T& v){

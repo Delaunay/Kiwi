@@ -17,6 +17,7 @@ return v;
 
 
 namespace kiwi {
+#undef log_trace
 #define log_trace(...) LOG_INTERNAL(LogLevel::trace, __VA_ARGS__)
 
     RenderTrait::StringType convert_string(ASTTrait::StringType const& str) {
@@ -102,8 +103,8 @@ namespace kiwi {
         }
 
         return_value function_call(FunctionCall<ASTTrait>* x) {
-            std::vector<Expression<ASTTrait>*>& s = x->args;
-            std::vector<Expression<RenderTrait>*> v(s.size());
+            const Array<Expression<ASTTrait>*>& s = x->args;
+            Array<Expression<RenderTrait>*> v(s.size());
 
             for (std::size_t i = 0; i < s.size(); ++i) {
                 v[i] = this->convert(s[i]);

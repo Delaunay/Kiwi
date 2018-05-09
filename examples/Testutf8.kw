@@ -1,0 +1,6 @@
+def inc(x: Double) → Double:
+    return x + 1
+
+class MyClass:
+	def __init__(self: MyClass):
+		pass
