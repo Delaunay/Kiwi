@@ -23,6 +23,7 @@ template<typename Visitor, typename NodeTrait, typename RetType, typename ...Arg
 class StaticVisitor{
 public:
     typedef RetType return_value;
+    using NodeTraitType = NodeTrait;
 
     RetType traverse(Expression<NodeTrait>* x, Args... args){
         switch(x->tag){
@@ -54,6 +55,8 @@ template<typename Visitor, typename NodeTrait, typename RetType, typename ...Arg
 class StaticTypeVisitor {
 public:
     typedef RetType return_value;
+    using NodeTraitType = NodeTrait;
+
     // --------------------------------------------------------------------------------
     //      Type Dispatcher
     // 

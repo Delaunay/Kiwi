@@ -4,7 +4,7 @@
 #include "SDLWindowManager.h"
 #include "SDLWindow.h"
 
-#include "RenderEngine.h"
+//#include "RenderEngine.h"
 
 #include "../Logging/Log.h"
 
@@ -17,7 +17,7 @@ private:
 
 public:
 
-    kiwi::ExpressionRenderEngine::ExpressionPtr sqr_node = kiwi::ExpressionRenderEngine::make_sqr();
+    //kiwi::ExpressionRenderEngine::ExpressionPtr sqr_node = kiwi::ExpressionRenderEngine::make_sqr();
 
 
     void render() override {
@@ -30,7 +30,7 @@ public:
     }
 
     void draw(SDL_Renderer *renderer) override {
-        kiwi::ExpressionRenderEngine::run(_renderer, sqr_node.get(), {50, 50});
+        //kiwi::ExpressionRenderEngine::run(_renderer, sqr_node.get(), {50, 50});
     }
 };
 

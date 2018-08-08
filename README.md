@@ -24,13 +24,15 @@ Additional constraints might limit the generality of the code but provide better
 Kiwi allows you to write Z3 constraint as type annotations
 The `get_value` function bellow guarantees that no out of bounds error can occur when this function is called.
 When the guarantee cannot be satisfied a compile time error is written back. You can then  choose to refactor
-your code inorder to provide the necessary guarantee or use the unsafe version
+your code inorder to provide the necessary guarantee or use the unsafe version.
 
 
 	def get_value(array: Array<T, N>, (index : Int) < N) -> Int:
 		return array[index];
 
+* Distributed System
 
+Kiwi is a compiler/server
 
 
 

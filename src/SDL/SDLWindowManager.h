@@ -28,7 +28,7 @@ private:
         CHECK(TTF_Init());
 
         //SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");
         log_trace("Window Manager was initialized");
     }
 
@@ -215,8 +215,8 @@ public:
 
     void run(){
         _is_running = true;
-
         SDL_Event event;
+        SDL_StartTextInput();
         while(is_running() && SDL_WaitEvent(&event)){
             switch (event.type){
             case SDL_WINDOWEVENT:{
@@ -245,10 +245,12 @@ public:
                 SDL_free(event.drop.file);
                 break;
             }
+
+            case SDL_TEXTINPUT:
+                log_info("[WindowManager] Getting Text Input");
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-            case SDL_TEXTEDITING:
-            case SDL_TEXTINPUT:{
+            case SDL_TEXTEDITING:{
                 if (keyboard_focus()){
                     keyboard_focus()->handle_event(event);
                     keyboard_focus()->render();
@@ -266,6 +268,7 @@ public:
 
             }
         }
+        SDL_StopTextInput();
     }
 
     bool is_running(){

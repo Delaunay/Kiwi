@@ -11,9 +11,8 @@
 #include "SDLEvent.h"
 #include "../Types.h"
 
+#include "Drawable/StringDrawable.h"
 #include "Point.h"
-
-#include "SDLString.h"
 
 namespace kiwi{
 
@@ -46,17 +45,19 @@ public:
     void handle_event(const SDL_Event& event){
         //log_info("event handling");
         switch (event.type){
+
+
         case SDL_MOUSEWHEEL:      return handle_mouse_wheel(event.wheel);
 
         case SDL_WINDOWEVENT:     return handle_window(event.window);
 
         case SDL_MOUSEMOTION:     return handle_mouse_motion(event.motion);
 
-        case SDL_MOUSEBUTTONDOWN: return handle_mouse_button_down(event.button);
-        case SDL_MOUSEBUTTONUP:   return handle_mouse_button_up(event.button);
+        case SDL_MOUSEBUTTONDOWN: return handle_mouse_button(false, event.button);
+        case SDL_MOUSEBUTTONUP:   return handle_mouse_button(true, event.button);
 
-        case SDL_KEYDOWN:         return handle_keyboard_down(event.key);
-        case SDL_KEYUP:           return handle_keyboard_up(event.key);
+        case SDL_KEYDOWN:         return handle_keyboard(false, event.key);
+        case SDL_KEYUP:           return handle_keyboard(true, event.key);
 
         case SDL_DROPFILE:        return handle_drop_file(event.drop);
         case SDL_DROPTEXT:        return handle_drop_text(event.drop);
@@ -69,8 +70,11 @@ public:
         // SDL_SetTextInputRect
         // SDL_StartTextInput
         // SDL_StopTextInput
-        case SDL_TEXTEDITING: return handle_text_editing(event.edit); // Char by char
-        case SDL_TEXTINPUT: return handle_text_input(event.text); // Grouped input
+        case SDL_TEXTEDITING: 
+            return handle_text_editing(event.edit); // Char by char
+
+        case SDL_TEXTINPUT:
+            return handle_text_input(event.text); // Grouped input                                    
         }
 
 
@@ -115,6 +119,8 @@ public:
         SDL_RenderClear(_renderer);
         SDL_SetRenderDrawColor(_renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
+        log_info("Cleaning Screen");
+
         draw(_renderer);
         SDL_RenderPresent(_renderer);
     }
@@ -133,11 +139,17 @@ public:
         return _handle != nullptr;
     }
 
-    virtual void handle_mouse_button_up(SDL_MouseButtonEvent event) {}
-    virtual void handle_mouse_button_down(SDL_MouseButtonEvent event) {}
+    virtual void handle_mouse_motion(SDL_MouseMotionEvent event) {}
 
-    virtual void handle_keyboard_up(SDL_KeyboardEvent event) {}
-    virtual void handle_keyboard_down(SDL_KeyboardEvent event) {}
+    virtual void handle_mouse_wheel(SDL_MouseWheelEvent event) {}
+
+    virtual void handle_text_editing(SDL_TextEditingEvent event) {}
+
+    virtual void handle_text_input(SDL_TextInputEvent event) {}
+
+    virtual void handle_mouse_button(bool up, SDL_MouseButtonEvent event) {}
+    virtual void handle_keyboard(bool up, SDL_KeyboardEvent event) {}
+
 
     virtual void handle_drop_file(SDL_DropEvent event) {}
     virtual void handle_drop_text(SDL_DropEvent event) {}
@@ -148,13 +160,6 @@ public:
 
     virtual void handle_quit(SDL_QuitEvent event) {}
 
-    virtual void handle_mouse_motion(SDL_MouseMotionEvent event) {}
-
-    virtual void handle_mouse_wheel(SDL_MouseWheelEvent event) {}
-
-    virtual void handle_text_editing(SDL_TextEditingEvent event) {}
-
-    virtual void handle_text_input(SDL_TextInputEvent event) {}
 
     virtual void handle_window(SDL_WindowEvent wevent){
         switch(wevent.event){

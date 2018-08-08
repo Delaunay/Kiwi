@@ -4,7 +4,7 @@ GroupSources(src/SDL)
 SET(BOOST_ROOT C:/UserData/dist/boost_1_67_0)
 SET(BOOST_LIBRARYDIR C:/UserData/dist/boost_1_67_0/lib64-msvc-14.1)
 SET(BOOST_INCLUDEDIR C:/UserData/dist/boost_1_67_0/)
-FIND_PACKAGE(Boost 1.67.0 COMPONENTS filesystem) #  
+FIND_PACKAGE(Boost 1.67.0 COMPONENTS filesystem) 
 
 INCLUDE_DIRECTORIES(../../dependencies)
 INCLUDE_DIRECTORIES(../../dependencies/SDL/include)
@@ -14,37 +14,16 @@ INCLUDE_DIRECTORIES(${SDL2_TTF_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 
 LINK_DIRECTORIES(${BOOST_LIBRARYDIR})
-
-SET(SDL_SRC
-    Point.h
-    String.h
-    String.cpp
-    RenderNode.h
-    RenderTreeVisitor.h
-    RenderEngine.h
-    StyleManager.h
-    SDLEvent.h
-    SDLEvent.cpp
-    SDLString.h
-    SDLString.cpp
-    SDLHelper.h
-    SDLHelper.cpp
-    SDLWindowManager.h
-    SDLWindowManager.cpp
-    SDLWindow.h
-    SDLWindow.cpp
-	ExpressionWorkspace.cpp
-	ExpressionWorkspace.h
-    SDLWrapper.h
-    RenderingUtils.h
-    RenderingUtils.cpp
-)
+ 
+ 
+file(GLOB_RECURSE SDL_SRC *.cpp)
+file(GLOB_RECURSE SDL_HDS *.h *.inc)
 
 #    SDLMain.cpp
 #TARGET_LINK_LIBRARIES(sdl_rendering ast parsing ${SDL2_LIBRARY} ${SDL2_TTF_LIBRARY})
 
 SET(${CXX_STANDARD_REQUIRED} ON)
-ADD_LIBRARY(sdl_rendering ${SDL_SRC})
+ADD_LIBRARY(sdl_rendering ${SDL_SRC} ${SDL_HDS})
 SET_PROPERTY(TARGET sdl_rendering PROPERTY CXX_STANDARD 17)
 
 SET(${CXX_STANDARD_REQUIRED} ON)

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace kiwi
 {
@@ -48,5 +49,8 @@ using Dict = std::unordered_map<Key, Value>;
 
 template<typename Value>
 using Array = std::vector<Value>;
+
+template<typename Value>
+using UniquePtr = std::unique_ptr<Value>;
 
 }

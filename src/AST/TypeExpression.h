@@ -140,7 +140,7 @@ namespace kiwi {
         Type<NodeTrait>*     get_type(size_t index)            const { return index_name[index].second;   }
         Type<NodeTrait>*     get_type(StringType const& name)  const { return get_type(get_index(name));  }
 
-        size_t size() const { return index_name.size();  }
+        size_t arg_size() const { return index_name.size();  }
 
         const StringType name;
         const bool is_union;
