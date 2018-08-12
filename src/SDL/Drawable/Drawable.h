@@ -1,55 +1,51 @@
 #ifndef KIWI_DRAWABLE_HEADER
 #define KIWI_DRAWABLE_HEADER
 
-#include "../SDLHelper.h"
 #include "../Point.h"
+#include "../SDLHelper.h"
 
 namespace kiwi {
 class Drawable {
-public:
+  public:
+    virtual ~Drawable();
+
     virtual Point draw(SDL_Renderer *renderer, Point position) = 0;
 
-    virtual ~Drawable() {}
-
-    virtual String const drawable_name() {
-        return "Drawable";
-    }
+    virtual String const drawable_name();
 
     // Event Handling
-    virtual void handle_mouse_motion(SDL_MouseMotionEvent event) {}
+    virtual void handle_mouse_motion(SDL_MouseMotionEvent);
 
-    virtual void handle_mouse_wheel(SDL_MouseWheelEvent event) {}
+    virtual void handle_mouse_wheel(SDL_MouseWheelEvent);
 
-    virtual void handle_text_editing(SDL_TextEditingEvent event) {}
+    virtual void handle_text_editing(SDL_TextEditingEvent);
 
-    virtual void handle_text_input(SDL_TextInputEvent event) {}
+    virtual void handle_text_input(SDL_TextInputEvent);
 
-    virtual void handle_window(SDL_WindowEvent wevent) {}
+    virtual void handle_window(SDL_WindowEvent);
 
-    virtual void handle_mouse_button(bool up, SDL_MouseButtonEvent event) {}
+    virtual void handle_mouse_button(bool up, SDL_MouseButtonEvent);
 
-    virtual void handle_keyboard(bool down, SDL_KeyboardEvent event) {}
+    virtual void handle_keyboard(bool down, SDL_KeyboardEvent);
 
     virtual Point size() const = 0;
 
-    Point position() const { return _position;  }
+    Point position() const { return _position; }
 
-    void set_position(Point pos) { _position = pos;  }
+    void set_position(Point pos) { _position = pos; }
 
     bool collide(int x, int y) {
-        if (x > position().x &&
-            y > position().y &&
-            position().x + size().x > x &&
-            position().y + size().y > y) {
+        if(x > position().x && y > position().y && position().x + size().x > x &&
+           position().y + size().y > y) {
             return true;
         }
         return false;
     }
 
-private:
+  private:
     Point _position;
 };
 
-}
+} // namespace kiwi
 
 #endif

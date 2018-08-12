@@ -1,17 +1,18 @@
 ﻿#pragma once
 
-#include <vector>
-#include <iostream>
 #include <chrono>
 #include <cstdio>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #include <algorithm>
 #include <regex>
 
 #include "../Format.h"
+#include "../Types.h"
 
-namespace kiwi{
+namespace kiwi {
 
 #define BIG_SCREEN " "
 #define SMALL_SCREEN "\n\t"
@@ -19,84 +20,81 @@ namespace kiwi{
 #define MSG_SEPARATOR " "
 #define SIMPLIFY_NAMES simplify_function_name
 
-#define KIWI_LOG_LEVEL \
-    KIWI_LEVEL(all, All, "     ALL     ")\
-    KIWI_LEVEL(trace, Trace, "     TRACE   ")\
-    KIWI_LEVEL(debug, Debug, " [?] DEBUG   ")\
-    KIWI_LEVEL(warn, Warning, " /!\\ WARNING ")\
-    KIWI_LEVEL(info, Info, " [i] INFO    ")\
+#define KIWI_LOG_LEVEL                                                                             \
+    KIWI_LEVEL(all, All, "     ALL     ")                                                          \
+    KIWI_LEVEL(trace, Trace, "     TRACE   ")                                                      \
+    KIWI_LEVEL(debug, Debug, " [?] DEBUG   ")                                                      \
+    KIWI_LEVEL(warn, Warning, " /!\\ WARNING ")                                                    \
+    KIWI_LEVEL(info, Info, " [i] INFO    ")                                                        \
     KIWI_LEVEL(error, Error, " [!] ERROR   ")
 
-enum class LogLevel{
+enum class LogLevel {
 #define KIWI_LEVEL(a, b, c) a,
     KIWI_LOG_LEVEL
 #undef KIWI_LEVEL
 };
 
-class Log{
-public:
-
-    template<typename... Args>
-    void log(LogLevel level, std::string file,
-             std::string function, int line, const Args& ... args)
-    {
-        if (log_level <= level)
-            print(out,
-                  date(), get_string(level), pretty_file(file), FILE_SEPARATOR,
-				  SIMPLIFY_NAMES(function), " ", line, MSG_SEPARATOR, args...) << std::endl;
+class Log {
+  public:
+    template <typename... Args>
+    void log(LogLevel level, std::string file, std::string function, i64 line,
+             const Args &... args) {
+        if(log_level <= level)
+            print(out, date(), get_string(level), pretty_file(file), FILE_SEPARATOR,
+                  SIMPLIFY_NAMES(function), " ", line, MSG_SEPARATOR, args...)
+                << std::endl;
     }
 
-    template<typename... Args>
-    void log_call_trace(LogLevel level, std::string file,
-             std::string function, int line, int depth, const Args& ... args)
-    {
-        if (log_level <= level)
-            print(out,
-                  get_string(level), pretty_depth(depth), pretty_file(file), " ",
-				  SIMPLIFY_NAMES(function), ":", line, " ", args...) << std::endl;
+    template <typename... Args>
+    void log_call_trace(LogLevel level, std::string file, std::string function, i64 line, i64 depth,
+                        const Args &... args) {
+        if(log_level <= level)
+            print(out, get_string(level), pretty_depth(depth), pretty_file(file), " ",
+                  SIMPLIFY_NAMES(function), ":", line, " ", args...)
+                << std::endl;
     }
 
-	// replace something like `kiwi::Class::method` by `k.C.method`
-	std::string simplify_function_name(const std::string& function) {
-		// Match namespace like name `kiwi::Class::method`
-		std::regex e("([A-Za-z])[A-Za-z0-9]*::");
+    // replace something like `kiwi::Class::method` by `k.C.method`
+    std::string simplify_function_name(const std::string &function) {
+        // Match namespace like name `kiwi::Class::method`
+        std::regex e("([A-Za-z])[A-Za-z0-9]*::");
 
-		std::string result;
-		std::regex_replace(std::back_inserter(result), function.begin(), function.end(), e, "$1.");
+        std::string result;
+        std::regex_replace(std::back_inserter(result), function.begin(), function.end(), e, "$1.");
 
-		return result;
-	}
+        return result;
+    }
 
-    static std::string date(){
+    static std::string date() {
         static std::string date_buffer = std::string(20, ' ');
 
         time_t rawtime;
-        struct tm* timeinfo;
+        struct tm *timeinfo;
 
         time(&rawtime);
         timeinfo = localtime(&rawtime);
 
         strftime(&date_buffer[0], 20, "%Y-%m-%d %H:%M:%S", timeinfo);
         return date_buffer.substr(0, 19);
-   }
+    }
 
-    static const std::string& get_string(LogLevel level){
+    static const std::string &get_string(LogLevel level) {
         static std::vector<std::string> stuff = {
-        #define KIWI_LEVEL(a, b, c) c,
+#define KIWI_LEVEL(a, b, c) c,
             KIWI_LOG_LEVEL
-        #undef KIWI_LEVEL
+#undef KIWI_LEVEL
         };
 
         return stuff[unsigned(level)];
     }
 
-    static std::string pretty_file(const std::string& file_name){
+    static std::string pretty_file(const std::string &file_name) {
         int count = 0;
         std::string temp;
         std::vector<std::string> strings;
 
-        for(auto c : file_name){
-            if (c == '/' || c == '\\'){
+        for(auto c : file_name) {
+            if(c == '/' || c == '\\') {
                 count += 1;
                 strings.push_back(temp);
                 temp = "";
@@ -107,7 +105,7 @@ public:
         strings.push_back(temp);
 
         std::size_t size = strings.size();
-        if (size > 2)
+        if(size > 2)
             return strings[size - 2] + "/" + strings[size - 1];
 
         return strings[size - 1];
@@ -121,11 +119,11 @@ public:
      * |+->
      * +->
      */
-    static std::string pretty_depth(unsigned int d){
+    static std::string pretty_depth(u64 d) {
         std::string s(d + 4, ' ');
 
-        for(unsigned int i = 0; i < d; ++i){
-            if (i % 2 == 0)
+        for(u64 i = 0; i < d; ++i) {
+            if(i % 2 == 0)
                 s[i] = '|';
             else
                 s[i] = ':';
@@ -136,72 +134,65 @@ public:
         return s;
     }
 
-    void set_log_level(LogLevel level) {
-        log_level = level;
+    void set_log_level(LogLevel level) { log_level = level; }
+
+  private:
+    // std::vector<LogEntry> entries;
+    std::ostream &out;
+    LogLevel log_level = LogLevel::all;
+
+  public:
+    static std::string header() {
+        return "-----------------------------------------------------------------------------\n"
+               "YYYY-MM-DD HH:MM:SS |  SEVERITY | FILE:FUNCTION:LINE                  MESSAGE\n"
+               "--------------------+-----------+--------------------------------------------\n";
     }
 
-private:
-    //std::vector<LogEntry> entries;
-    std::ostream&         out;
-    LogLevel              log_level = LogLevel::all;
-
-public:
-
-    static std::string header(){
-        return
-        "-----------------------------------------------------------------------------\n"
-        "YYYY-MM-DD HH:MM:SS |  SEVERITY | FILE:FUNCTION:LINE                  MESSAGE\n"
-        "--------------------+-----------+--------------------------------------------\n";
-    }
-
-    static Log& instance(){
+    static Log &instance() {
         static Log log(header());
         return log;
     }
 
-private:
-    Log(const std::string& header):
-        out(std::cout)
-    {
-        out << header;
-    }
+  private:
+    Log(const std::string &header) : out(std::cout) { out << header; }
 };
 
-
 #ifndef __linux__
-#   define GET_FUN_NAME_EXT __FUNCSIG__
+#define GET_FUN_NAME_EXT __FUNCSIG__
 #else
-#   define GET_FUN_NAME_EXT __PRETTY_FUNCTION__
+#define GET_FUN_NAME_EXT __PRETTY_FUNCTION__
 #endif
 
 #define GET_FUN_NAME_SHORT __FUNCTION__
 
 #define GET_FUN_NAME GET_FUN_NAME_SHORT
 
-#define LOG_INTERNAL(level, ...)\
-    kiwi::Log::instance().log(kiwi::level, __FILE__, GET_FUN_NAME, __LINE__,  __VA_ARGS__)
+#define LOG_INTERNAL(level, ...)                                                                   \
+    kiwi::Log::instance().log(kiwi::level, __FILE__, GET_FUN_NAME, __LINE__, __VA_ARGS__)
 
-#define log_warn(...)  LOG_INTERNAL(LogLevel::warn,  __VA_ARGS__)
-#define log_info(...)  LOG_INTERNAL(LogLevel::info,  __VA_ARGS__)
+#define log_warn(...) LOG_INTERNAL(LogLevel::warn, __VA_ARGS__)
+#define log_info(...) LOG_INTERNAL(LogLevel::info, __VA_ARGS__)
 #define log_error(...) LOG_INTERNAL(LogLevel::error, __VA_ARGS__)
 #define log_debug(...) LOG_INTERNAL(LogLevel::debug, __VA_ARGS__)
 #define log_trace(...) LOG_INTERNAL(LogLevel::trace, __VA_ARGS__)
 
-#define LOG_INTERNAL_CALL(level, depth, ...)\
-    kiwi::Log::instance().log_call_trace(level, __FILE__, GET_FUN_NAME, __LINE__,  depth, __VA_ARGS__)
+#define LOG_INTERNAL_CALL(level, depth, ...)                                                       \
+    kiwi::Log::instance().log_call_trace(level, __FILE__, GET_FUN_NAME, __LINE__, depth,           \
+                                         __VA_ARGS__)
 
-#define log_cwarn(depth, ...)  LOG_INTERNAL_CALL(LogLevel::warn,  depth, __VA_ARGS__)
-#define log_cinfo(depth, ...)  LOG_INTERNAL_CALL(LogLevel::info,  depth, __VA_ARGS__)
+#define log_cwarn(depth, ...) LOG_INTERNAL_CALL(LogLevel::warn, depth, __VA_ARGS__)
+#define log_cinfo(depth, ...) LOG_INTERNAL_CALL(LogLevel::info, depth, __VA_ARGS__)
 #define log_cerror(depth, ...) LOG_INTERNAL_CALL(LogLevel::error, depth, __VA_ARGS__)
 #define log_cdebug(depth, ...) LOG_INTERNAL_CALL(LogLevel::debug, depth, __VA_ARGS__)
 #define log_ctrace(depth, ...) LOG_INTERNAL_CALL(LogLevel::trace, depth, __VA_ARGS__)
 
-#define debug_if(pred, ...) {if (pred) { log_debug(__VA_ARGS__); }}
-
+#define debug_if(pred, ...)                                                                        \
+    {                                                                                              \
+        if(pred) {                                                                                 \
+            log_debug(__VA_ARGS__);                                                                \
+        }                                                                                          \
+    }
 }
-
-
-
 
 /*
 template<typename T, typename... Args>

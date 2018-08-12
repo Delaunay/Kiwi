@@ -3,65 +3,68 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#include <SDL_video.h>
 #include <SDL_render.h>
 #include <SDL_surface.h>
+#include <SDL_video.h>
 
-#include "SDLHelper.h"
-#include "SDLEvent.h"
 #include "../Types.h"
+#include "SDLEvent.h"
+#include "SDLHelper.h"
 
 #include "Drawable/StringDrawable.h"
 #include "Point.h"
 
-namespace kiwi{
+namespace kiwi {
 
-class SDLWindow{
-protected:
+class SDLWindow {
+  protected:
     friend class WindowManager;
 
-    SDLWindow(SDL_Window* handle):
-        _handle(handle)
-    {
+    SDLWindow(SDL_Window *handle) : _handle(handle) {
         log_debug("Window(", id(), ") was created");
-        _renderer = CHECK(SDL_CreateRenderer(_handle, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC));
+        _renderer = CHECK(
+            SDL_CreateRenderer(_handle, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC));
         _font = CHECK(TTF_OpenFont(HOME "DejaVuSansMonoPowerline.ttf", 50));
     }
 
-public:
+  public:
     SDLWindow() = default;
 
-    SDLWindow(const SDLWindow& w):
-        _handle(w._handle), _renderer(w._renderer), _font(w._font)
-    {}
+    SDLWindow(const SDLWindow &w) : _handle(w._handle), _renderer(w._renderer), _font(w._font) {}
 
-    ~SDLWindow(){
-    }
+    ~SDLWindow() {}
 
-    bool operator== (const SDLWindow& w){
-        return _handle == w._handle;
-    }
+    bool operator==(const SDLWindow &w) { return _handle == w._handle; }
 
-    void handle_event(const SDL_Event& event){
-        //log_info("event handling");
-        switch (event.type){
+    void handle_event(const SDL_Event &event) {
+        // log_info("event handling");
+        switch(event.type) {
 
+        case SDL_MOUSEWHEEL:
+            return handle_mouse_wheel(event.wheel);
 
-        case SDL_MOUSEWHEEL:      return handle_mouse_wheel(event.wheel);
+        case SDL_WINDOWEVENT:
+            return handle_window(event.window);
 
-        case SDL_WINDOWEVENT:     return handle_window(event.window);
+        case SDL_MOUSEMOTION:
+            return handle_mouse_motion(event.motion);
 
-        case SDL_MOUSEMOTION:     return handle_mouse_motion(event.motion);
+        case SDL_MOUSEBUTTONDOWN:
+            return handle_mouse_button(false, event.button);
+        case SDL_MOUSEBUTTONUP:
+            return handle_mouse_button(true, event.button);
 
-        case SDL_MOUSEBUTTONDOWN: return handle_mouse_button(false, event.button);
-        case SDL_MOUSEBUTTONUP:   return handle_mouse_button(true, event.button);
+        case SDL_KEYDOWN:
+            return handle_keyboard(false, event.key);
+        case SDL_KEYUP:
+            return handle_keyboard(true, event.key);
 
-        case SDL_KEYDOWN:         return handle_keyboard(false, event.key);
-        case SDL_KEYUP:           return handle_keyboard(true, event.key);
-
-        case SDL_DROPFILE:        return handle_drop_file(event.drop);
-        case SDL_DROPTEXT:        return handle_drop_text(event.drop);
-        case SDL_DROPBEGIN:       return handle_drop_begin(event.drop);
+        case SDL_DROPFILE:
+            return handle_drop_file(event.drop);
+        case SDL_DROPTEXT:
+            return handle_drop_text(event.drop);
+        case SDL_DROPBEGIN:
+            return handle_drop_begin(event.drop);
         case SDL_DROPCOMPLETE:
             handle_drop_complete(event.drop);
             SDL_free(event.drop.file);
@@ -70,33 +73,32 @@ public:
         // SDL_SetTextInputRect
         // SDL_StartTextInput
         // SDL_StopTextInput
-        case SDL_TEXTEDITING: 
+        case SDL_TEXTEDITING:
             return handle_text_editing(event.edit); // Char by char
 
         case SDL_TEXTINPUT:
-            return handle_text_input(event.text); // Grouped input                                    
+            return handle_text_input(event.text); // Grouped input
         }
 
-
-        if (event.type == SDL_MOUSEMOTION)
+        if(event.type == SDL_MOUSEMOTION)
             return;
 
         log_debug(to_string(event));
 
-        if(event.type == SDL_WINDOWEVENT && event.window.windowID == id()){
-            switch(event.window.event){
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
+        if(event.type == SDL_WINDOWEVENT && event.window.windowID == id()) {
+            switch(event.window.event) {
+            case SDL_WINDOWEVENT_SIZE_CHANGED:
                 log_debug("SDL_WINDOWEVENT_SIZE_CHANGED ", id());
                 SDL_RenderPresent(_renderer);
                 log_debug("resized");
                 break;
 
-                case SDL_WINDOWEVENT_EXPOSED:
+            case SDL_WINDOWEVENT_EXPOSED:
                 log_debug("SDL_WINDOWEVENT_EXPOSED ", id());
                 SDL_RenderPresent(_renderer);
                 break;
 
-                case SDL_WINDOWEVENT_CLOSE:
+            case SDL_WINDOWEVENT_CLOSE:
                 log_debug("SDL_WINDOWEVENT_CLOSE ", id());
                 SDL_HideWindow(_handle);
                 break;
@@ -110,11 +112,11 @@ public:
         }*/
     }
 
-    virtual void draw(SDL_Renderer *renderer){
+    virtual void draw(SDL_Renderer *renderer) {
         CHECK(SDL_RenderDrawLine(renderer, 0, 0, 100, 100));
     }
 
-    virtual void render(){
+    virtual void render() {
         SDL_SetRenderDrawColor(_renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(_renderer);
         SDL_SetRenderDrawColor(_renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
@@ -125,19 +127,13 @@ public:
         SDL_RenderPresent(_renderer);
     }
 
-    i32 id(){ return SDL_GetWindowID(_handle); }
+    i32 id() { return SDL_GetWindowID(_handle); }
 
-    operator SDL_Window const*() const{
-        return _handle;
-    }
+    operator SDL_Window const *() const { return _handle; }
 
-    operator SDL_Window*(){
-        return _handle;
-    }
+    operator SDL_Window *() { return _handle; }
 
-    operator bool() const{
-        return _handle != nullptr;
-    }
+    operator bool() const { return _handle != nullptr; }
 
     virtual void handle_mouse_motion(SDL_MouseMotionEvent event) {}
 
@@ -150,7 +146,6 @@ public:
     virtual void handle_mouse_button(bool up, SDL_MouseButtonEvent event) {}
     virtual void handle_keyboard(bool up, SDL_KeyboardEvent event) {}
 
-
     virtual void handle_drop_file(SDL_DropEvent event) {}
     virtual void handle_drop_text(SDL_DropEvent event) {}
     virtual void handle_drop_begin(SDL_DropEvent event) {}
@@ -160,43 +155,42 @@ public:
 
     virtual void handle_quit(SDL_QuitEvent event) {}
 
-
-    virtual void handle_window(SDL_WindowEvent wevent){
-        switch(wevent.event){
-            case SDL_WINDOWEVENT_SIZE_CHANGED:
+    virtual void handle_window(SDL_WindowEvent wevent) {
+        switch(wevent.event) {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
             log_debug("SDL_WINDOWEVENT_SIZE_CHANGED ", id());
             SDL_RenderPresent(_renderer);
             log_debug("resized");
             break;
 
-            case SDL_WINDOWEVENT_EXPOSED:
+        case SDL_WINDOWEVENT_EXPOSED:
             log_debug("SDL_WINDOWEVENT_EXPOSED ", id());
             SDL_RenderPresent(_renderer);
             break;
 
-            case SDL_WINDOWEVENT_CLOSE:
+        case SDL_WINDOWEVENT_CLOSE:
             log_debug("SDL_WINDOWEVENT_CLOSE ", id());
             SDL_HideWindow(_handle);
             break;
         }
     }
 
-    SDL_Renderer* renderer() { return _renderer; }
+    SDL_Renderer *renderer() { return _renderer; }
 
-protected:
-	void set_focus(bool val) { _focus = true; }
+  protected:
+    void set_focus(bool val) { _focus = true; }
 
-    mutable SDL_Window* _handle = nullptr;
+    mutable SDL_Window *_handle = nullptr;
 
     SDL_Renderer *_renderer = nullptr;
-    SDL_Color     _bg_color = {255, 255, 255};
-    SDL_Font*     _font     = nullptr;
-    SDL_Surface*  _txt      = nullptr;
-    SDL_Texture*  _message  = nullptr;
-	bool		  _focus	= false;
+    SDL_Color _bg_color     = {255, 255, 255};
+    SDL_Font *_font         = nullptr;
+    SDL_Surface *_txt       = nullptr;
+    SDL_Texture *_message   = nullptr;
+    bool _focus             = false;
 };
 
-}
+} // namespace kiwi
 
 /*
         log_debug("Starting init >>>>>>>>>>>>");
@@ -213,20 +207,19 @@ protected:
 */
 
 #define UTF8_CODE_POINT(x, y, z)
-UTF8_CODE_POINT(E0A0, 	EE 82 A0, Branch)
-UTF8_CODE_POINT(E0A1, 	EE 82 A1, Line number)
-UTF8_CODE_POINT(E0A2, 	EE 82 A2, Padlock (read-only))
-UTF8_CODE_POINT(E0A3, 	EE 82 A3, Column number)
-UTF8_CODE_POINT(E0B0, 	EE 82 B9, Right angle solid)
-UTF8_CODE_POINT(E0B1, 	EE 82 B1, Right angle line)
-UTF8_CODE_POINT(E0B2, 	EE 82 B2, Left angle solid)
-UTF8_CODE_POINT(E0B3, 	EE 82 B3, Left angle line)
-UTF8_CODE_POINT(E0B8, 	EE 82 B8, Bottom-left angle solid)
-UTF8_CODE_POINT(E0B9, 	EE 82 B9, Bottom-left angle line)
-UTF8_CODE_POINT(E0BA, 	EE 82 BA, Bottom-right angle solid)
-UTF8_CODE_POINT(E0BB, 	EE 82 BB, Bottom-right angle line)
-UTF8_CODE_POINT(E0BC, 	EE 82 BC, Top-left angle solid)
-UTF8_CODE_POINT(E0BD, 	EE 82 BD, Top-left angle line)
-UTF8_CODE_POINT(E0BE, 	EE 82 BE, Top-right angle solid)
-UTF8_CODE_POINT(E0BF, 	EE 82 BF, Top-right angle line)
-
+UTF8_CODE_POINT(E0A0, EE 82 A0, Branch)
+UTF8_CODE_POINT(E0A1, EE 82 A1, Line number)
+UTF8_CODE_POINT(E0A2, EE 82 A2, Padlock(read - only))
+UTF8_CODE_POINT(E0A3, EE 82 A3, Column number)
+UTF8_CODE_POINT(E0B0, EE 82 B9, Right angle solid)
+UTF8_CODE_POINT(E0B1, EE 82 B1, Right angle line)
+UTF8_CODE_POINT(E0B2, EE 82 B2, Left angle solid)
+UTF8_CODE_POINT(E0B3, EE 82 B3, Left angle line)
+UTF8_CODE_POINT(E0B8, EE 82 B8, Bottom - left angle solid)
+UTF8_CODE_POINT(E0B9, EE 82 B9, Bottom - left angle line)
+UTF8_CODE_POINT(E0BA, EE 82 BA, Bottom - right angle solid)
+UTF8_CODE_POINT(E0BB, EE 82 BB, Bottom - right angle line)
+UTF8_CODE_POINT(E0BC, EE 82 BC, Top - left angle solid)
+UTF8_CODE_POINT(E0BD, EE 82 BD, Top - left angle line)
+UTF8_CODE_POINT(E0BE, EE 82 BE, Top - right angle solid)
+UTF8_CODE_POINT(E0BF, EE 82 BF, Top - right angle line)

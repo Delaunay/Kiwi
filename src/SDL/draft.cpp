@@ -1,52 +1,3 @@
-﻿#define SDL_MAIN_HANDLED
-
-#include "SDLWindow.h"
-#include "SDLWindowManager.h"
-
-//#include "RenderEngine.h"
-
-#include "../Logging/Log.h"
-
-class MyWindow : public kiwi::SDLWindow {
-  private:
-    friend class kiwi::WindowManager;
-    MyWindow(SDL_Window *handle) : SDLWindow(handle) {}
-
-  public:
-    // kiwi::ExpressionRenderEngine::ExpressionPtr sqr_node =
-    // kiwi::ExpressionRenderEngine::make_sqr();
-
-    void render() override {
-        SDL_SetRenderDrawColor(_renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(_renderer);
-        SDL_SetRenderDrawColor(_renderer, 255, 25, 255, SDL_ALPHA_OPAQUE);
-
-        draw(_renderer);
-        SDL_RenderPresent(_renderer);
-    }
-
-    void draw(SDL_Renderer *renderer) override {
-        // kiwi::ExpressionRenderEngine::run(_renderer, sqr_node.get(), {50, 50});
-    }
-};
-
-#include "../Parsing/Optional.h"
-
-int main() {
-
-    log_debug("Trying to create a window");
-    kiwi::SDLWindow *w1 = kiwi::WindowManager::new_window<MyWindow>(
-        "A, B, C", 800, 500, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-
-    log_debug("Launching event loop");
-    kiwi::WindowManager::manager().run();
-
-    log_debug("Done!");
-    return 0;
-}
-
-namespace kiwi {
-
 /*
 #define UTF8_SYMBOLS\
     // Misc Symbols
@@ -394,4 +345,114 @@ namespace kiwi {
 ❰	10096	2770	 	HEAVY LEFT-POINTING ANGLE BRACKET ORNAMENT
 ❱	10097	2771	 	HEAVY RIGHT-POINTING ANGLE BRACKET ORNAMEN
 */
+/**
+FILE* file = fopen("M:\\projects\\Kiwi\\examples\\Test.kw", "r");
+
+char c = ' ';
+while ((c = fgetc(file)) != EOF) {
+std::cout << c;
+}*/
+
+/**/
+
+/*
+using namespace std::chrono_literals;
+
+std::string cmd = "cmd.exe /C " MONGO_DB_LOC " --dbpath C:\\UserData\\mongo\\kiwi --bind_ip 127.0.0.1";
+std::cout << cmd << std::endl;
+
+boost::asio::io_service ios;
+async_pipe ap(ios);
+
+ipstream out_stream;
+ipstream err_stream;
+opstream in;
+
+//  std_err > err_stream,
+child child(cmd, std_out > out_stream, std_in < in); // std_out > out_stream,
+
+// --dbpath
+std::string out_line;
+
+while (child.running()){
+char c = ' ';
+
+//for(auto k : "exit\n")
+//    in.put(k);
+
+while(out_stream && out_stream.get(c)){
+std::cout << c;
 }
+
+//std::cout << "Sending Quit" << std::endl;
+
+
+std::this_thread::sleep_for(1s);
+}
+
+
+
+std::cout << "end" << std::endl;
+child.wait();*/
+
+
+/*
+#include <future>
+#include <vector>
+#include <iostream>
+
+using namespace std;
+
+template<typename T>
+vector<T> getAllFutures(vector<future<T>>& futures) {
+vector<T> results(futures.size());
+
+for (auto i = 0; i < futures.size(); ++i) {
+results[i] = futures[i].get();
+}
+
+return results;
+}
+
+template<typename T>
+future<vector<T>> externalizeFuture(vector<future<T>>& futures) {
+return std::async(getAllFutures<T>, std::ref(futures));
+}
+
+struct TResult {
+std::vector<double> vec;
+std::string value;
+};
+
+int i = 0;
+TResult costly_compute(int a, int b) {
+
+std::this_thread::sleep_for(std::chrono::seconds(1));
+i += 1;
+std::cout << i << std::endl;
+if (i % 2) {
+std::cout << "Failed default" << std::endl;
+return TResult();
+}
+return TResult{ std::vector<double>{1, 2, 3}, "test" };
+}
+
+
+for (int j = 0; j < 50; ++j) {
+std::vector<std::future<TResult>> workers;
+workers.reserve(50);
+
+for (int i = 0; i < 50; ++i) {
+workers.push_back(std::async(costly_compute, i * i, i + i));
+}
+
+future<vector<TResult>> data = externalizeFuture(workers);
+vector<TResult> results = data.get();
+
+for (TResult& r : results) {
+std::cout << r.value << std::endl;
+}
+}
+
+return 0;
+*/

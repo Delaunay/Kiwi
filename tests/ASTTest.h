@@ -12,8 +12,7 @@ using namespace kiwi;
 typedef generic::Root<Expression<LightExpression>> Root;
 typedef Builder<LightExpression> RBuilder;
 
-TEST(AST, Printing)
-{
+TEST(AST, Printing) {
     Root v = RBuilder::value(2.0);
     Root w = RBuilder::value(3.0);
     Root x = RBuilder::placeholder("x");
@@ -24,25 +23,20 @@ TEST(AST, Printing)
     std::stringstream ss1;
     print_expr<LightExpression>(ss1, f);
 
-
     std::stringstream ss2;
     print_expr<LightExpression>(ss2, g);
 
     print(std::cout, "Result: ", ss1.str(), " and ", ss2.str()) << std::endl;
 }
 
-
-TEST(AST, Function)
-{
+TEST(AST, Function) {
     Root x    = RBuilder::placeholder("x");
     Root body = RBuilder::mult(x, RBuilder::borrow(x));
     Root sqr  = RBuilder::function("sqr", body);
-         static_cast<LightAST::Function*>(sqr.get())->args.push_back("x");
+    static_cast<LightAST::Function *>(sqr.get())->args.push_back("x");
 
     // add function to context
-    Context<LightExpression> ctx = {
-      {"sqr", sqr.get()}
-    };
+    Context<LightExpression> ctx = {{"sqr", sqr.get()}};
 
     // print function
     std::stringstream ss1;
@@ -51,7 +45,7 @@ TEST(AST, Function)
 
     // call function sqr(2)
     Root val  = RBuilder::value(3.0);
-    Root sqr2 = RBuilder::call("sqr", {val.take_ownership()});
+    Root sqr2 = RBuilder::call(RBuilder::placeholder("sqr"), {val.take_ownership()});
 
     std::stringstream ss2;
     print_expr<LightExpression>(ss2, sqr2);
@@ -60,17 +54,14 @@ TEST(AST, Function)
     EXPECT_DOUBLE_EQ(full_eval<LightExpression>(ctx, sqr2), 9.0);
 }
 
-TEST(AST, Eval)
-{
+TEST(AST, Eval) {
     Root v = RBuilder::value(2.0);
     Root x = RBuilder::placeholder("x");
 
     Root f = RBuilder::add(v, x);
 
     Context<LightExpression> ctx;
-        ctx["x"] = v.get();
+    ctx["x"] = v.get();
 
     EXPECT_DOUBLE_EQ(full_eval<LightExpression>(ctx, f), 4.0);
 }
-
-
