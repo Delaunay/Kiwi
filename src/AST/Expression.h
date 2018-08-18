@@ -1,6 +1,7 @@
-﻿#pragma once
+﻿#ifndef KIWI_AST_EXPRESSION_HEADER
+#define KIWI_AST_EXPRESSION_HEADER
 
-#include "TypeExpression.h"
+#include "Statement.h"
 
 #include <cassert>
 #include <iostream>
@@ -21,23 +22,6 @@
  * for internal use
  */
 namespace kiwi {
-#define KIWI_AST_NODES                                                                             \
-    X(value, Value)                                                                                \
-    X(placeholder, Placeholder)                                                                    \
-    X(function, Function)                                                                          \
-    X(unary_call, UnaryCall)                                                                       \
-    X(binary_call, BinaryCall)                                                                     \
-    X(function_call, FunctionCall)                                                                 \
-    X(match, Match)                                                                                \
-    X(name_space, Namespace)                                                                       \
-    X(borrow, Borrow)                                                                              \
-    X(error, ErrorNode)
-
-enum class NodeTag {
-#define X(name, object) name,
-    KIWI_AST_NODES
-#undef X
-};
 
 template <typename T> T access(T *ptr) {
     if(ptr == nullptr) {
@@ -46,47 +30,11 @@ template <typename T> T access(T *ptr) {
 }
 
 // TODO: test typing system
-// TODO: Precedence table <= Or should I this is parsing stuff
+// TODO: Precedence table <= Or should this be parsing stuff
 
-template <typename NodeTrait> class Expression : public NodeTrait {
+class Expression : public Statement {
   public:
-    Expression(NodeTag tag) : tag(tag) {}
-
-    const NodeTag tag;
-
-    VTABLEV(virtual void visit(class DynamicVisitor *v) = 0;);
-    PARENT(Expression<NodeTrait> *parent = nullptr;)
-};
-
-// Implementation of a function
-template <typename NodeTrait> class Function final : public Expression<NodeTrait> {
-  public:
-    NODE_TYPES;
-
-    Function(StringArgument const &name, Expression<NodeTrait> *body) :
-        Expression<NodeTrait>(NodeTag::function), name(NodeTrait::make_function_name(name)),
-        body(body) {}
-
-    Function(StringArgument const &name, Expression<NodeTrait> *body, Arrow<NodeTrait> *type) :
-        Expression<NodeTrait>(NodeTag::function), name(NodeTrait::make_function_name(name)),
-        body(body), type(type) {
-        if(type) {
-            assert(type->tag == NodeTypeTag::arrow && "Not a function type");
-        }
-    }
-
-    IndexType args_size() const { return int(args.size()); }
-
-    const StringView &arg(IndexType index) const { return args[index]; }
-
-    void add_arg(StringArgument const &str) { args.push_back(NodeTrait::make_argument_name(str)); }
-
-    VTABLEV(void visit(class DynamicVisitor *v) override;);
-
-    StringView name;
-    Array<StringType> args;
-    Arrow<NodeTrait> *type{nullptr};
-    Expression<NodeTrait> *body{nullptr};
+    Expression(NodeTag tag) : Statement(tag) {}
 };
 
 /* Function calls are split in 3
@@ -94,49 +42,45 @@ template <typename NodeTrait> class Function final : public Expression<NodeTrait
  *      - call2, call to a binaryOperator
  *      - calln, call to a function
  */
-template <typename NodeTrait> class Call : public Expression<NodeTrait> {
+class Call : public Expression {
   public:
-    NODE_TYPES;
-
   protected:
-    Call(NodeTag tag, Expression<NodeTrait> *fun) : Expression<NodeTrait>(tag), fun(fun) {}
+    Call(NodeTag tag, Expression *fun) : Expression(tag), fun(fun) {}
 
+  public:
     size_t args_size() const;
-    Expression<NodeTrait> *arg(IndexType index) const;
+    Expression *arg(u64 index) const;
 
   public:
-    Expression<NodeTrait> *fun;
-    Arrow<NodeTrait> *type{nullptr};
+    Expression *fun;
+    Expression *type{nullptr};
 };
 
-template <typename NodeTrait> class Namespace : public Expression<NodeTrait> {
+/*
+ *      target match {
+ *          case pattern => expression
+ *          case _ => default
+ *      }
+ *
+ *  Has to be an Expression that evaluate to a Value (then == must be defined for that type)
+ *  it is basically a more generic switch we do not provide real pattern matching there yet.
+ */
+class Match : public Expression {
   public:
-    NODE_TYPES;
+    Match() : Expression(NodeTag::match) {}
 
-    Namespace() : Expression<NodeTrait>(NodeTag::name_space) {}
-
-    const StringType name;
-
-    Dict<StringType, Expression<NodeTrait> *> attributes;
+    Expression *target;
+    Array<Tuple<Expression *, Expression *>> branches;
+    Expression *default_branch = nullptr;
 };
 
-template <typename NodeTrait> class Match : public Expression<NodeTrait> {
+class UnaryCall final : public Call {
   public:
-    NODE_TYPES;
+    UnaryCall(Expression *fun, Expression *expr) : Call(NodeTag::unary_call, fun), expr(expr) {}
 
-    Match() : Expression<NodeTrait>(NodeTag::match) {}
-};
+    u64 args_size() const { return 1; }
 
-template <typename NodeTrait> class UnaryCall final : public Call<NodeTrait> {
-  public:
-    NODE_TYPES;
-
-    UnaryCall(Expression<NodeTrait> *fun, Expression<NodeTrait> *expr) :
-        Call<NodeTrait>(NodeTag::unary_call, fun), expr(expr) {}
-
-    IndexType args_size() const { return 1; }
-
-    Expression<NodeTrait> *arg(IndexType index) const {
+    Expression *arg(u64 index) const {
         switch(index) {
         case 0:
             return expr;
@@ -145,22 +89,18 @@ template <typename NodeTrait> class UnaryCall final : public Call<NodeTrait> {
         }
     }
 
-    VTABLEV(void visit(class DynamicVisitor *v) override;);
-
-    Expression<NodeTrait> *expr;
+    Expression *expr;
     bool right = false; // operator is left/right associative
 };
 
-template <typename NodeTrait> class BinaryCall final : public Call<NodeTrait> {
+class BinaryCall final : public Call {
   public:
-    NODE_TYPES;
+    BinaryCall(Expression *fun, Expression *lhs, Expression *rhs) :
+        Call(NodeTag::binary_call, fun), lhs(lhs), rhs(rhs) {}
 
-    BinaryCall(Expression<NodeTrait> *fun, Expression<NodeTrait> *lhs, Expression<NodeTrait> *rhs) :
-        Call<NodeTrait>(NodeTag::binary_call, fun), lhs(lhs), rhs(rhs) {}
+    u64 args_size() const { return 2; }
 
-    IndexType args_size() const { return 2; }
-
-    Expression<NodeTrait> *arg(IndexType index) const {
+    Expression *arg(u64 index) const {
         switch(index) {
         case 0:
             return lhs;
@@ -171,59 +111,37 @@ template <typename NodeTrait> class BinaryCall final : public Call<NodeTrait> {
         }
     }
 
-    VTABLEV(void visit(class DynamicVisitor *v) override;);
-
-    Expression<NodeTrait> *lhs;
-    Expression<NodeTrait> *rhs;
+    Expression *lhs;
+    Expression *rhs;
 };
 
-template <typename NodeTrait> class FunctionCall final : public Call<NodeTrait> {
+class FunctionCall final : public Call {
   public:
-    NODE_TYPES;
+    FunctionCall(Expression *fun, const Array<Expression *> &args) :
+        Call(NodeTag::function_call, fun), args(args) {}
 
-    FunctionCall(Expression<NodeTrait> *fun, const Array<Expression<NodeTrait> *> &args) :
-        Call<NodeTrait>(NodeTag::function_call, fun), args(args) {}
+    u64 args_size() const { return args.size(); }
 
-    IndexType args_size() const { return int(args.size()); }
+    Expression *arg(u64 index) const { return args[index]; }
 
-    Expression<NodeTrait> *arg(IndexType index) { return args[index]; }
-
-    VTABLEV(void visit(class DynamicVisitor *v) override;);
-
-    const Array<Expression<NodeTrait> *> args;
+    const Array<Expression *> args;
 };
 
-template <typename NodeTrait> class Placeholder final : public Expression<NodeTrait> {
+class Placeholder final : public Expression {
   public:
-    NODE_TYPES;
+    Placeholder(String const &name) : Expression(NodeTag::placeholder), name(name) {}
 
-    Placeholder(StringArgument const &name) :
-        Expression<NodeTrait>(NodeTag::placeholder), name(NodeTrait::make_placeholder_name(name)) {}
-
-    VTABLEV(void visit(class DynamicVisitor *v) override;);
-
-    StringType name;
-    Expression<NodeTrait> *type{nullptr};
+    String name;
+    Expression *type{nullptr};
 };
 
-/* Borrow is a dummy Node which only exists to help
- * memory management. A Borrowed node is a node owned
- * by another tree. i.e we don't need to free it
- *
- * Borrow is mostly during meta programming phase
- * when the user generates code from a programm.
- * Borrow allow us to reuse the original program subtree
- * instead of copying it
- */
-template <typename NodeTrait> class Borrow final : public Expression<NodeTrait> {
+class Block final : public Expression {
   public:
-    NODE_TYPES;
+    Block(String const &name) : Expression(NodeTag::block), name(name) {}
 
-    Borrow(Expression<NodeTrait> *expr) : Expression<NodeTrait>(NodeTag::borrow), expr(expr) {}
-
-    VTABLEV(void visit(class DynamicVisitor *v) override;);
-
-    Expression<NodeTrait> *expr{nullptr};
+    String name;
+    Expression *type{nullptr};
+    Array<Statement *> statements;
 };
 
 // An ErrorNode is used by the parser
@@ -243,44 +161,42 @@ template <typename NodeTrait> class Borrow final : public Expression<NodeTrait> 
 // --------------------
 // ErrorNode also holds an expected Node which used
 // when the parser can determine the node that should be present
-template <typename NodeTrait> class ErrorNode final : public Expression<NodeTrait> {
+class ErrorNode final : public Expression {
   public:
-    NODE_TYPES;
+    ErrorNode(String const &message, String const &code = "", Expression *partial = nullptr) :
+        Expression(NodeTag::error_type), message(message), code(code), partial(partial) {}
 
-    ErrorNode(StringArgument const &message, StringArgument const &code = "",
-              Expression<NodeTrait> *partial = nullptr) :
-        Expression<NodeTrait>(NodeTag::error),
-        message(NodeTrait::make_error_message(message)), code(code), partial(partial) {}
-
-    Expression<NodeTrait> *partial{nullptr};  // partial parsed Node
-    Expression<NodeTrait> *expected{nullptr}; // suggested node
-    StringView code;                          // code the parser should use to solve the issue
-    StringView message;                       // error message
+    Expression *expected{nullptr}; // suggested node
+    String message;                // error message
+    String code;                   // code the parser should use to solve the issue
+    Expression *partial{nullptr};  // partial parsed Node
 };
 
-template <typename NodeTrait> Expression<NodeTrait> *Call<NodeTrait>::arg(IndexType index) const {
-    switch(Expression<NodeTrait>::tag) {
+inline Expression *Call::arg(u64 index) const {
+    switch(Expression::tag) {
     case NodeTag::unary_call:
-        return static_cast<UnaryCall<NodeTrait> &>(*this).arg(index);
+        return static_cast<UnaryCall const &>(*this).arg(index);
     case NodeTag::binary_call:
-        return static_cast<BinaryCall<NodeTrait> &>(*this).arg(index);
+        return static_cast<BinaryCall const &>(*this).arg(index);
     case NodeTag::function_call:
-        return static_cast<FunctionCall<NodeTrait> &>(*this).arg(index);
+        return static_cast<FunctionCall const &>(*this).arg(index);
     default:
         return nullptr;
     }
 }
 
-template <typename NodeTrait> std::size_t Call<NodeTrait>::args_size() const {
-    switch(Expression<NodeTrait>::tag) {
+inline u64 Call::args_size() const {
+    switch(Expression::tag) {
     case NodeTag::unary_call:
-        return static_cast<const UnaryCall<NodeTrait> &>(*this).args_size();
+        return static_cast<UnaryCall const &>(*this).args_size();
     case NodeTag::binary_call:
-        return static_cast<const BinaryCall<NodeTrait> &>(*this).args_size();
+        return static_cast<BinaryCall const &>(*this).args_size();
     case NodeTag::function_call:
-        return static_cast<const FunctionCall<NodeTrait> &>(*this).args_size();
+        return static_cast<FunctionCall const &>(*this).args_size();
     default:
         return 0;
     }
 }
-}
+} // namespace kiwi
+
+#endif

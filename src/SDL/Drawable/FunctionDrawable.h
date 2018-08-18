@@ -1,6 +1,9 @@
 #ifndef KIWI_FUNCTION_DRAWABLE_HEADER
 #define KIWI_FUNCTION_DRAWABLE_HEADER
 
+#include "../../AST/Definition.h"
+#include "../../AST/Expression.h"
+#include "../../AST/Type.h"
 #include "ExpressionDrawable.h"
 
 namespace kiwi {
@@ -12,7 +15,7 @@ class FunctionDrawable : public ExpressionDrawable {
     FunctionDrawable() {}
 
     // Build the Drawable from a AST Function Node
-    template <typename T> FunctionDrawable(Function<T> const *fun, uint32 idt = 0) {
+    FunctionDrawable(FunctionDefinition const *fun, uint32 idt = 0) {
         Point pos{0, 0};
 
         // Prototype
@@ -21,34 +24,50 @@ class FunctionDrawable : public ExpressionDrawable {
         std::tie(std::ignore, pos) = insert_entity_after(make_string("("), pos);
 
         //
-        i64 n = fun->args_size() - 1;
+        u64 n = fun->args_size();
 
-        if(n >= 0) {
-            types = Array<Drawable *>(n + 1);
-            args  = Array<Drawable *>(n + 1);
+        // Resolve Function Type
+        Statement *etype    = fun->type;
+        FunctionType *ftype = nullptr;
+        if(etype->tag != NodeTag::function_type) {
+            ftype = static_cast<FunctionType *>(etype);
+        }
 
-            for(size_t i = 0; i < n; ++i) {
+        if(n > 0) {
+            types = Array<Drawable *>(n);
+            args  = Array<Drawable *>(n);
+
+            for(size_t i = 0; i < n - 1; ++i) {
                 log_trace("argument ", i + 1);
 
                 std::tie(args[i], pos) = insert_entity_after(make_argument_name(fun->arg(i)), pos);
                 std::tie(std::ignore, pos) = insert_entity_after(make_string(": "), pos);
-                std::tie(types[i], pos) =
-                    insert_entity_after(ExpressionDrawable::make(fun->type->arg(i)), pos);
+
+                if(ftype) {
+                    std::tie(types[i], pos) =
+                        insert_entity_after(ExpressionDrawable::make(ftype->arg(i)), pos);
+                }
                 std::tie(std::ignore, pos) = insert_entity_after(make_string(", "), pos);
             }
 
-            std::tie(args[n], pos)     = insert_entity_after(make_argument_name(fun->arg(n)), pos);
+            std::tie(args[n - 1], pos) = insert_entity_after(make_argument_name(fun->arg(n)), pos);
             std::tie(std::ignore, pos) = insert_entity_after(make_string(": "), pos);
 
-            std::tie(types[n], pos) =
-                insert_entity_after(ExpressionDrawable::make(fun->type->arg(n)), pos);
+            if(ftype) {
+                std::tie(types[n - 1], pos) =
+                    insert_entity_after(ExpressionDrawable::make(ftype->arg(n)), pos);
+            }
         }
 
         std::tie(std::ignore, pos) = insert_entity_after(make_string(")"), pos);
-        std::tie(std::ignore, pos) = insert_entity_after(make_string(style.arrow()), pos);
-
-        std::tie(return_type, pos) =
-            insert_entity_after(ExpressionDrawable::make(fun->type->return_type), pos);
+        std::tie(std::ignore, pos) = insert_entity_after(make_string(style.arrow), pos);
+        if(ftype) {
+            std::tie(return_type, pos) =
+                insert_entity_after(ExpressionDrawable::make(ftype->return_type), pos);
+        } else {
+            std::tie(return_type, pos) =
+                insert_entity_after(ExpressionDrawable::make(fun->type), pos);
+        }
         std::tie(std::ignore, pos) = insert_entity_after(make_string(": "), pos);
 
         // I could make both of those dummy Drawables to ease size computation when changes are

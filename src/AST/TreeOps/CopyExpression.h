@@ -1,31 +1,25 @@
-#pragma once
+#ifndef KIWI_AST_COPY_HEADER
+#define KIWI_AST_COPY_HEADER
 
 #include "../../Logging/Log.h"
-#include "../Expression.h"
-#include "../Root.h"
+#include "../Builder.h"
 #include "../Visitor.h"
 
-#include "../Builder.h"
-
 namespace kiwi {
-// Functions
+/* / Functions
 // ------------------------------------------------------------------------
 
 // Copy a tree
-template <typename NodeTrait>
-Expression<NodeTrait> *copy(Expression<NodeTrait> *expr, bool keep_borrowed = false);
+
+Expression *copy(Expression *expr, bool keep_borrowed = false);
 
 // Implementation
 // ------------------------------------------------------------------------
-template <typename NodeTrait>
-class Copy : public StaticVisitor<Copy<NodeTrait>, NodeTrait, Expression<NodeTrait> *> {
+class Copy : public StaticVisitor<Copy, Expression *> {
   public:
-    typedef typename generic::Root<Expression<NodeTrait>> Root;
-    typedef typename generic::DummyRoot<Expression<NodeTrait>> DummyRoot;
-
     Copy(bool keep_borrowed) : keep_borrowed(keep_borrowed) {}
 
-    static Expression<NodeTrait> *run(Expression<NodeTrait> *expr, bool keep_borrowed = false) {
+    static Expression *run(Expression *expr, bool keep_borrowed = false) {
         if(expr == nullptr)
             return nullptr;
 
@@ -33,58 +27,49 @@ class Copy : public StaticVisitor<Copy<NodeTrait>, NodeTrait, Expression<NodeTra
         return eval.traverse(expr);
     }
 
-    Expression<NodeTrait> *function(Function<NodeTrait> *x) {
-        return Builder<NodeTrait>::function(x->name, traverse(x->body));
+    Expression *function(FunctionDeclaration *x) {
+        return Builder::function(x->name, traverse(x->body));
     }
 
-    Expression<NodeTrait> *function_call(FunctionCall<NodeTrait> *x) {
-        std::vector<Expression<NodeTrait> *> new_args;
+    Expression *function_call(FunctionCall *x) {
+        std::vector<Expression *> new_args;
 
-        std::transform(
-            x->args.begin(), x->args.end(),                                  // from -> to
-            std::back_inserter(new_args),                                    // insert to
-            [this](Expression<NodeTrait> *expr) { return traverse(expr); }); // copy each arguments
+        std::transform(x->args.begin(), x->args.end(),                       // from -> to
+                       std::back_inserter(new_args),                         // insert to
+                       [this](Expression *expr) { return traverse(expr); }); // copy each arguments
 
-        return Builder<NodeTrait>::call(x->name, new_args);
+        return Builder::call(x->fun, new_args);
     }
 
-    Expression<NodeTrait> *unary_call(UnaryCall<NodeTrait> *x) {
-        return Builder<NodeTrait>::unary_call(x->name, traverse(x->expr));
+    Expression *unary_call(UnaryCall *x) { return Builder::unary_call(x->fun, traverse(x->expr)); }
+
+    Expression *binary_call(BinaryCall *x) {
+        return Builder::binary_call(x->fun, traverse(x->lhs), traverse(x->rhs));
     }
 
-    Expression<NodeTrait> *binary_call(BinaryCall<NodeTrait> *x) {
-        return Builder<NodeTrait>::binary_call(x->name, traverse(x->lhs), traverse(x->rhs));
-    }
+    Expression *value(Value *x) { return Builder::value(x->template as<f64>()); }
 
-    Expression<NodeTrait> *value(Value<NodeTrait> *x) {
-        return Builder<NodeTrait>::value(x->template as<f64>());
-    }
+    Expression *placeholder(Placeholder *x) { return Builder::placeholder(x->name); }
 
-    Expression<NodeTrait> *placeholder(Placeholder<NodeTrait> *x) {
-        return Builder<NodeTrait>::placeholder(x->name);
-    }
-
-    Expression<NodeTrait> *borrow(Borrow<NodeTrait> *b) {
+    Expression *borrow(Borrow *b) {
         if(keep_borrowed)
-            return Builder<NodeTrait>::borrow(b->expr);
+            return nullptr; // Builder::borrow(b->expr);
 
         return traverse(b->expr);
     }
 
     // TODO
-    Expression<NodeTrait> *arrow(Arrow<NodeTrait> *x) { return x; }
+    Node *function_type(FunctionType *x) { return x; }
 
-    Expression<NodeTrait> *type(Type<NodeTrait> *x) { return x; }
+    Node *type(Type *x) { return x; }
 
-    Expression<NodeTrait> *builtin(Builtin<NodeTrait> *e) { return e; }
+    Node *builtin_type(BuiltinType *e) { return e; }
 
-    Expression<NodeTrait> *error(ErrorNode<NodeTrait> *e) { return e; }
+    Node *error(ErrorNode *e) { return e; }
 
     bool keep_borrowed;
 };
 
-template <typename NodeTrait>
-Expression<NodeTrait> *copy(Expression<NodeTrait> *expr, bool keep_borrowed) {
-    return Copy<NodeTrait>::run(expr, keep_borrowed);
-}
+Expression *copy(Expression *expr, bool keep_borrowed) { return Copy::run(expr, keep_borrowed); } */
 } // namespace kiwi
+#endif

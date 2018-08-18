@@ -15,7 +15,7 @@ class BuiltinDrawable : public ExpressionDrawable {
     }
 
     // Build the Drawable from a AST Function Node
-    template <typename T> BuiltinDrawable(Builtin<T> const *builtin, uint32 idt = 0) {
+    BuiltinDrawable(BuiltinType const *builtin, uint32 idt = 0) {
         std::tie(_name, std::ignore) =
             insert_entity_after(make_builtin_name(builtin->name), {0, 0});
     }

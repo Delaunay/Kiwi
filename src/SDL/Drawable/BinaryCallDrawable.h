@@ -7,7 +7,7 @@ namespace kiwi {
 
 class BinaryCallDrawable : public ExpressionDrawable {
   public:
-    BinaryCallDrawable(BinaryCall<LightExpression> *bexpr) {
+    BinaryCallDrawable(BinaryCall *bexpr) {
         Point pos = {0, 0};
 
         std::tie(std::ignore, pos) = insert_entity_after(make_string("("), pos);

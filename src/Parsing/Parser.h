@@ -28,12 +28,6 @@ namespace kiwi {
  */
 class Parser {
   public:
-    typedef typename generic::Root<Expression<LightExpression>> Root;
-    typedef typename generic::DummyRoot<Expression<LightExpression>> DummyRoot;
-
-    using RBuilder     = Builder<LightExpression>;
-    using FunctionArgs = std::tuple<LightExpression::ArgNames, LightExpression::ArgTypes>;
-
     Parser(AbstractBuffer &buffer) : _lexer(buffer) { _lexer.consume(); }
 
     Token nexttok() {
@@ -52,14 +46,14 @@ class Parser {
         {"return", Option<Tuple<bool, uint8>>(std::make_tuple(false, 0))}};
 
     // fold_left
-    Module<LightExpression> parse_declarations(int i) {
-        using InsertResult = std::pair<Module<LightExpression>::iterator, bool>;
-        Module<LightExpression> my_module;
+    Module parse_declarations(int i) {
+        using InsertResult = std::pair<Module::iterator, bool>;
+        Module my_module;
 
         while(peek_token().type() != tok_eof) {
-            Tuple<String, Root> val = parse_declaration(i + 1);
+            Tuple<String, Definition *> val = parse_declaration(i + 1);
             InsertResult result =
-                my_module.insert(std::make_pair(std::get<0>(val), std::get<1>(val).get()));
+                my_module.insert(std::make_pair(std::get<0>(val), std::get<1>(val)));
 
             if(!result.second) {
                 // TODO print reference to the previous declaration so user can check
@@ -71,23 +65,28 @@ class Parser {
     }
 
     //*/ Top level declarations
-    Tuple<String, Root> parse_declaration(int i) {
+    Tuple<String, Definition *> parse_declaration(int i) {
         log_cdebug(i, "");
         Token tok = peek_token();
 
         // predict next expression from current token
         switch(tok.type()) {
+        case tok_macro:
+            return parse_macro(i + 1);
         case tok_def:
             return parse_function(i + 1);
         case tok_record:
             return parse_record(i + 1);
         default:
-            return std::make_tuple("__main__", parse_expression(i + 1));
+            // parse_expression(i + 1)
+            return std::make_tuple("__main__", nullptr);
         }
 
     } //*/
 
-    Tuple<String, Root> parse_record(int i) {
+    Tuple<String, Definition *> parse_macro(int i) { return std::make_tuple("", nullptr); }
+
+    Tuple<String, Definition *> parse_record(int i) {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
         Token tok = peek_token();
@@ -108,15 +107,15 @@ class Parser {
         return std::make_tuple(name, nullptr);
     }
 
-    Tuple<LightExpression::ArgNames, LightExpression::ArgTypes> parse_args(int i) {
+    Tuple<Array<String>, Array<Statement *>> parse_args(int i) {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
         Token tok = peek_token();
         EXPECT('(', "expected '(' got '", tok.type(), "'");
         // --------------------------------------------------------------------
 
-        LightExpression::ArgTypes arg_types;
-        LightExpression::ArgNames arg_names;
+        Array<Statement *> arg_types;
+        Array<String> arg_names;
 
         // FIXME missing )
         tok = nexttok();
@@ -132,7 +131,7 @@ class Parser {
 
                     EXPECT(tok_identifier, "expected type name");
                     log_info("Type is `", tok.identifier(), "`");
-                    arg_types.push_back(RBuilder::builtin(tok.identifier()));
+                    arg_types.push_back(Builder::builtin(tok.identifier()));
 
                     tok = nexttok();
                 }
@@ -149,7 +148,7 @@ class Parser {
         return std::make_tuple(arg_names, arg_types);
     }
 
-    Tuple<String, Root> parse_function(int i) {
+    Tuple<String, Definition *> parse_function(int i) {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
         Token tok = peek_token();
@@ -162,8 +161,8 @@ class Parser {
 
         String name = tok.identifier();
         consume_token();
-        LightExpression::ArgTypes arg_types;
-        LightExpression::ArgNames arg_names;
+        Array<Statement *> arg_types;
+        Array<String> arg_names;
 
         // >>>>>>>> Arguments
         // args = (identifier: identifier,*)
@@ -172,15 +171,15 @@ class Parser {
 
         // >>>>>>>> Return Type
         // -> return_type
-        Arrow<ASTTrait> *type = nullptr;
-        tok                   = peek_token();
+        Expression *type = nullptr;
+        tok              = peek_token();
         if(tok.type() == tok_arrow) {
             tok = nexttok();
             EXPECT(tok_identifier, "expected type name, got '", tok.type(), "'");
             log_info("Type is `", tok.identifier(), "`");
 
-            type = reinterpret_cast<Arrow<ASTTrait> *>(
-                RBuilder::arrow(arg_types, RBuilder::builtin(tok.identifier())).take_ownership());
+            // type = reinterpret_cast<Arrow<ASTTrait> *>(
+            //    RBuilder::arrow(arg_types, RBuilder::builtin(tok.identifier())).take_ownership());
 
             consume_token();
         }
@@ -197,8 +196,8 @@ class Parser {
         consume_token();
         // <<<<<<<< Prototype end
 
-        Function<ASTTrait> *fun =
-            static_cast<Function<ASTTrait> *>(RBuilder::function(name, nullptr).get());
+        FunctionDefinition *fun =
+            static_cast<FunctionDefinition *>(Builder::function(name, nullptr));
         fun->args = arg_names;
         fun->type = type;
         fun->body = parse(i + 1);
@@ -209,7 +208,7 @@ class Parser {
         return std::make_tuple(name, fun);
     }
 
-    Root parse_operator(int i, String const &op, Tuple<bool, uint8> const &info) {
+    Expression *parse_operator(int i, String const &op, Tuple<bool, uint8> const &info) {
         Token tok = peek_token();
         // log_error(tok.type(), tok.identifier());
 
@@ -218,16 +217,16 @@ class Parser {
         }
 
         consume_token();
-        return RBuilder::unary_call(RBuilder::placeholder(op), parse(i + 1));
+        return Builder::unary_call(Builder::placeholder(op), parse(i + 1));
     }
 
-    Root parse(int i) { return parse_expression(i); }
+    Expression *parse(int i) { return parse_expression(i); }
 
-    Root parse_expression(int i) {
+    Expression *parse_expression(int i) {
         log_cdebug(i, "");
 
-        Root lhs  = nullptr;
-        Token tok = peek_token();
+        Expression *lhs = nullptr;
+        Token tok       = peek_token();
 
         log_trace(tok);
 
@@ -276,7 +275,7 @@ class Parser {
             tok.debug_print(std::cout) << std::endl;
             log_error("`", int(tok.type()), "` is not a correct op (id=", tok.identifier(), ")");
 
-            if(lhs.get() == nullptr) {
+            if(lhs == nullptr) {
                 log_error("nullptr");
             } else {
                 // print_expr(std::cout, lhs);
@@ -287,24 +286,24 @@ class Parser {
         return lhs;
     }
 
-    Root parse_add(int i, Root lhs) {
+    Expression *parse_add(int i, Expression *lhs) {
         log_cdebug(i, "");
-        Root rhs = parse(i + 1);
+        Expression *rhs = parse(i + 1);
 
-        if(rhs.get() == nullptr)
+        if(rhs == nullptr)
             return lhs;
 
-        return RBuilder::add(lhs, rhs);
+        return Builder::add(lhs, rhs);
     }
 
-    Root parse_value(int i, double val) {
+    Expression *parse_value(int i, double val) {
         log_cdebug(i, "");
-        return RBuilder::value(val);
+        return Builder::value(val);
     }
 
-    Root parse_identifier(int i, std::string name) {
+    Expression *parse_identifier(int i, std::string name) {
         log_cdebug(i, "");
-        return RBuilder::placeholder(name);
+        return Builder::placeholder(name);
     }
 
   private:

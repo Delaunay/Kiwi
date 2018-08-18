@@ -2,12 +2,19 @@ INCLUDE(../../cmake/macros/GroupSources.cmake)
 GroupSources(src/AST)
 
 SET(AST_SRC
+    Tag.h
+    Tag.cpp
     AST.h
     Root.h
+    Statement.h
+    Statement.cpp
+    Definition.h
+    Definition.cpp
     Expression.h
     Expression.cpp
-    TypeExpression.h
-    TypeExpression.cpp
+    Type.h
+    Type.cpp
+    AbstractType.h
     Value.h
     Builder.h
     Builder.cpp

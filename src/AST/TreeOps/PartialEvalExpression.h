@@ -1,35 +1,32 @@
 #pragma once
 
 #include "../../Logging/Log.h"
-#include "../Expression.h"
-#include "../Root.h"
-#include "../Visitor.h"
 
 #include "../Builder.h"
+#include "../Expression.h"
+#include "../Module.h"
+#include "../Visitor.h"
+
+#include "Operators.h"
 
 namespace kiwi {
-// Functions
+/*/ Functions
 // ------------------------------------------------------------------------
 
 // Implementation
 // ------------------------------------------------------------------------
-template <typename NodeTrait>
-class PartialEval : public StaticVisitor<PartialEval<NodeTrait>, NodeTrait,
-                                         generic::Root<Expression<NodeTrait>>> {
+class PartialEval : public StaticVisitor<PartialEval, Expression *> {
   public:
-    typedef typename generic::Root<Expression<NodeTrait>> Root;
-    typedef typename generic::DummyRoot<Expression<NodeTrait>> DummyRoot;
+    PartialEval(const Context &ctx) : ctx(ctx) {}
 
-    PartialEval(const Context<NodeTrait> &ctx) : ctx(ctx) {}
-
-    static Root run(const Context<NodeTrait> &ctx, Expression<NodeTrait> *expr) {
+    static Expression *run(const Context &ctx, Expression *expr) {
         PartialEval eval(ctx);
         return eval.traverse(expr);
     }
 
-    Expression<NodeTrait> *function(Function<NodeTrait> *x) { return x; }
+    Expression *functio_decl(FunctionDeclaration *x) { return x->body; }
 
-    Expression<NodeTrait> *function_call(FunctionCall<NodeTrait> *x) {
+    Expression *function_call(FunctionCall *x) {
         // we need to build a new context with the arguments
 
         // lookup the implementation
@@ -40,51 +37,76 @@ class PartialEval : public StaticVisitor<PartialEval<NodeTrait>, NodeTrait,
         return x;
     }
 
-    Expression<NodeTrait> *unary_call(UnaryCall<NodeTrait> *x) {
-        Expression<NodeTrait> *expr = traverse(x->expr);
+    Tuple<i64, String> const &resolve_function_calle(Expression *fun) {
+        Expression *callee = traverse(fun);
+        if(callee->tag != NodeTag::placeholder) {
+            return std::make_tuple(1, "");
+        }
+        String name = static_cast<Placeholder *>(callee)->name;
+        return std::make_tuple(0, name);
+    }
+
+    Expression *unary_call(UnaryCall *x) {
+        Expression *expr = traverse(x->expr);
 
         if(expr->tag == NodeTag::value) {
-            Value<NodeTrait> *vexpr = static_cast<Value<NodeTrait> *>(expr);
-            return Builder<NodeTrait>::value(unary_operator(x->name)(vexpr->template as<f64>()));
+            Value *vexpr = static_cast<Value *>(expr);
+            i64 code;
+            String name;
+            std::tie(code, name) = resolve_function_calle(x->fun);
+
+            if(code > 0) {
+                return Builder::error(
+                    "function should resolve to an identifier or a function type");
+            }
+            return Builder::value(unary_operator(name)(vexpr->template as<f64>()));
         }
 
-        return Builder<NodeTrait>::unary_call(x->name, expr);
+        return Builder::unary_call(x->fun, expr);
     }
 
-    Expression<NodeTrait> *binary_call(BinaryCall<NodeTrait> *x) {
-        Expression<NodeTrait> *lhs = traverse(x->lhs);
-        Expression<NodeTrait> *rhs = traverse(x->rhs);
+    Expression *binary_call(BinaryCall *x) {
+        Expression *lhs = traverse(x->lhs);
+        Expression *rhs = traverse(x->rhs);
+
+        u64 code;
+        String name;
+        std::tie(code, name) = resolve_function_calle(x->fun);
+
+        if(code > 0) {
+            return Builder::error("function should resolve to an identifier or a function type");
+        }
 
         if(lhs->tag == NodeTag::value && rhs->tag == NodeTag::value) {
-            Value<NodeTrait> *vlhs = static_cast<Value<NodeTrait> *>(lhs);
-            Value<NodeTrait> *vrhs = static_cast<Value<NodeTrait> *>(rhs);
-            ;
-            return Builder<DummyRoot>::value(
-                binary_operator(x->name)(vlhs->template as<f64>(), vrhs->template as<f64>()));
+            Value *vlhs = static_cast<Value *>(lhs);
+            Value *vrhs = static_cast<Value *>(rhs);
+
+            return Builder::value(
+                binary_operator(name)(vlhs->template as<f64>(), vrhs->template as<f64>()));
         }
 
-        return Builder<NodeTrait>::binary_call(x->name, lhs, rhs);
+        return Builder::binary_call(x->fun, lhs, rhs);
     }
 
-    Expression<NodeTrait> *borrow(Borrow<NodeTrait> *b) { return traverse(b->expr); }
+    Expression *borrow(Borrow *b) { return traverse(b->expr); }
 
-    Expression<NodeTrait> *value(Value<NodeTrait> *x) { return x; }
+    Expression *value(Value *x) { return x; }
 
-    Expression<NodeTrait> *placeholder(Placeholder<NodeTrait> *x) {
+    Expression *placeholder(Placeholder *x) {
         if(ctx.count(x->name) == 0)
             return x;
 
         return traverse(ctx.at(x->name));
     }
 
-    Expression<NodeTrait> *arrow(Arrow<NodeTrait> *x) { return x; }
+    Expression *arrow(FunctionType *x) { return x; }
 
-    Expression<NodeTrait> *type(Type<NodeTrait> *x) { return x; }
+    Expression *type(Type *x) { return x; }
 
-    Expression<NodeTrait> *builtin(Builtin<NodeTrait> *e) { return e; }
+    Expression *builtin(BuiltinType *e) { return e; }
 
-    Expression<NodeTrait> *error(ErrorNode<NodeTrait> *e) { return e; }
+    Expression *error(ErrorNode *e) { return e; }
 
-    const Context<NodeTrait> &ctx;
-};
+    const Context &ctx;
+};*/
 } // namespace kiwi

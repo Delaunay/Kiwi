@@ -6,35 +6,33 @@
 #include "../Visitor.h"
 
 namespace kiwi {
-// Functions
+/*/ Functions
 // ------------------------------------------------------------------------
-
-template <typename NodeTrait> void free(Expression<NodeTrait> *expr);
+void free(Expression *expr);
 
 // Implementation
 // ------------------------------------------------------------------------
-template <typename NodeTrait>
-class FreeMemory : public StaticVisitor<FreeMemory<NodeTrait>, NodeTrait, void> {
+class FreeMemory : public StaticVisitor<FreeMemory, void> {
   public:
     FreeMemory() = default;
 
-    static void run(Expression<NodeTrait> *expr) {
+    static void run(Expression *expr) {
         if(expr == nullptr)
             return;
 
-        FreeMemory<NodeTrait> eval;
+        FreeMemory eval;
         eval.traverse(expr);
         delete expr;
         return;
     }
 
-    void function(Function<NodeTrait> *x) {
+    void function(FunctionDeclaration *x) {
         traverse(x->body);
         delete x->body;
         return;
     }
 
-    void general_call(Call<NodeTrait> &x) {
+    void general_call(Call &x) {
         for(int i = 0; i < x.args_size(); ++i) {
             traverse(x.arg(i));
             delete x.arg(i);
@@ -42,30 +40,28 @@ class FreeMemory : public StaticVisitor<FreeMemory<NodeTrait>, NodeTrait, void> 
         return;
     }
 
-    void function_call(FunctionCall<NodeTrait> *x) { return general_call(*x); }
+    void function_call(FunctionCall *x) { return general_call(*x); }
 
-    void binary_call(BinaryCall<NodeTrait> *x) { return general_call(*x); }
+    void binary_call(BinaryCall *x) { return general_call(*x); }
 
-    void unary_call(UnaryCall<NodeTrait> *x) { return general_call(*x); }
+    void unary_call(UnaryCall *x) { return general_call(*x); }
 
-    void borrow(Borrow<NodeTrait> *) {
+    void borrow(Borrow *) {
         // nothing to do. Borrow will be deleted by its parent
     }
 
-    void value(Value<NodeTrait> *x) { return; }
-    void placeholder(Placeholder<NodeTrait> *x) { return; }
+    void value(Value *x) { return; }
+    void placeholder(Placeholder *x) { return; }
 
     // TODO
-    void arrow(Arrow<NodeTrait> *x) {}
+    void arrow(FunctionType *x) {}
 
-    void type(Type<NodeTrait> *x) {}
+    void type(Type *x) {}
 
-    void builtin(Builtin<NodeTrait> *e) {}
+    void builtin(BuiltinType *e) {}
 
-    void error(ErrorNode<NodeTrait> *e) {}
+    void error(ErrorNode *e) {}
 };
 
-template <typename NodeTrait> void free(Expression<NodeTrait> *expr) {
-    return FreeMemory<NodeTrait>::run(expr);
-}
+template <typename NodeTrait> void free(Expression *expr) { return FreeMemory::run(expr); }*/
 } // namespace kiwi

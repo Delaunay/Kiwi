@@ -3,12 +3,14 @@
 
 #undef NOMINMAX
 #define NOMINMAX
+#include "../../AST/Definition.h"
 #include "../../AST/Expression.h"
-#include "../../AST/LightAST.h"
-#include "../../Types.h"
+#include "../../AST/Type.h"
+
 #include "../SDLHelper.h"
 #include "../StyleManager.h"
 
+#include "../Configuration.h"
 #include "Drawable.h"
 #include "StringDrawable.h"
 
@@ -21,8 +23,9 @@ class ExpressionDrawable : public Drawable {
     using StringType = StringDrawable;
     using StringView = StringDrawable;
 
-    static std::unique_ptr<ExpressionDrawable> make(Expression<LightExpression> *elem);
-    static std::unique_ptr<ExpressionDrawable> make(Type<LightExpression> *elem);
+    static std::unique_ptr<ExpressionDrawable> make(Definition *elem);
+    static std::unique_ptr<ExpressionDrawable> make(Expression *elem);
+    static std::unique_ptr<ExpressionDrawable> make(Type *elem);
 
     typedef SDL_Color SDLColor;
     // typedef std::vector<Type<RenderTrait>*> ArgTypes;
@@ -33,45 +36,40 @@ class ExpressionDrawable : public Drawable {
 
     static std::string to_string(StringType const &str) { return str.string(); }
 
-    template <typename T>
-    static UniquePtr<Drawable> make_text(const T &str, const SDLColor &color) {
-        return std::make_unique<StringType>(str, color, StringType::default_font());
+    template <typename T> static UniquePtr<Drawable> make_text(const T &str, MappedStyle style) {
+        return std::make_unique<StringType>(str, StyleManager::style_manager().get_style(style));
     }
 
     template <typename T> static UniquePtr<Drawable> make_string(const T &str) {
-        return make_text(str, {255, 255, 255});
+        return make_text(str, MappedStyle::Default);
     }
 
     template <typename T> static UniquePtr<Drawable> make_type_name(const T &str) {
-        return make_text(str, {255, 200, 200});
-    }
-
-    template <typename T> static UniquePtr<Drawable> make_call_name(const T &str) {
-        return make_text(str, {155, 155, 255});
+        return make_text(str, MappedStyle::TypeName);
     }
 
     template <typename T> static UniquePtr<Drawable> make_keyword(const T &str) {
-        return make_text(str, {255, 155, 155});
+        return make_text(str, MappedStyle::Keyword);
     }
 
     template <typename T> static UniquePtr<Drawable> make_placeholder_name(const T &str) {
-        return make_text(str, {255, 155, 255});
+        return make_text(str, MappedStyle::Placeholder);
     }
 
     template <typename T> static UniquePtr<Drawable> make_function_name(const T &str) {
-        return make_text(str, {155, 255, 255});
+        return make_text(str, MappedStyle::FunctionName);
     }
 
     template <typename T> static UniquePtr<Drawable> make_error_message(const T &str) {
-        return make_text(str, {255, 155, 155});
+        return make_text(str, MappedStyle::ErrorMessage);
     }
 
     template <typename T> static UniquePtr<Drawable> make_builtin_name(const T &str) {
-        return make_text(str, {155, 255, 155});
+        return make_text(str, MappedStyle::Builtin);
     }
 
     template <typename T> static UniquePtr<Drawable> make_argument_name(const T &str) {
-        return make_text(str, {155, 155, 155});
+        return make_text(str, MappedStyle::ArgumentName);
     }
 
     Point4f bound_box{10000, 10000, -10000, -10000};
@@ -227,7 +225,8 @@ class ExpressionDrawable : public Drawable {
                 renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, _size.x, _size.y))};
             auto target = SDL_GetRenderTarget(renderer);
             CHECK(SDL_SetRenderTarget(renderer, _texture.get()));
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            Color c = StyleManager::style_manager().background_color;
+            SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
             SDL_RenderClear(renderer);
 
             Point position = oposition;
@@ -238,8 +237,11 @@ class ExpressionDrawable : public Drawable {
                 log_cinfo(depth + 1, "New pos is (pos: (", position.x, " x ", position.y, "))");
             }
 
-            SDL_SetRenderDrawColor(renderer, 250, 250, 150, 0);
-            SDL_RenderDrawRect(renderer, nullptr);
+            if(BackEndConfig::config().show_expression_bound_box) {
+                Color c = BackEndConfig::config().expression_bound_box_color;
+                SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+                SDL_RenderDrawRect(renderer, nullptr);
+            }
             CHECK(SDL_SetRenderTarget(renderer, target));
         }
 

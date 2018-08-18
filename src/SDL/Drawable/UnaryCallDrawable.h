@@ -7,7 +7,7 @@ namespace kiwi {
 
 class UnaryCallDrawable : public ExpressionDrawable {
   public:
-    UnaryCallDrawable(UnaryCall<LightExpression> *uexpr) {
+    UnaryCallDrawable(UnaryCall *uexpr) {
         Point pos = {0, 0};
 
         if(!uexpr->right) {

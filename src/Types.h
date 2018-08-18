@@ -1,12 +1,12 @@
-﻿#pragma once
+﻿#ifndef KIWI_TYPES_HEADER
+#define KIWI_TYPES_HEADER
 
 #include <cstdint>
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
-namespace kiwi
-{
+namespace kiwi {
 
 typedef std::uint64_t uint64;
 typedef std::int64_t int64;
@@ -31,7 +31,7 @@ typedef std::int64_t i64;
 typedef std::uint32_t u32;
 typedef std::int32_t i32;
 
-typedef std::uint16_t u15;
+typedef std::uint16_t u16;
 typedef std::int16_t i16;
 
 typedef std::uint8_t u8;
@@ -40,17 +40,12 @@ typedef std::int8_t i8;
 typedef float f32;
 typedef double f64;
 
-template<typename... Args>
-using Tuple = std::tuple<Args...>;
-using String = std::string;
+template <typename... Args> using Tuple            = std::tuple<Args...>;
+using String                                       = std::string;
+template <typename Key, typename Value> using Dict = std::unordered_map<Key, Value>;
+template <typename Value> using Array              = std::vector<Value>;
+template <typename Value> using UniquePtr          = std::unique_ptr<Value>;
 
-template<typename Key, typename Value>
-using Dict = std::unordered_map<Key, Value>;
+} // namespace kiwi
 
-template<typename Value>
-using Array = std::vector<Value>;
-
-template<typename Value>
-using UniquePtr = std::unique_ptr<Value>;
-
-}
+#endif

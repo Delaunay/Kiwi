@@ -7,10 +7,11 @@ namespace kiwi {
 
 class PlaceholderDrawable : public ExpressionDrawable {
   public:
-    PlaceholderDrawable(Placeholder<LightExpression> *x) {
+    PlaceholderDrawable(Placeholder *x) {
 
-        Point pos            = {0, 0};
-        std::tie(_name, pos) = insert_entity_after(std::make_unique<StringDrawable>(x->name), pos);
+        Point pos = {0, 0};
+        std::tie(_name, pos) =
+            insert_entity_after(ExpressionDrawable::make_placeholder_name(x->name), pos);
     }
 
   private:

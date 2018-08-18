@@ -2,65 +2,62 @@
 
 #include "../../Logging/Log.h"
 #include "../Expression.h"
+#include "../Module.h"
 #include "../Root.h"
 #include "../Visitor.h"
 
 #include "Operators.h"
 
 namespace kiwi {
-template <typename NodeTrait> using Context = Dict<String, Expression<NodeTrait> *>;
-
-// Functions
+/*/ Functions
 // ------------------------------------------------------------------------
 
 // Compute the graph (all placeholder must be defined)
-template <typename NodeTrait>
-double full_eval(const Context<NodeTrait> &ctx, Expression<NodeTrait> *expr);
+double full_eval(const Context &ctx, Expression *expr);
 
 // Implementation
 // ------------------------------------------------------------------------
-template <typename NodeTrait>
-class FullEval : public StaticVisitor<FullEval<NodeTrait>, NodeTrait, double> {
+class FullEval : public StaticVisitor<FullEval, double> {
   public:
-    FullEval(const Context<NodeTrait> &ctx) : ctx(ctx) {}
+    FullEval(const Context &ctx) : ctx(ctx) {}
 
-    static double run(const Context<NodeTrait> &ctx, Expression<NodeTrait> *expr) {
+    static double run(const Context &ctx, Expression *expr) {
         FullEval eval(ctx);
         return eval.traverse(expr);
     }
 
     // nothing to do...
-    double function(Function<NodeTrait> *) { return 0; }
+    double function(FunctionDeclaration *) { return 0; }
 
-    double function_call(FunctionCall<NodeTrait> *x) {
+    double function_call(FunctionCall *x) {
         if(x->fun->tag != NodeTag::placeholder) {
             log_error("Computed Lambda not supported in FullEval Mode");
             return 0;
         }
 
-        Placeholder<NodeTrait> *pl = static_cast<Placeholder<NodeTrait> *>(x->fun);
-        std::size_t count          = ctx.count(pl->name);
+        Placeholder *pl   = static_cast<Placeholder *>(x->fun);
+        std::size_t count = ctx.count(pl->name);
 
         if(count == 0) {
             log_error("Function does not exist");
             return 0;
         }
 
-        Expression<NodeTrait> *efun = ctx.at(pl->name);
+        Expression *efun = ctx.at(pl->name);
 
-        if(efun->tag != NodeTag::function) {
+        if(efun->tag != NodeTag::function_decl) {
             log_error("Calling a non-function");
             return 0;
         }
 
-        Function<NodeTrait> *fun = static_cast<Function<NodeTrait> *>(efun);
+        FunctionDeclaration *fun = reinterpret_cast<FunctionDeclaration *>(efun);
 
         if(fun->args_size() != x->args_size()) {
             log_error("argument size mismatch:", fun->args_size(), " ", x->args_size());
             return 0;
         } else {
             // create eval context
-            Context<NodeTrait> fun_ctx;
+            Context fun_ctx;
 
             for(int i = 0; i < fun->args_size(); ++i) {
                 fun_ctx[fun->arg(i)] = x->arg(i);
@@ -72,50 +69,49 @@ class FullEval : public StaticVisitor<FullEval<NodeTrait>, NodeTrait, double> {
         }
     }
 
-    double binary_call(BinaryCall<NodeTrait> *x) {
+    double binary_call(BinaryCall *x) {
         if(x->fun->tag != NodeTag::placeholder) {
             log_error("Computed Lambda not supported in FullEval Mode");
             return 0;
         }
 
-        Placeholder<NodeTrait> *pl = static_cast<Placeholder<NodeTrait> *>(x->fun);
+        Placeholder *pl = static_cast<Placeholder *>(x->fun);
 
         double a = traverse(x->arg(0));
         double b = traverse(x->arg(1));
         return binary_operator(pl->name)(a, b);
     }
 
-    double unary_call(UnaryCall<NodeTrait> *x) {
+    double unary_call(UnaryCall *x) {
         if(x->fun->tag != NodeTag::placeholder) {
             log_error("Computed Lambda not supported in FullEval Mode");
             return 0;
         }
 
-        Placeholder<NodeTrait> *pl = static_cast<Placeholder<NodeTrait> *>(x->fun);
+        Placeholder *pl = static_cast<Placeholder *>(x->fun);
 
         double a = traverse(x->arg(0));
         return unary_operator(pl->name)(a);
     }
 
-    double borrow(Borrow<NodeTrait> *b) { return traverse(b->expr); }
+    double borrow(Borrow *b) { return traverse(b->expr); }
 
-    double value(Value<NodeTrait> *x) { return x->template as<f64>(); }
+    double value(Value *x) { return x->template as<f64>(); }
 
-    double placeholder(Placeholder<NodeTrait> *x) { return traverse(ctx.at(x->name)); }
+    double placeholder(Placeholder *x) { return traverse(ctx.at(x->name)); }
 
-    double arrow(Arrow<NodeTrait> *) { return 0; }
+    double arrow(FunctionType *) { return 0; }
 
-    double type(Type<NodeTrait> *) { return 0; }
+    double type(Type *) { return 0; }
 
-    double builtin(Builtin<NodeTrait> *) { return 0; }
+    double builtin(BuiltinType *) { return 0; }
 
-    double error(ErrorNode<NodeTrait> *) { return 0; }
+    double error(ErrorNode *) { return 0; }
 
-    const Context<NodeTrait> &ctx;
+    const Context &ctx;
 };
 
-template <typename NodeTrait>
-double full_eval(const Context<NodeTrait> &ctx, Expression<NodeTrait> *expr) {
-    return FullEval<NodeTrait>::run(ctx, expr);
-}
+template <typename NodeTrait> double full_eval(const Context &ctx, Expression *expr) {
+    return FullEval::run(ctx, expr);
+}*/
 } // namespace kiwi

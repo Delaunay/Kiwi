@@ -1,22 +1,68 @@
 ﻿#ifndef KIWI_STYLE_MANAGER_HEADER
 #define KIWI_STYLE_MANAGER_HEADER
 
-//#include "Drawable/RenderNode.h"
-#include "Drawable/StringDrawable.h"
+#ifdef __linux__
+#include <SDL2/SDL_ttf.h>
+#else
+#include <SDL_ttf.h>
+#endif
+
+#include "../Logging/Log.h"
+#include "Point.h"
+#include "SDLHelper.h"
 
 namespace kiwi {
+typedef TTF_Font SDL_Font;
+
+enum RenderingType { Solid, Blended, Shaded };
+
+struct StringStyle {
+    StringStyle(SDL_Color render_color = {255, 255, 255, 0}, bool highlight = false,
+                SDL_Color highlight_color = {255, 255, 255, 0}, bool underline = false,
+                u8 underline_tickness = 2, SDL_Color underline_color = {255, 255, 255, 0},
+                SDL_Font *font = nullptr, RenderingType rendering_type = Shaded) :
+        render_color(render_color),
+        highlight(highlight), highlight_color(highlight_color), underline(underline),
+        underline_tickness(underline_tickness), underline_color(underline_color), font(font),
+        rendering_type(rendering_type) {}
+
+    SDL_Color render_color       = {255, 255, 255, 0};
+    bool highlight               = false;
+    SDL_Color highlight_color    = {255, 255, 255, 0};
+    bool underline               = false;
+    u8 underline_tickness        = 2;
+    SDL_Color underline_color    = {255, 255, 255, 0};
+    SDL_Font *font               = nullptr;
+    RenderingType rendering_type = Shaded;
+};
+
+enum class MappedStyle {
+    Default = 0,
+    Keyword,
+    TypeName,
+    Placeholder,
+    FunctionName,
+    ErrorMessage,
+    Builtin,
+    ArgumentName,
+    Comment
+};
 
 struct StyleManager {
   private:
     StyleManager() { log_info("Style Manager was created"); }
+    StyleManager(StyleManager const &cp) = default;
 
     static StyleManager init() {
         log_info("Intitialized");
-        return StyleManager();
+        StyleManager m;
+        TTF_SizeUTF8(m._font, " ", &m.glyph_width, &m.glyph_height);
+        return m;
     }
 
+    ~StyleManager() {}
+
   public:
-    using StringType = StringDrawable;
     typedef SDL_Font *FontType;
 
     static StyleManager &style_manager() {
@@ -24,75 +70,148 @@ struct StyleManager {
         return style;
     }
 
-    const StringType &get(char c) const {
-        switch(c) {
-        case '(':
-            return fun_open;
-        case ')':
-            return fun_close;
-        case ':':
-            return fun_col;
-        case ' ':
-            return _space;
-        case ',':
-            return fun_com;
-        default:
-            log_error("Requesting an non-predef");
-            return _space;
-        }
-    }
-
-    const StringType &def() const { return fun_def; }
-    const StringType &arrow() const { return _arrow; }
-    const StringType &space() const { return _space; }
-
     f32 width() const { return glyph_width; }
     f32 height() const { return glyph_height; }
-
-    f32 width(const StringType &txt) const { return f32(txt.size().x); }
-    f32 height(const StringType &) const { return f32(glyph_height); }
-
-    Point2f size(const StringType &txt) const { return Point(width(txt), height(txt)); }
-
-    //** /
-    const StringType &open_parenthesis() const { return fun_open; }
-    const StringType &close_parenthesis() const { return fun_close; }
-
-    template <typename T> static StringType make_text(const T &str, const SDL_Color &color) {
-        StringType txt(str, color, StringType::default_font());
-        return txt;
-    }
-
-    template <typename T> StringType text(const T &str) {
-        log_info("Making text ");
-        return make_text(str, {25, 25, 25});
-    }
-
-    template <typename T> StringType keyword(const T &str) {
-        log_info("Making keyword ");
-        auto x = make_text(str, {50, 50, 50});
-        log_info("Making kedn ");
-        return x;
-    } //*/
 
     const FontType &font() const { return _font; }
     uint32 font_size() const { return _font_size; }
 
+    static SDL_Font *default_font() {
+        log_trace();
+        static SDL_Font *font = CHECK(TTF_OpenFont(HOME "DejaVuSansMonoPowerline.ttf", 24));
+        return font;
+    }
+
+    static SDL_Color default_color() {
+        log_trace();
+        return SDL_Color{255, 255, 255, 0};
+    }
+
+    StringStyle const &get_style(MappedStyle name) {
+        switch(name) {
+        case MappedStyle::Default:
+            return default_style;
+        case MappedStyle::Keyword:
+            return keyword;
+        case MappedStyle::TypeName:
+            return type_name;
+        case MappedStyle::Placeholder:
+            return placeholder;
+        case MappedStyle::FunctionName:
+            return function_name;
+        case MappedStyle::ErrorMessage:
+            return error_message;
+        case MappedStyle::Builtin:
+            return builtin_name;
+        case MappedStyle::ArgumentName:
+            return argument_name;
+        case MappedStyle::Comment:
+            return comment;
+        default:
+            return default_style;
+        }
+    }
+
+  public:
+    // ==================================================================================
+    // UTF8 Char to use
+    String arrow = u8" \u2192 "; // ->
+
+    // ==================================================================================
+    // Global Style Constant
+    Color background_color = {35, 35, 35, 0};
+
+    // https://stackoverflow.com/questions/18731707/why-does-c11-not-support-designated-initializer-lists-as-c99
+    // TLDR somehow it is hard
+    StringStyle default_style = StringStyle(
+        /*.render_color       = */ {255, 255, 255, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle keyword = StringStyle(
+        /*.render_color       = */ {255, 155, 155, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {155, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle type_name = StringStyle(
+        /*.render_color       = */ {255, 255, 255, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle placeholder = StringStyle(
+        /*.render_color       = */ {255, 155, 255, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle function_name = StringStyle(
+        /*.render_color       = */ {155, 255, 255, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle error_message = StringStyle(
+        /*.render_color       = */ {255, 255, 255, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle builtin_name = StringStyle(
+        /*.render_color       = */ {155, 255, 155, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle argument_name = StringStyle(
+        /*.render_color       = */ {155, 155, 155, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+    StringStyle comment = StringStyle(
+        /*.render_color       = */ {255, 255, 255, 0},
+        /*.highlight          = */ false,
+        /*.highlight_color    = */ {255, 255, 255, 0},
+        /*.underline          = */ false,
+        /*.underline_tickness = */ 2,
+        /*.underline_color    = */ {255, 255, 255, 0},
+        /*.font               = */ default_font(),
+        /*.rendering_type     = */ Shaded);
+
+    // ==================================================================================
   private:
-    FontType _font    = StringDrawable::default_font();
+    FontType _font    = default_font();
     uint32 _font_size = 12;
 
-    /**/
-    StringType fun_def   = keyword("def ");
-    StringType fun_open  = text("(");
-    StringType fun_close = text(")");
-    StringType fun_col   = text(": ");
-    StringType fun_com   = text(", ");
-    StringType _space    = text(" ");
-    StringType _arrow    = text(u8" \u2192 "); //*/
-
-    f32 glyph_width  = f32(_space.size().x);     // space.getCharacterSize();
-    f32 glyph_height = f32(_space.size().y + 1); // space.getGlobalBounds().height;
+    i32 glyph_width;
+    i32 glyph_height;
 };
 
 } // namespace kiwi

@@ -1,70 +1,69 @@
-﻿#pragma once
+﻿#ifndef KIWI_AST_BUILDER_HEADER
+#define KIWI_AST_BUILDER_HEADER
 
+#define PARENT(x)
+
+#include "Definition.h"
+#include "Expression.h"
+#include "Type.h"
+#include "Value.h"
 #include <cmath>
-
-#include "LightAST.h"
-#include "Root.h"
-#include "TreeOps.h"
 
 namespace kiwi {
 
-template <typename NodeTrait> class Builder {
+class Builder {
   public:
-    NODE_TYPES;
+    using ExpressionPtr = Expression *; // UniquePtr<Expression>;
+    using TypePtr       = Type *;       // UniquePtr<Type>;
 
-    using ExpressionPtr = generic::Root<Expression<NodeTrait>>;
-    using TypePtr       = generic::Root<Type<NodeTrait>>;
-
-    static ExpressionPtr function(String const &op, const ExpressionPtr &body) {
-        Function<NodeTrait> *root = new Function<NodeTrait>(op, body.take_ownership());
+    static Definition *function(String const &op, const ExpressionPtr &body) {
+        FunctionDefinition *root = new FunctionDefinition(op, body);
 
         PARENT(body->parent = root);
-        return ExpressionPtr(root);
+        return root;
     }
 
-    static ExpressionPtr function(const String op, const ExpressionPtr &body, const TypePtr &type) {
-        if(type) {
-            assert(type->tag == NodeTypeTag::arrow && "Function Type is represented by an arrow");
-        }
-
-        Arrow<NodeTrait> *arrow   = static_cast<Arrow<NodeTrait> *>(type.take_ownership());
-        Function<NodeTrait> *root = new Function<NodeTrait>(op, body.take_ownership(), arrow);
+    /*
+    static ExpressionPtr function(String const &op, const ExpressionPtr &body,
+                                  const TypePtr &type) {
+        FunctionType *arrow      = static_cast<FunctionType *>(type);
+        FunctionDefinition *root = new FunctionDefinition(op, body, arrow);
 
         PARENT(body->parent = root);
         PARENT(type->parent = root);
         return ExpressionPtr(root);
-    }
+    }*/
 
-    static ExpressionPtr call(ExpressionPtr const op, Array<Expression<NodeTrait> *> args) {
-        return ExpressionPtr(new FunctionCall<NodeTrait>(op, args));
+    static ExpressionPtr call(ExpressionPtr const op, Array<Expression *> args) {
+        return ExpressionPtr(new FunctionCall(op, args));
     }
 
     static ExpressionPtr unary_call(ExpressionPtr const op, const ExpressionPtr &expr) {
-        return new UnaryCall<NodeTrait>(op, expr.take_ownership());
+        return new UnaryCall(op, expr);
     }
 
     static ExpressionPtr binary_call(ExpressionPtr const op, const ExpressionPtr &lhs,
                                      const ExpressionPtr &rhs) {
-        return new BinaryCall<NodeTrait>(op, lhs.take_ownership(), rhs.take_ownership());
+        return new BinaryCall(op, lhs, rhs);
     }
 
-    static ExpressionPtr error(String const &message) { return new ErrorNode<NodeTrait>(message); }
+    static ExpressionPtr error(String const &message) { return new ErrorNode(message); }
 
-    static ExpressionPtr value(double value) { return new Value<NodeTrait>(value); }
+    static ExpressionPtr value(double value) { return new Value(value); }
 
-    static ExpressionPtr placeholder(String const &name) {
-        return new Placeholder<NodeTrait>(name);
+    static ExpressionPtr placeholder(String const &name) { return new Placeholder(name); }
+
+    // static ExpressionPtr borrow(Node *expr) { return new Borrow(expr); }
+
+    static TypePtr function_type(Array<Type *> args, const TypePtr &return_type) {
+        return new FunctionType(args, return_type);
     }
 
-    static ExpressionPtr borrow(const ExpressionPtr &expr) {
-        return new Borrow<NodeTrait>(expr.get());
+    static TypePtr arrow(Array<Type *> args, const TypePtr &return_type) {
+        return function_type(args, return_type);
     }
 
-    static TypePtr arrow(Array<Type<NodeTrait> *> args, const TypePtr &return_type) {
-        return new Arrow<NodeTrait>(args, return_type);
-    }
-
-    static TypePtr builtin(String const &name) { return new Builtin<NodeTrait>(name); }
+    static TypePtr builtin(String const &name) { return new BuiltinType(name); }
 
     bool is_zero(f64 value) { return std::abs(value) <= 1e-12; }
 
@@ -91,8 +90,7 @@ template <typename NodeTrait> class Builder {
             }
         }*/
 
-        ExpressionPtr root = new BinaryCall<NodeTrait>(new Placeholder<NodeTrait>("+"),
-                                                       lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = binary_call(placeholder("+"), lhs, rhs);
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
@@ -131,27 +129,26 @@ template <typename NodeTrait> class Builder {
                 }
         }*/
 
-        ExpressionPtr root = new BinaryCall<NodeTrait>(new Placeholder<NodeTrait>("*"),
-                                                       lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = binary_call(placeholder("*"), lhs, rhs);
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
 
     static ExpressionPtr div(const ExpressionPtr &lhs, const ExpressionPtr &rhs) {
-        ExpressionPtr root = new BinaryCall<NodeTrait>(new Placeholder<NodeTrait>("/"),
-                                                       lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = binary_call(placeholder("/"), lhs, rhs);
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
 
     static ExpressionPtr sub(const ExpressionPtr &lhs, const ExpressionPtr &rhs) {
-        ExpressionPtr root = new BinaryCall<NodeTrait>(new Placeholder<NodeTrait>("-"),
-                                                       lhs.take_ownership(), rhs.take_ownership());
+        ExpressionPtr root = binary_call(placeholder("-"), lhs, rhs);
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
     }
 };
 } // namespace kiwi
+
+#endif

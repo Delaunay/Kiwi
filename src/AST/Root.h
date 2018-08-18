@@ -4,10 +4,10 @@
 
 //#define KIWI_DEBUG
 #include "../Debug.h"
+#include <iostream>
 
 namespace kiwi {
 
-template <typename T>
 class Expression;
 
 /* Root represent the root of our tree, when a node is created
@@ -20,40 +20,32 @@ class Expression;
  * Root is kind of a unique_ptr but that allows copying
  * and it was adapted for our tree structure.
  */
-namespace generic{
-template<typename T>
-class Root{
-public:
-    typedef T* ptr_type;
+namespace generic {
+template <typename T> class Root {
+  public:
+    typedef T *ptr_type;
 
-    Root(T* ptr = nullptr):
-        _root(ptr), _owned(false)
-    {}
+    Root(T *ptr = nullptr) : _root(ptr), _owned(false) {}
 
-    Root(const Root& r):
-        _root(r.take_ownership()), _owned(false)
-    {}
+    Root(const Root &r) : _root(r.take_ownership()), _owned(false) {}
 
-    Root(const Root&& r):
-        _root(r.take_ownership()), _owned(false)
-    {}
+    Root(const Root &&r) : _root(r.take_ownership()), _owned(false) {}
 
-    Root& operator= (const Root&& r){
-        if (_root == nullptr){
+    Root &operator=(const Root &&r) {
+        if(_root == nullptr) {
             _owned = false;
-            _root = r.take_ownership();
-        }
-        else{
+            _root  = r.take_ownership();
+        } else {
             // FIXME
             std::cout << "Root already owning a node\n";
         }
         return *this;
     }
 
-    ~Root(){
-        if (!_owned){
-            //freeprint(_root);
-            //free(_root);
+    ~Root() {
+        if(!_owned) {
+            // freeprint(_root);
+            // free(_root);
         }
     }
 
@@ -61,11 +53,11 @@ public:
      * takes ownership of the node. If the node is already
      * owned a copy of the tree is returned instead
      */
-    T* take_ownership(bool borrow=false) const{
-        if (_owned){
+    T *take_ownership(bool borrow = false) const {
+        if(_owned) {
             // FIXME
             // printdt("Node already owned, copying subtree: ", _root);
-            //if (borrow)
+            // if (borrow)
             //    return;
             // return copy(_root);
         }
@@ -74,17 +66,15 @@ public:
         return _root;
     }
 
-    bool owned() const{ return _owned; }
+    bool owned() const { return _owned; }
 
-    T* get       () const{ return _root; }
-    T* operator->() const{ return _root; }
+    T *get() const { return _root; }
+    T *operator->() const { return _root; }
 
-    operator T*() const{
-        return _root;
-    }
+    operator T *() const { return _root; }
 
-private:
-    T*  _root;
+  private:
+    T *_root;
     mutable bool _owned;
 };
 
@@ -93,30 +83,23 @@ private:
  * As opposed to Root this can be trivially simplified to a naked pointer
  * by the compiler.
  */
-template<typename T>
-class DummyRoot{
-public:
-    typedef T* ptr_type;
+template <typename T> class DummyRoot {
+  public:
+    typedef T *ptr_type;
 
-    DummyRoot(T* ptr):
-        _root(ptr)
-    {}
+    DummyRoot(T *ptr) : _root(ptr) {}
 
-    T* take_ownership() const{
-        return _root;
-    }
+    T *take_ownership() const { return _root; }
 
-    bool owned() const{ return false; }
+    bool owned() const { return false; }
 
-    T* get       () const{ return _root; }
-    T* operator->() const{ return _root; }
+    T *get() const { return _root; }
+    T *operator->() const { return _root; }
 
-    operator T*() const{
-        return _root;
-    }
+    operator T *() const { return _root; }
 
-private:
-    T* _root;
+  private:
+    T *_root;
 };
-}
-}
+} // namespace generic
+} // namespace kiwi

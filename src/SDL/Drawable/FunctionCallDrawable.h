@@ -7,7 +7,7 @@ namespace kiwi {
 
 class FunctionCallDrawable : public ExpressionDrawable {
   public:
-    FunctionCallDrawable(FunctionCall<LightExpression> *callexpr) : args(callexpr->args_size()) {
+    FunctionCallDrawable(FunctionCall *callexpr) : args(callexpr->args_size()) {
         Point pos          = {0, 0};
         std::tie(fun, pos) = insert_entity_after(ExpressionDrawable::make(callexpr->fun), pos);
         std::tie(std::ignore, pos) = insert_entity_after(make_string("("), pos);

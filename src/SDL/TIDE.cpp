@@ -5,7 +5,7 @@
 
 //#include "RenderEngine.h"
 
-#include "../AST/Root.h"
+#include "../AST/Definition.h"
 
 #include "../Parsing/Buffer.h"
 #include "../Parsing/Optional.h"
@@ -19,8 +19,6 @@
 //#include "Drawable/RenderNode.h"
 
 using namespace kiwi;
-using ASTExpressionPtr = generic::Root<Expression<ASTTrait>>;
-// using RenderExpressionPtr = generic::Root<Expression<RenderTrait>>;
 
 #include "Drawable/EditableString.h"
 #include "Drawable/StringDrawable.h"
@@ -43,8 +41,8 @@ class MyDrawableExpression : public kiwi::Drawable {
             // --------------------------------------------------------------------
             auto result = parser.parse_declaration(0);
             log_debug("Declaration `", std::get<0>(result), "` was parsed!");
-            ASTExpressionPtr expr = std::get<1>(result);
-            print_expr<ASTTrait>(std::cout, expr) << std::endl;
+            Definition *expr = std::get<1>(result);
+            // print_expr<ASTTrait>(std::cout, expr) << std::endl;
 
             /*/ --------------------------------------------------------------------
             auto class_parsed = parser.parse_declaration(0);
@@ -54,7 +52,7 @@ class MyDrawableExpression : public kiwi::Drawable {
             // -------------------------------------------------------------------- */
             // render_expr = convert(expr);
 
-            render_expr = ExpressionDrawable::make(expr.get());
+            render_expr = ExpressionDrawable::make(expr);
         }
     }
 
@@ -218,10 +216,9 @@ int main() {
     kiwi::SDLWindow *w1 = kiwi::WindowManager::new_window<MyWindow>(
         u8"TIDE", 800, 500, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
-    // new StringDrawable(u8"Приве́т");
-    MyWindow* mw = reinterpret_cast<MyWindow*>(w1);
+    MyWindow *mw = static_cast<MyWindow *>(w1);
 
-    //mw->insert_entity<MyDrawableExpression>();
+    // m    w->insert_entity<MyDrawableExpression>();
 
     log_trace();
     mw->insert_entity(new StringDrawable(u8"Приве́т"));
