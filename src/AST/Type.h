@@ -1,6 +1,7 @@
 #ifndef KIWI_AST_TYPE_NODE_HEADER
 #define KIWI_AST_TYPE_NODE_HEADER
 
+#include "Definition.h"
 #include "Statement.h"
 
 /*  Expression Representing Types
@@ -56,6 +57,24 @@ class ErrorType : public Type {
 
     String message;
 };
+
+// Instanciation of a struct type
+class StructType : public Type {
+  public:
+    StructType(StructDefinition *def) : Type(NodeTag::struct_type), definition(def) {}
+
+    StructDefinition *definition;
+    Array<Tuple<String, Statement *>> meta_types;
+};
+
+class UnionType : public Type {
+  public:
+    UnionType(UnionDefinition *def) : Type(NodeTag::union_type), definition(def) {}
+
+    UnionDefinition *definition;
+    Array<Tuple<String, Statement *>> meta_types;
+};
+
 } // namespace kiwi
 
 #endif

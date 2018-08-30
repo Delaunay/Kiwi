@@ -15,7 +15,7 @@ namespace kiwi {
     X(borrow, Borrow, i8(1))                                                                       \
     X(definition, Definition, 0 | DEF_TAG)                                                         \
     X(function_def, FunctionDefinition, 1 | DEF_TAG)                                               \
-    X(macro_def, MacroDefinition, 1 | DEF_TAG)                                                     \
+    X(macro_def, MacroDefinition, 2 | DEF_TAG)                                                     \
     X(type, Type, 0 | TYPE_TAG)                                                                    \
     X(struct_def, StructDefinition, 0 | TYPE_DEF_TAG)                                              \
     X(union_def, UnionDefinition, 1 | TYPE_DEF_TAG)                                                \
@@ -23,6 +23,8 @@ namespace kiwi {
     X(function_type, FunctionType, 3 | TYPE_TAG | EXPR_TAG)                                        \
     X(unknown_type, UnknownType, 4 | TYPE_TAG | EXPR_TAG)                                          \
     X(error_type, ErrorType, 5 | TYPE_TAG | EXPR_TAG)                                              \
+    X(union_type, UnionType, 6 | TYPE_TAG | EXPR_TAG)                                              \
+    X(struct_type, StructType, 7 | TYPE_TAG | EXPR_TAG)                                            \
     X(expression, Expression, 0 | EXPR_TAG)                                                        \
     X(unary_call, UnaryCall, 1 | EXPR_TAG)                                                         \
     X(binary_call, BinaryCall, 2 | EXPR_TAG)                                                       \
@@ -37,6 +39,8 @@ enum class NodeTag : u8 {
     KIWI_AST_NODES(X)
 #undef X
 };
+
+const char *to_string(NodeTag tag);
 
 class Node {
   public:

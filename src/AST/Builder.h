@@ -63,6 +63,8 @@ class Builder {
         return function_type(args, return_type);
     }
 
+    static ExpressionPtr block() { return new Block(); }
+
     static TypePtr builtin(String const &name) { return new BuiltinType(name); }
 
     bool is_zero(f64 value) { return std::abs(value) <= 1e-12; }
@@ -147,6 +149,16 @@ class Builder {
         PARENT(lhs->parent = root);
         PARENT(rhs->parent = root);
         return root;
+    }
+
+    static Definition *struct_def(String const &name, Array<Tuple<String, Statement *>> const &meta,
+                                  Array<Tuple<String, Statement *>> const &attr) {
+        return new StructDefinition(name, meta, attr);
+    }
+
+    static Definition *union_def(String const &name, Array<Tuple<String, Statement *>> const &meta,
+                                 Array<Tuple<String, Statement *>> const &attr) {
+        return new UnionDefinition(name, meta, attr);
     }
 };
 } // namespace kiwi

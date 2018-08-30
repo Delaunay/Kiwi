@@ -34,12 +34,15 @@
     X(tok_def, -10)                                                                                \
     X(tok_docstring, -11)                                                                          \
     X(tok_arrow, -12)                                                                              \
-    X(tok_record, -13)                                                                             \
-    X(tok_macro, -14)
+    X(tok_struct, -13)                                                                             \
+    X(tok_union, -14)                                                                              \
+    X(tok_macro, -15)
 
 #define KIWI_KEYWORDS                                                                              \
     X("def", tok_def)                                                                              \
-    X("class", tok_record)                                                                         \
+    X("macro", tok_macro)                                                                          \
+    X("struct", tok_struct)                                                                        \
+    X("union", tok_union)                                                                          \
     X("->", tok_arrow)
 
 namespace kiwi {

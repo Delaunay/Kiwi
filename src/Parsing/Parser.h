@@ -11,7 +11,14 @@
 #define EXPECT(c, ...)                                                                             \
     if(tok.type() != c) {                                                                          \
         log_error(__VA_ARGS__);                                                                    \
+        tok.debug_print(std::cout) << std::endl;                                                   \
     }
+
+#define EXPECT_ELSE(c, ...)                                                                        \
+    if(tok.type() != c) {                                                                          \
+        log_error(__VA_ARGS__);                                                                    \
+        tok.debug_print(std::cout) << std::endl;                                                   \
+    } else
 
 namespace kiwi {
 
@@ -75,7 +82,9 @@ class Parser {
             return parse_macro(i + 1);
         case tok_def:
             return parse_function(i + 1);
-        case tok_record:
+        case tok_union:
+            return parse_record(i + 1);
+        case tok_struct:
             return parse_record(i + 1);
         default:
             // parse_expression(i + 1)
@@ -84,13 +93,71 @@ class Parser {
 
     } //*/
 
-    Tuple<String, Definition *> parse_macro(int i) { return std::make_tuple("", nullptr); }
+    Tuple<String, Definition *> parse_macro(int i) { return parse_function(i); }
+
+    Expression *parse_statement(int i) { return parse(i); }
+
+    Type *parse_type(int i) {
+        Token tok = peek_token();
+        if(tok.type() == tok_identifier)
+            return Builder::builtin(tok.identifier());
+
+        return nullptr;
+    }
+
+    // <name>:<expr> <end_sep> <name>:<expr> <term_sep>
+    Array<Tuple<String, Statement *>> parse_attribute_list(char end_sep, char term_sep, int i) {
+        Array<Tuple<String, Statement *>> attributes;
+        String name       = "";
+        Statement *type   = nullptr;
+        bool parsing_type = false;
+        bool push_ready   = false;
+        Token tok         = peek_token();
+
+        while(tok.type() != term_sep && tok.type() != tok_eof) {
+            tok = peek_token();
+
+            if(!parsing_type && tok.type() == tok_identifier) {
+                log_info("parsing: ", tok.identifier());
+                name = tok.identifier();
+            } else if(parsing_type) {
+                type         = parse_type(i + 1);
+                parsing_type = false;
+            } else if(tok.type() == ':') {
+                log_info("parsing type ");
+                parsing_type = true;
+                push_ready   = true;
+            } else if(tok.type() == end_sep && push_ready) {
+                log_info("pushing attributes");
+                parsing_type = false;
+                attributes.emplace_back(name, type);
+                push_ready = false;
+            }
+
+            consume_token();
+        }
+
+        if(push_ready) {
+            attributes.emplace_back(name, type);
+        }
+
+        EXPECT(term_sep, "expected end of attribute list");
+        consume_token();
+        return attributes;
+    }
 
     Tuple<String, Definition *> parse_record(int i) {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
-        Token tok = peek_token();
-        EXPECT(tok_record, "not a record");
+        Token tok           = peek_token();
+        bool parsing_struct = false;
+        if(tok.type() != tok_struct && tok.type() != tok_union) {
+            log_error("Expected Parsing a Record");
+        }
+
+        if(tok.type() == tok_struct) {
+            parsing_struct = true;
+        }
         // --------------------------------------------------------------------
 
         tok = nexttok();
@@ -98,13 +165,35 @@ class Parser {
         String name = tok.identifier();
         consume_token();
 
-        // TODO
-        // RBuilder::record();
+        // Parse Meta Types
+        Array<Tuple<String, Statement *>> meta_types;
+
+        tok = peek_token();
+        if(tok.type() == '(') {
+            log_info("Parsing MetaTypes");
+            consume_token();
+            meta_types = parse_attribute_list(',', ')', i + 1);
+        }
 
         // --------------------------------------------------------------------
-        EXPECT(tok_desindent, "expected desindentation got '", tok.type(), "'");
+        tok = peek_token();
+        EXPECT_ELSE(':', "expected ':' after user type declaration") { consume_token(); }
+
+        tok = peek_token();
+        EXPECT(tok_newline, "expected new line after user type declaration") { consume_token(); }
+        // --------------------------------------------------------------------
+
+        // Parse Attributes
+        Array<Tuple<String, Statement *>> attributes =
+            parse_attribute_list(tok_newline, tok_desindent, i + 1);
+
+        // --------------------------------------------------------------------
+        EXPECT(tok_desindent, "expected desindentation got '", tok_to_string(tok.type()), "'");
         consume_token();
-        return std::make_tuple(name, nullptr);
+
+        if(parsing_struct)
+            return std::make_tuple(name, Builder::struct_def(name, meta_types, attributes));
+        return std::make_tuple(name, Builder::union_def(name, meta_types, attributes));
     }
 
     Tuple<Array<String>, Array<Statement *>> parse_args(int i) {
@@ -152,7 +241,10 @@ class Parser {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
         Token tok = peek_token();
-        EXPECT(tok_def, "not a function");
+
+        if(tok.type() != tok_def && tok.type() != tok_macro) {
+            log_error("not a function or a macro");
+        }
         // --------------------------------------------------------------------
 
         // >>>>>>>> Parse Prototype
@@ -200,7 +292,9 @@ class Parser {
             static_cast<FunctionDefinition *>(Builder::function(name, nullptr));
         fun->args = arg_names;
         fun->type = type;
-        fun->body = parse(i + 1);
+        Block *b  = new Block();
+        fun->body = b;
+        b->statements.push_back(parse(i + 1));
 
         // --------------------------------------------------------------------
         EXPECT(tok_desindent, "expected desindentation got '", tok.type(), "'");

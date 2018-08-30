@@ -26,6 +26,7 @@ SET(AST_SRC
     Module.cpp
     TreeOps.h
     TreeOps/PrintExpression.h
+    TreeOps/PrintExpression.cpp
     TreeOps/EvalExpression.h
     TreeOps/PartialEvalExpression.h
     TreeOps/FreeExpression.h

@@ -137,9 +137,8 @@ class Placeholder final : public Expression {
 
 class Block final : public Expression {
   public:
-    Block(String const &name) : Expression(NodeTag::block), name(name) {}
+    Block() : Expression(NodeTag::block) {}
 
-    String name;
     Expression *type{nullptr};
     Array<Statement *> statements;
 };

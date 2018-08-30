@@ -5,7 +5,6 @@
 
 #include "Expression.h"
 #include "Statement.h"
-#include "Type.h"
 
 namespace kiwi {
 
@@ -95,20 +94,26 @@ class MacroDefinition : public Definition {
 //      name: type
 class StructDefinition : public Definition {
   public:
-    StructDefinition(String const &name) : Definition(NodeTag::struct_def, name) {}
+    StructDefinition(String const &name, Array<Tuple<String, Statement *>> const &meta,
+                     Array<Tuple<String, Statement *>> const &attr) :
+        Definition(NodeTag::struct_def, name),
+        meta_types(meta), attributes(attr) {}
 
-    Array<Tuple<String, Statement *>> attributes;
     Array<Tuple<String, Statement *>> meta_types;
+    Array<Tuple<String, Statement *>> attributes;
 };
 
 // union type_name(name: meta_type):
 //      name: type
 class UnionDefinition : public Definition {
   public:
-    UnionDefinition(String const &name) : Definition(NodeTag::union_def, name) {}
+    UnionDefinition(String const &name, Array<Tuple<String, Statement *>> const &meta,
+                    Array<Tuple<String, Statement *>> const &attr) :
+        Definition(NodeTag::union_def, name),
+        meta_types(meta), attributes(attr) {}
 
-    Array<Tuple<String, Statement *>> attributes;
     Array<Tuple<String, Statement *>> meta_types;
+    Array<Tuple<String, Statement *>> attributes;
 };
 
 } // namespace kiwi

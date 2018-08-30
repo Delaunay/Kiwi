@@ -8,16 +8,75 @@
 #include "../Visitor.h"
 
 namespace kiwi {
+
+class PrintType : public TypeVisitor<std::ostream &, std::ostream &, u64> {
+  public:
+    std::ostream &builtin_type(BuiltinType *, std::ostream &out, u64 depth) override;
+    std::ostream &function_type(FunctionType *, std::ostream &out, u64 depth) override;
+    std::ostream &union_type(UnionType *, std::ostream &out, u64 depth) override;
+    std::ostream &struct_type(StructType *, std::ostream &out, u64 depth) override;
+
+    std::ostream &unhandled_type(Type *, std::ostream &out, u64 depth) override;
+    std::ostream &nullptr_type(std::ostream &out, u64 depth) override;
+};
+
+class PrintExpression : public ExpressionVisitor<std::ostream &, std::ostream &, u64> {
+  public:
+    std::ostream &unary_call(UnaryCall *, std::ostream &out, u64 depth) override;
+    std::ostream &binary_call(BinaryCall *, std::ostream &out, u64 depth) override;
+    std::ostream &function_call(FunctionCall *, std::ostream &out, u64 depth) override;
+    std::ostream &match(Match *, std::ostream &out, u64 depth) override;
+    std::ostream &block(Block *, std::ostream &out, u64 depth) override;
+    std::ostream &placeholder(Placeholder *, std::ostream &out, u64 depth) override;
+    std::ostream &value(Value *, std::ostream &out, u64 depth) override;
+
+    std::ostream &unhandled_expression(Expression *, std::ostream &out, u64 depth) override;
+    std::ostream &nullptr_expression(std::ostream &out, u64 depth) override;
+};
+
+class PrintDefinition : public DefinitionVisitor<std::ostream &, std::ostream &, u64> {
+  public:
+    std::ostream &function_def(FunctionDefinition *, std::ostream &out, u64 depth) override;
+    std::ostream &macro_def(MacroDefinition *, std::ostream &out, u64 depth) override;
+    std::ostream &struct_def(StructDefinition *, std::ostream &out, u64 depth) override;
+    std::ostream &union_def(UnionDefinition *, std::ostream &out, u64 depth) override;
+
+    std::ostream &unhandled_definition(Definition *, std::ostream &out, u64 depth) override;
+    std::ostream &nullptr_definition(std::ostream &out, u64 depth) override;
+};
+
+class PrintStatement : public StatementVisitor<std::ostream &, std::ostream &, u64> {
+  public:
+    std::ostream &visit_type(Type *type, std::ostream &out, u64 depth) override {
+        return PrintType().visit_type(type, out, depth);
+    }
+    std::ostream &visit_definition(Definition *def, std::ostream &out, u64 depth) override {
+        return PrintDefinition().visit_definition(def, out, depth);
+    }
+    std::ostream &visit_expression(Expression *expr, std::ostream &out, u64 depth) override {
+        return PrintExpression().visit_expression(expr, out, depth);
+    }
+
+    std::ostream &unhandled_statement(Statement *stmt, std::ostream &out, u64) override {
+        log_info(to_string(stmt->tag));
+        return out;
+    }
+
+    std::ostream &nullptr_statement(std::ostream &out, u64) override {
+        return out << "NoneStatement(nullptr)";
+    }
+};
+
 /*/ Functions
 // ------------------------------------------------------------------------
 
-std::ostream &print_expr(std::ostream &out, Expression *expr);
+std::ostream &Print_expr(std::ostream &out, Expression *expr);
 
 std::ostream &operator<<(std::ostream &out, Expression *expr);
 
 // Implementation
 // ------------------------------------------------------------------------
-class Printing : public StaticVisitor<Printing, void, int> {
+class Printing : public StaticVisitor<Printing, void, u64> {
   public:
     Printing(std::ostream &out) : out(out) {}
 
@@ -27,7 +86,7 @@ class Printing : public StaticVisitor<Printing, void, int> {
         return out;
     }
 
-    void function_declaration(FunctionDeclaration *x, int indentation) {
+    void function_declaration(FunctionDeclaration *x, u64 indentation) {
         std::size_t n = x->args_size();
         out << "def " << x->name << "(";
 
@@ -39,7 +98,7 @@ class Printing : public StaticVisitor<Printing, void, int> {
         }
 
         if(n > 0) {
-            for(std::size_t i = 0; i < n - 1; ++i) {
+            for(std::size_t i; i < n - 1; ++i) {
 
                 out << x->arg(i);
                 if(ftype) {
@@ -69,12 +128,12 @@ class Printing : public StaticVisitor<Printing, void, int> {
         traverse(x->body, indentation + 1);
     }
 
-    void function_call(FunctionCall *x, int indentation) {
+    void function_call(FunctionCall *x, u64 indentation) {
         size_t n = x->args_size() - 1;
 
         traverse(x->fun, indentation);
         out << "(";
-        for(std::size_t i = 0; i < n; ++i) {
+        for(std::size_t i; i < n; ++i) {
             traverse(x->arg(i), indentation);
             out << ", ";
         }
@@ -83,7 +142,7 @@ class Printing : public StaticVisitor<Printing, void, int> {
         out << ")";
     }
 
-    void unary_call(UnaryCall *x, int indentation) {
+    void unary_call(UnaryCall *x, u64 indentation) {
         if(!x->right)
             traverse(x->fun, indentation);
 
@@ -93,7 +152,7 @@ class Printing : public StaticVisitor<Printing, void, int> {
             traverse(x->fun, indentation);
     }
 
-    void binary_call(BinaryCall *x, int indentation) {
+    void binary_call(BinaryCall *x, u64 indentation) {
         out << "(";
         traverse(x->arg(0), indentation);
         out << " ";
@@ -103,21 +162,21 @@ class Printing : public StaticVisitor<Printing, void, int> {
         out << ")";
     }
 
-    void borrow(Borrow *b, int indentation) { return traverse(b->expr, indentation); }
+    void borrow(Borrow *b, u64 indentation) { return traverse(b->expr, indentation); }
 
-    void error(ErrorNode *e, int) { out << "(error, m = " << e->message << ")"; }
+    void error(ErrorNode *e, u64) { out << "(error, m = " << e->message << ")"; }
 
-    void value(Value *x, int) {
-        x->print(out);
+    void value(Value *x, u64) {
+        x->Print(out);
         // out << x->as<f64>();
     }
 
-    void placeholder(Placeholder *x, int) { out << x->name; }
+    void placeholder(Placeholder *x, u64) { out << x->name; }
 
     std::ostream &out;
 };
 
-std::ostream &print_expr(std::ostream &out, Expression *expr) { return Printing::run(out, expr); }
+std::ostream &Print_expr(std::ostream &out, Expression *expr) { return Printing::run(out, expr); }
 
-std::ostream &operator<<(std::ostream &out, Expression *expr) { return print_expr(out, expr); }*/
+std::ostream &operator<<(std::ostream &out, Expression *expr) { return Print_expr(out, expr); }*/
 } // namespace kiwi

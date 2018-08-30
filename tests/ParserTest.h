@@ -41,92 +41,90 @@ TEST(Parser, AddParsing) {
 }
 
 TEST(Parser, FunctionWithAnnotation) {
-    std::string code = s("def inc(x: Double) -> Double:\n") + s("    x + 1\n") + s("");
+    std::string code = s("def inc(x: Double) -> Double:\n") + s("    return x + 1\n") + s("");
 
     StringBuffer reader(code);
     Parser parser(reader);
 
     Tuple<String, Definition *> op = parser.parse_function(0);
 
+    std::cout << std::string(80, '-') << std::endl;
     std::stringstream ss;
-    // print_expr<LightExpression>(ss, std::get<1>(op));
-
+    PrintStatement().visit_definition(std::get<1>(op), ss, 0);
+    std::cout << std::string(80, '-') << std::endl;
     std::cout << ss.str() << std::endl;
 }
 
 TEST(Parser, FunctionWithoutAnnoation) {
-    std::string code = s("def inc(x):\n") + s("    x + 1\n") + s("");
+    std::string code = s("def inc(x):\n") + s("    return x + 1\n") + s("");
 
     StringBuffer reader(code);
     Parser parser(reader);
 
     Tuple<String, Definition *> op = parser.parse_function(0);
-    std::stringstream ss;
-    // print_expr<LightExpression>(ss, std::get<1>(op));
 
+    std::cout << std::string(80, '-') << std::endl;
+    std::stringstream ss;
+    PrintStatement().visit_definition(std::get<1>(op), ss, 0);
+    std::cout << std::string(80, '-') << std::endl;
     std::cout << ss.str() << std::endl;
 }
 
-TEST(Optional, Some) {
-    auto a = some<int>(10);
+TEST(Parser, StructParsing) {
+    std::string code = "struct Point(T1: Type, T2: Type):\n"
+                       "    x: T1\n"
+                       "    y: T2\n";
 
-    EXPECT_EQ(a.is_defined(), true);
-    EXPECT_EQ(a.is_empty(), false);
-    EXPECT_EQ(a.get(), 10);
+    StringBuffer reader(code);
+    Parser parser(reader);
 
-    a.foreach([](const int &i) -> void { std::cout << i << std::endl; });
+    Tuple<String, Definition *> data = parser.parse_record(0);
 
-    int map_ret = a.map<int>([](const int &d) -> int { return d; }).get();
-    EXPECT_EQ(map_ret, 10);
-
-    int fold_ret = a.fold<int>([]() { return 11; }, [](const int &a) { return a; });
-
-    EXPECT_EQ(fold_ret, 10);
+    PrintDefinition printer;
+    std::stringstream ss;
+    printer.visit_definition(std::get<1>(data), ss, 0);
+    std::cout << std::get<0>(data) << ": " << std::endl << ss.str();
 }
 
-TEST(Optional, None) {
-    auto a = none<int>();
+TEST(Parser, UnionParsing) {
+    std::string code = "union Point(T1: Type, T2: Type):\n"
+                       "    x: T1\n"
+                       "    y: T2\n";
 
-    EXPECT_EQ(a.is_defined(), false);
-    EXPECT_EQ(a.is_empty(), true);
-    EXPECT_THROW(a.get(), EmptyOptionException);
+    StringBuffer reader(code);
+    Parser parser(reader);
 
-    a.foreach([](const int &i) -> void { std::cout << i << std::endl; });
+    Tuple<String, Definition *> data = parser.parse_record(0);
 
-    Option<int> map_ret = a.map<int>([](const int &d) -> int { return d; });
-    // EXPECT_THROW(map_ret.get(), EmptyOptionException);
-
-    int fold_ret = a.fold<int>([]() { return 11; }, [](const int &a) { return a; });
-
-    EXPECT_EQ(fold_ret, 11);
+    PrintDefinition printer;
+    std::stringstream ss;
+    printer.visit_definition(std::get<1>(data), ss, 0);
+    std::cout << std::get<0>(data) << ": " << std::endl << ss.str();
 }
 
-TEST(Either, Right) {
-    auto a = right<int, f32>(10);
+TEST(Parser, overall) {
+    std::string code = ""
+                       "def inc(x:)\n"
+                       "    return x + 1\n"
+                       "\n"
+                       "struct Test(meta_type: Type)\n"
+                       "    x: Int\n"
+                       "    y: meta_type\n"
+                       "\n"
+                       "union Test(meta_type: Type)\n"
+                       "    x: Int\n"
+                       "    y: meta_type\n"
+                       "\n"
+                       "def my_fun(a: A, b: B) -> C:\n"
+                       "    def wrap(x: X) -> Z:\n"
+                       "        return x * a + b\n"
+                       "    \n"
+                       "    return wrap\n"
+                       "\n";
 
-    EXPECT_EQ(a.is_right(), true);
-    EXPECT_EQ(a.is_left(), false);
+    StringBuffer reader(code);
+    Parser parser(reader);
 
-    EXPECT_EQ(a.right(), 10);
-    EXPECT_THROW(a.left(), EitherError);
-
-    bool fold_ret = a.fold<bool>([](const int &a) -> bool { return true; },
-                                 [](const float &b) -> bool { return false; });
-
-    EXPECT_EQ(fold_ret, true);
-}
-
-TEST(Either, Left) {
-    auto a = left<int, f32>(11.2f);
-
-    EXPECT_EQ(a.is_right(), false);
-    EXPECT_EQ(a.is_left(), true);
-
-    EXPECT_FLOAT_EQ(a.left(), 11.2f);
-    EXPECT_THROW(a.right(), EitherError);
-
-    bool fold_ret = a.fold<bool>([](const int &a) -> bool { return true; },
-                                 [](const float &b) -> bool { return false; });
-
-    EXPECT_EQ(fold_ret, false);
+    std::stringstream ss;
+    std::cout << ss.str() << std::endl;
 }

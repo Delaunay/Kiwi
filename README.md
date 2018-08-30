@@ -17,7 +17,7 @@ Tested with MSVC 19
 
 ## Kiwi Philosophy
 
-Kiwi tries to help the programmer express himself and his intention without hamper flexibility.
+Kiwi tries to help the programmer express himself and his intention without hamper flexibility to do so.
     
 ## Kiwi AST
 
@@ -34,7 +34,8 @@ Kiwi tries to help the programmer express himself and his intention without hamp
                 * function call (generic)           // like matlab .* or .+ 
             * match                                 Conditional Jump
             * block                                 Sequence of Instructions
-            * error                                 Represent an erroneous state
+            * error                                 Represent an erroneous state (Might be something like Rust Result<T, E>)
+                                                    Hopefully making it as invisible as possible and allowing users to have an error handling facility in between exceptions and error codes 
         * Definition        Reusable components
             * function                              Reusable Subtree
             * macros                                Expression generator - Compile time function
@@ -86,24 +87,24 @@ If not it will cause an error.
 
 Meta Types
 
-    Struct Point(T: Type):
+    struct Point(T: Type):
         x: T
         y: T
         
-    Union Point(T: Type):
-        x: T
-        y: T
+    union Either(R: Type, L: Type):
+        left: L
+        right: R
 
 Making everything being a statement will allow users to compute types at compile time and annotate their code with
 arbitrary expression, like `x: make_type(x, y, z)`.
 
 We could define something like:
 
-    Struct Tuple(X: Type, Y: Type):
+    struct Tuple(X: Type, Y: Type):
         x: X
         y: Y
         
-    Struct Variant(X: Type, Y: Type):
+    union Variant(X: Type, Y: Type):
         x: X
         y: Y
 
@@ -113,14 +114,55 @@ We could define something like:
     def operator | (X: Type, Y: Type): Struct =
         return Variant(X, Y)
         
-    Struct MyData:
+    struct MyData:
         t: Int * Float    => Function Call resolved to a Tuple
         v: Int | Float    => Function Call resolved to a Variant
         
     # Extract meta types 
     def get_x(tuple: Tuple(A: Type, Float)): A 
         return tuple.x
+        
+NB: because everything is a statement, it makes Kiwi type system dependent.
+See example below where the value N is part of the type.
 
+    Struct Vector(T: Type, N: Int):
+        data : T[N]
+        
+        
+## Reflection as code gen
+
+I personnaly do not see the attraction of reflection as a runtime feature.
+Kiwi use macros to expose the source code to the user.
+For example, Kiwi does not differenciate between a Tuple and a Reccord because
+both of them ater interchangeable using macros.
+
+
+    struct Whatever:
+        x: X
+        y: Y
+
+    x = Whatever();
+    x.x = 1
+    x.y = 2
+        
+    # Macros that are executed at compile time
+    get_fields(x)       <-  [(x, X), (y, Y)]
+    get_field(0, x)     <- 
+    get_field("x", x)
+    
+    # Get the parsed AST back
+    # This means you can write a bunch of code
+    # get its ASt and generate a bunch of more code based on that
+    # this should make SQL/Data Serialization very straight forward and
+    # nicely integrated with the language
+    # 
+    # Additionally something like autodiff for ML should also be possible
+    get_ast(x)
+    
+    # This is definetly something I want to
+    get_llvm_ir(x)
+
+ 
 ## Kiwi Specifications
 
 * Type checking is done through Z3. Typing are program the program constraint.
@@ -195,6 +237,10 @@ abitrary things including compiler metadata about the program.
 
 # Kiwi Distributed File System and Job Scheduling
 
+## Concept
+
+Basically a kind of REST interface. 
+
     /kdfs/machine_id/data
     /kdfs/machine_id/jobs/logs/:job_name/:field_name
     /kdfs/machine_id/jobs/history/:job_name/:field_name
@@ -212,10 +258,30 @@ abitrary things including compiler metadata about the program.
     
     # Show running jobs
     ls /kdfs/machine_id/jobs/running
-    ls /kdfs/machine_id/jobs/running | gerp my_job_name
+    ls /kdfs/machine_id/jobs/running | grep my_job_name
     
     # get job logs
     cat /kdfs/machine_id/jobs/logs/my_job_name/stdout > log.stdout
+    
+    # Global Namespace
+    # Allows you to read data from the cluster. KDFS will decide from which machine
+    # might even be some sort of peer to peer transfer
+    /kdfs/global/data
+    /kdfs/global/jobs
+    
+## Functions
+
+
+    myfun => Ref(Function(myfun))
+    
+                 Placeholders
+              <------>  <------>                                        
+    def myfun(a: Float, b: Float) -> Float:           
+        return a + b            # a => Ref(Placeholder(a))
+                                # b => Ref(Placeholder(b))
+                                                      
+                                                        
+    
 
 
 
