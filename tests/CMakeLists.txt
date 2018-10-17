@@ -30,6 +30,7 @@ SET(TEST_SRC
     ParserTest.h
     ValueTest.h
     OptionalTest.h
+    BuilderContextTest.h
 )
 
 IF(WIN32)

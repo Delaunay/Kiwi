@@ -41,7 +41,7 @@ class MyDrawableExpression : public kiwi::Drawable {
             // --------------------------------------------------------------------
             auto result = parser.parse_declaration(0);
             log_debug("Declaration `", std::get<0>(result), "` was parsed!");
-            Definition *expr = std::get<1>(result);
+            Expression *expr = std::get<1>(result);
             // print_expr<ASTTrait>(std::cout, expr) << std::endl;
 
             /*/ --------------------------------------------------------------------

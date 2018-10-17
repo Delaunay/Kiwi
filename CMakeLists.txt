@@ -1,8 +1,8 @@
 ﻿# required for C++11 features
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
 
 # project name + language used
-PROJECT(kiwi)
+PROJECT(kiwi LANGUAGES CXX CUDA)
 
 # Compiler Stuff
 # ====================================

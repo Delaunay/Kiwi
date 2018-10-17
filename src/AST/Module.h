@@ -3,32 +3,13 @@
 
 #include "Definition.h"
 #include "Expression.h"
+#include "Stack.h"
 
 namespace kiwi {
 
 using Module = Dict<String, Definition *>;
 
 using Context = Dict<String, Expression *>;
-
-template <typename T> class Stack {
-  public:
-    Stack(std::size_t reserve_size) { _vector.reserve(reserve_size); }
-
-    void push(T const &v) { _vector.push_back(v); }
-
-    T pop() {
-        T item = _vector.back();
-        _vector.pop_back();
-        return item;
-    }
-
-    void pop_back() { _vector.pop_back(); }
-
-    std::size_t size() { return _vector.size(); }
-
-  private:
-    Array<T> _vector;
-};
 
 class LocalScope;
 

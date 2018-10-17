@@ -32,7 +32,8 @@ namespace kiwi {
     X(match, Match, 4 | EXPR_TAG)                                                                  \
     X(block, Block, 5 | EXPR_TAG)                                                                  \
     X(placeholder, Placeholder, 6 | EXPR_TAG)                                                      \
-    X(value, Value, 7 | EXPR_TAG)
+    X(placeholder_ref, PlaceholderReference, 7 | EXPR_TAG)                                         \
+    X(value, Value, 8 | EXPR_TAG)
 
 enum class NodeTag : u8 {
 #define X(name, object, val) name = val,

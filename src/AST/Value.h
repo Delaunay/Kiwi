@@ -3,18 +3,54 @@
 #include <cassert>
 #include <cstdio>
 #include <memory>
+#include <ostream>
 
 #include "Expression.h"
+
+#include "Definition.h"
 #include "Type.h"
 
 #include "../Logging/Log.h"
+//
 
 namespace kiwi {
 
-struct typetype {};
-struct object {};
+// -------------------------------------------------------------------------------------------
+enum class ValueTag { vprimitive, vstruct, vunion, vfunction };
 
-#define KIWI_TYPE_TYPE(X)                                                                          \
+class Value : public Expression {
+  public:
+    Value(ValueTag tag) : Expression(NodeTag::value), value_tag(tag) {}
+
+    virtual ~Value() {}
+
+    virtual std::ostream &dump(std::ostream &out) const = 0;
+
+    virtual Type *type() const = 0;
+
+    template <typename T> T as(std::size_t index = 0) const;
+
+    ValueTag value_tag;
+};
+
+// -------------------------------------------------------------------------------------------
+//  Primitive Value
+// -------------------------------------------------------------------------------------------
+
+// TBD: half precision (IEEE 754-2008)
+/*
+struct f16 {
+    f16() = default;
+    template <typename T> f16(T) {}
+    template <typename T> f16 operator=(T) { return f16(); }
+    template <typename T> operator T() { return T(); }
+};
+inline std::ostream &operator<<(std::ostream &out, f16) { return out; }
+*/
+
+//     X(f16)
+
+#define KIWI_PRIMITIVE(X)                                                                          \
     X(i8)                                                                                          \
     X(i16)                                                                                         \
     X(i32)                                                                                         \
@@ -26,107 +62,211 @@ struct object {};
     X(f32)                                                                                         \
     X(f64)
 
-enum class BuiltinTypeTag {
-#define X(n) n,
-    KIWI_TYPE_TYPE(X)
-#undef X
-        object,
-    type
+// clang-format off
+enum class PrimitiveTag {
+    #define X(n) n,
+        KIWI_PRIMITIVE(X)
+    #undef X
+    none,
 };
 
-inline const std::string &name(BuiltinTypeTag id) {
-    static std::unordered_map<BuiltinTypeTag, std::string> builtin_types = {
-#define X(n) {BuiltinTypeTag::n, #n},
-        KIWI_TYPE_TYPE(X)
+template <typename T> PrimitiveTag get_primitive_tag() { return PrimitiveTag::none; }
+
+// Map C++ type to Primitive Tag
+#define X(n)                                                                                       \
+    template <> inline PrimitiveTag get_primitive_tag<n>() { return PrimitiveTag::n; }
+    KIWI_PRIMITIVE(X)
 #undef X
+
+// PrettyPrint a Primitive Tag name
+inline const std::string &get_primitive_name(PrimitiveTag id) {
+    static std::unordered_map<PrimitiveTag, std::string> builtin_types = {
+    #define X(n) {PrimitiveTag::n, #n},
+        KIWI_PRIMITIVE(X)
+    #undef X
+        {PrimitiveTag::none, "NotAPrimitive"}
     };
     return builtin_types[id];
 }
 
-template <typename T> BuiltinTypeTag type_id() { return BuiltinTypeTag::object; }
-template <> inline BuiltinTypeTag type_id<typetype>() { return BuiltinTypeTag::type; }
-
-#define X(n)                                                                                       \
-    template <> inline BuiltinTypeTag type_id<n>() { return BuiltinTypeTag::n; }
-KIWI_TYPE_TYPE(X)
-#undef X
-
-template <typename T> Type *type() {
-    static BuiltinType t(name(type_id<T>()));
+// Build a Kiwi Builtin Type for primitives
+template <typename T> BuiltinType *get_primitive_type() {
+    static BuiltinType t(get_primitive_name(get_primitive_tag<T>()));
     return &t;
 }
+//clang-format on
 
-class Value : public Expression {
+class PrimitiveValue : public Value {
   public:
     template <typename T>
-    Value(T x) :
-        Expression(NodeTag::value), _self(std::make_shared<Model<T>>(std::move(x))),
-        type(kiwi::type_id<T>()) {}
-
-    template <typename T> const T &as() const {
-        debug_if(type != type_id<T>(), this);
-        assert(type == type_id<T>() && "wrong Value cast");
-        return reinterpret_cast<const Model<T> *>(_self.get())->_data;
+    PrimitiveValue(T v) : Value(ValueTag::vprimitive),
+        primitive_tag(get_primitive_tag<T>()), _type(get_primitive_type<T>())
+    {
+        set_value(v);
     }
 
-    template <typename T> const T &as(const T &) const {
-        debug_if(type != type_id<T>(), this);
-        assert(type == type_id<T>() && "wrong Value cast");
-        return reinterpret_cast<const Model<T> *>(_self.get())->_data;
+    Type* type() const override { return _type;}
+
+    template <typename T> void set_value(T v) {
+        // clang-format off
+        switch(primitive_tag) {
+        #define X(n)                                                                                   \
+        case PrimitiveTag::n: {                                                                        \
+            primitive_tag = get_primitive_tag<T>();                                                    \
+            _type = get_primitive_type<T>();                                                           \
+            value.n##_value = n(v);                                                                    \
+            break;                                                                                     \
+        }
+        KIWI_PRIMITIVE(X)
+        #undef X
+        case PrimitiveTag::none:
+            return;
+        //clang-format on
+        }
     }
 
-    std::ostream &dump(std::ostream &out) const { return print(out); }
-
-    std::ostream &print(std::ostream &out, bool ptype = false) const {
-        switch(type) {
-#define X(n)                                                                                       \
-    case BuiltinTypeTag::n: {                                                                      \
-        if(ptype) {                                                                                \
-            out << "(";                                                                            \
-        }                                                                                          \
-        out << as<n>();                                                                            \
-        if(ptype) {                                                                                \
-            out << ": " << name(BuiltinTypeTag::n) << ")";                                         \
-        }                                                                                          \
-        break;                                                                                     \
+    template<typename T> T as() const{
+        if (get_primitive_tag<T>() == primitive_tag){
+            // clang-format off
+            switch(primitive_tag) {
+            #define X(n)                                                                                \
+            case PrimitiveTag::n: {                                                                     \
+                return T(value.n##_value);                                                              \
+            }
+            KIWI_PRIMITIVE(X)
+            #undef X
+            case PrimitiveTag::none:
+                return T();
+            }
+            //clang-format on
+        }
+        return T();
     }
-            KIWI_TYPE_TYPE(X)
-#undef X
-        // this is a dummy type
-        case BuiltinTypeTag::type: {
-            out << "Type";
+
+    std::ostream &dump(std::ostream &out) const override {
+        // clang-format off
+        switch(primitive_tag) {
+        #define X(n)                                                                                \
+        case PrimitiveTag::n: {                                                                     \
+            out << value.n##_value;                                                                 \
+            break;                                                                                  \
+        }
+        KIWI_PRIMITIVE(X)
+        #undef X
+        case PrimitiveTag::none:
             break;
         }
-        // this a user defined object i.e a Kiwi object
-        case BuiltinTypeTag::object: {
-            out << "Object";
-            break;
-        }
-        }
-        out.flush();
+        //clang-format on
+        out << ": " << get_primitive_name(primitive_tag);
         return out;
     }
 
-    const BuiltinTypeTag type;
-
   private:
-    struct Concept {
-        virtual ~Concept() = default;
-    };
+    union PrimitiveValues {
+    // clang-format off
+    #define X(n) n n##_value;
+        KIWI_PRIMITIVE(X)
+    #undef X
+    //clang-format on
+    } value;
 
-    template <typename T> struct Model final : Concept {
-        Model(T x) : _data(std::move(x)) {}
-
-        T _data;
-    };
-
-    std::shared_ptr<const Concept> _self;
+    PrimitiveTag primitive_tag;
+    Type* _type;
 };
 
-template <typename NodeTrait> std::ostream &operator<<(std::ostream &out, const Value *v) {
-    return v->print(out);
-}
+class UnionValue : public Value {
+  public:
+    UnionValue() : Value(ValueTag::vunion){}
 
-template <typename T, typename NodeTrait> const T &as(Value *expr) { return expr->as(T()); }
+    UnionValue* set_type(Union* ptr){
+        _type = ptr;
+        return this;
+    }
+
+    //Type* type() const override { return _type;}
+    Type* type() const override { return nullptr;}
+
+    Union* definition() { return _type; }
+
+    std::ostream &dump(std::ostream &out) const override {
+        out << "(";
+        if (value && index >= 0){
+            out << std::get<0>(_type->attributes[std::size_t(index)]) << " = ";
+            value->dump(out);
+        } else {
+            out << "none";
+        }
+        return out << ")";
+    }
+
+    Value *value;
+    int32 index;
+
+private:
+    Union* _type;
+};
+
+class StructValue : public Value {
+  public:
+    StructValue() :
+        Value(ValueTag::vstruct) {}
+
+    StructValue* set_type(Struct* ptr){
+        _type = ptr;
+        return this;
+    }
+
+    //Type* type() const override { return _type;}
+    Type* type() const override { return nullptr;}
+
+    Struct* definition() { return _type; }
+
+    std::ostream &dump(std::ostream &out) const override {
+        out << "(";
+        for(u64 i = 0; i < values.size() - 1; ++i) {
+            auto &item = values[i];
+            item->dump(out) << ", ";
+        }
+        values[values.size() - 1]->dump(out);
+        return out << ")";
+    }
+
+    Array<Value *> values;
+private:
+    Struct* _type;
+};
+
+struct ExecutionContext{};
+
+class FunctionValue : public Value {
+public:
+    FunctionValue(Function* def, ExecutionContext& ctx):
+        Value(ValueTag::vfunction), def(def), ctx(ctx)
+    {}
+
+    Function* def;
+    ExecutionContext& ctx;
+};
+
+template<typename T> T Value::as(std::size_t index) const{
+    switch(value_tag){
+    case ValueTag::vprimitive:{
+        PrimitiveValue const* val = static_cast<PrimitiveValue const*>(this);
+        return val->as<T>();
+    }
+    case ValueTag::vstruct:{
+        UnionValue const* val = static_cast<UnionValue const*>(this);
+        return val->as<T>();
+    }
+    case ValueTag::vunion:{
+        StructValue const* val = static_cast<StructValue const*>(this);
+        return val->values[index]->as<T>();
+    }
+    case ValueTag::vfunction:{
+        FunctionValue const* val = static_cast<FunctionValue const*>(this);
+        return val->as<T>();
+    }
+    }
+}
 
 } // namespace kiwi

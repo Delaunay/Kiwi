@@ -12,10 +12,12 @@ SET(AST_SRC
     Definition.cpp
     Expression.h
     Expression.cpp
+    KExpression.h
     Type.h
     Type.cpp
     AbstractType.h
     Value.h
+    Value.cpp
     Builder.h
     Builder.cpp
     Visitor.h
@@ -24,6 +26,7 @@ SET(AST_SRC
     StringDatabase.cpp
     Module.h
     Module.cpp
+    Stack.h
     TreeOps.h
     TreeOps/PrintExpression.h
     TreeOps/PrintExpression.cpp

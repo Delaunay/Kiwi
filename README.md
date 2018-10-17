@@ -2,6 +2,8 @@ Kiwi
 ====
 
 Kiwi is an experimental language. At the moment I mainly try stuff.
+This is a repo where I try stuff in C++/python. Do not expect good codes or test
+this is just a bunch of experiment.
 
 ## Compilation Steps
 
@@ -24,10 +26,11 @@ Kiwi tries to help the programmer express himself and his intention without hamp
     * Statement
         * Expression        High Level Instructions
             * value                                    
-                * object
-                * int
-                * double
-                * ...
+                * Primitive
+					* int
+					* double
+                * Struct
+				* Union
             * call                                  Unconditional Jump
                 *   binary call `a * b`             // A lot of functions have only 1 or 2 arguments
                 *   unary  call ` - a `             // plus it will allow the user to define custom operators
@@ -94,9 +97,19 @@ Meta Types
     union Either(R: Type, L: Type):
         left: L
         right: R
+		
+	val = Either(left=2)
+	val = Either(right=3)
+	
+	def left(l: Type) -> Either(Type, Type2):
+		return Either(left = l)
+		
+	def right(l: Type) -> Either(Type, Type2):
+		return Either(right = l)
 
 Making everything being a statement will allow users to compute types at compile time and annotate their code with
 arbitrary expression, like `x: make_type(x, y, z)`.
+An `Union` type can be none too.
 
 We could define something like:
 

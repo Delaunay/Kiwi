@@ -32,4 +32,4 @@ Makefile*
 *.autosave
 dependencies/SDL/
 dependencies/SDL_ttf/
-
+.idea/

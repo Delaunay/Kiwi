@@ -35,7 +35,7 @@ namespace kiwi {
  */
 class Parser {
   public:
-    Parser(AbstractBuffer &buffer) : _lexer(buffer) { _lexer.consume(); }
+    Parser(AbstractBuffer &buffer) : _lexer(buffer), builder(&ctx) { _lexer.consume(); }
 
     Token nexttok() {
         _lexer.consume();
@@ -52,13 +52,13 @@ class Parser {
         {"/", Option<Tuple<bool, uint8>>(std::make_tuple(true, 0))},
         {"return", Option<Tuple<bool, uint8>>(std::make_tuple(false, 0))}};
 
-    // fold_left
+    /*/ fold_left
     Module parse_declarations(int i) {
         using InsertResult = std::pair<Module::iterator, bool>;
         Module my_module;
 
         while(peek_token().type() != tok_eof) {
-            Tuple<String, Definition *> val = parse_declaration(i + 1);
+            Tuple<String, Statement *> val = parse_declaration(i + 1);
             InsertResult result =
                 my_module.insert(std::make_pair(std::get<0>(val), std::get<1>(val)));
 
@@ -69,10 +69,10 @@ class Parser {
         }
 
         return my_module;
-    }
+    }*/
 
     //*/ Top level declarations
-    Tuple<String, Definition *> parse_declaration(int i) {
+    Tuple<String, Expression *> parse_declaration(int i) {
         log_cdebug(i, "");
         Token tok = peek_token();
 
@@ -93,14 +93,14 @@ class Parser {
 
     } //*/
 
-    Tuple<String, Definition *> parse_macro(int i) { return parse_function(i); }
+    Tuple<String, Expression *> parse_macro(int i) { return parse_function(i); }
 
     Expression *parse_statement(int i) { return parse(i); }
 
     Type *parse_type(int i) {
         Token tok = peek_token();
         if(tok.type() == tok_identifier)
-            return Builder::builtin(tok.identifier());
+            return builder.make_builtin(tok.identifier());
 
         return nullptr;
     }
@@ -146,7 +146,7 @@ class Parser {
         return attributes;
     }
 
-    Tuple<String, Definition *> parse_record(int i) {
+    Tuple<String, Expression *> parse_record(int i) {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
         Token tok           = peek_token();
@@ -192,8 +192,8 @@ class Parser {
         consume_token();
 
         if(parsing_struct)
-            return std::make_tuple(name, Builder::struct_def(name, meta_types, attributes));
-        return std::make_tuple(name, Builder::union_def(name, meta_types, attributes));
+            return std::make_tuple(name, builder.make_struct(name, meta_types, attributes));
+        return std::make_tuple(name, builder.make_union(name, meta_types, attributes));
     }
 
     Tuple<Array<String>, Array<Statement *>> parse_args(int i) {
@@ -220,7 +220,7 @@ class Parser {
 
                     EXPECT(tok_identifier, "expected type name");
                     log_info("Type is `", tok.identifier(), "`");
-                    arg_types.push_back(Builder::builtin(tok.identifier()));
+                    arg_types.push_back(builder.make_builtin(tok.identifier()));
 
                     tok = nexttok();
                 }
@@ -237,7 +237,7 @@ class Parser {
         return std::make_tuple(arg_names, arg_types);
     }
 
-    Tuple<String, Definition *> parse_function(int i) {
+    Tuple<String, Expression *> parse_function(int i) {
         // ---------------------- Sanity Check --------------------------------
         log_cdebug(i, "");
         Token tok = peek_token();
@@ -288,14 +288,21 @@ class Parser {
         consume_token();
         // <<<<<<<< Prototype end
 
-        FunctionDefinition *fun =
-            static_cast<FunctionDefinition *>(Builder::function(name, nullptr));
-        fun->args = arg_names;
-        fun->type = type;
-        Block *b  = new Block();
-        fun->body = b;
+        FunctionBuilder fbuilder = builder.make_function(name);
+        if(arg_names.size() != arg_types.size()) {
+            log_info("Argument name size != Argument Type size");
+        } else {
+            for(std::size_t i = 0; i < arg_names.size(); ++i) {
+                fbuilder.add_arg(arg_names[i], arg_types[i]);
+            }
+        }
+
+        Block *b = new Block();
         b->statements.push_back(parse(i + 1));
 
+        fbuilder.add_body(b);
+
+        Function *fun = fbuilder.build();
         // --------------------------------------------------------------------
         EXPECT(tok_desindent, "expected desindentation got '", tok.type(), "'");
         consume_token();
@@ -311,7 +318,8 @@ class Parser {
         }
 
         consume_token();
-        return Builder::unary_call(Builder::placeholder(op), parse(i + 1));
+        Expression *expr = parse(i + 1);
+        return builder.make_unary_call(op, expr);
     }
 
     Expression *parse(int i) { return parse_expression(i); }
@@ -387,22 +395,25 @@ class Parser {
         if(rhs == nullptr)
             return lhs;
 
-        return Builder::add(lhs, rhs);
+        return builder.make_binary_call("+", lhs, rhs);
+        // Builder::add(lhs, rhs);
     }
 
     Expression *parse_value(int i, double val) {
         log_cdebug(i, "");
-        return Builder::value(val);
+        return builder.make_value(val);
+        // Builder::value(val);
     }
 
     Expression *parse_identifier(int i, std::string name) {
         log_cdebug(i, "");
-        return Builder::placeholder(name);
+        return builder.make_placeholder(name);
     }
 
   private:
     Lexer _lexer;
-    // Context _ctx;
+    BuilderContext ctx;
+    Builder builder;
 };
 
 } // namespace kiwi

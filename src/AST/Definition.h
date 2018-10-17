@@ -17,15 +17,17 @@ class Definition : public Statement {
     Expression *type;
 };
 
-// def fun(args)-> ret:
+// def fun(args) -> ret:
 //      body
 class FunctionDefinition : public Definition {
   public:
     FunctionDefinition(String const &name, Expression *body) :
         Definition(NodeTag::function_def, name), body(body) {}
 
-    FunctionDefinition(String const &name, Expression *body, Expression *ftype) :
-        Definition(NodeTag::function_def, name, ftype), body(body) {}
+    FunctionDefinition(String const &name, Expression *body = nullptr,
+                       Expression *ftype = nullptr) :
+        Definition(NodeTag::function_def, name, ftype),
+        body(body) {}
 
     u64 args_size() const { return args.size(); }
 
@@ -34,6 +36,7 @@ class FunctionDefinition : public Definition {
     void add_arg(String const &str) { args.push_back(str); }
 
     Array<String> args;
+
     Expression *body{nullptr};
 };
 
@@ -94,10 +97,22 @@ class MacroDefinition : public Definition {
 //      name: type
 class StructDefinition : public Definition {
   public:
-    StructDefinition(String const &name, Array<Tuple<String, Statement *>> const &meta,
-                     Array<Tuple<String, Statement *>> const &attr) :
+    StructDefinition(
+        String const &name,
+        Array<Tuple<String, Statement *>> const &meta = Array<Tuple<String, Statement *>>(),
+        Array<Tuple<String, Statement *>> const &attr = Array<Tuple<String, Statement *>>()) :
         Definition(NodeTag::struct_def, name),
         meta_types(meta), attributes(attr) {}
+
+    StructDefinition *add_meta_type(String const &name, Statement *stmt) {
+        meta_types.emplace_back(std::make_tuple(name, stmt));
+        return this;
+    }
+
+    StructDefinition *add_attribute(String const &name, Statement *stmt) {
+        attributes.emplace_back(std::make_tuple(name, stmt));
+        return this;
+    }
 
     Array<Tuple<String, Statement *>> meta_types;
     Array<Tuple<String, Statement *>> attributes;
@@ -107,10 +122,22 @@ class StructDefinition : public Definition {
 //      name: type
 class UnionDefinition : public Definition {
   public:
-    UnionDefinition(String const &name, Array<Tuple<String, Statement *>> const &meta,
-                    Array<Tuple<String, Statement *>> const &attr) :
+    UnionDefinition(
+        String const &name,
+        Array<Tuple<String, Statement *>> const &meta = Array<Tuple<String, Statement *>>(),
+        Array<Tuple<String, Statement *>> const &attr = Array<Tuple<String, Statement *>>()) :
         Definition(NodeTag::union_def, name),
         meta_types(meta), attributes(attr) {}
+
+    UnionDefinition *add_meta_type(String const &name, Statement *stmt) {
+        meta_types.emplace_back(std::make_tuple(name, stmt));
+        return this;
+    }
+
+    UnionDefinition *add_attribute(String const &name, Statement *stmt) {
+        attributes.emplace_back(std::make_tuple(name, stmt));
+        return this;
+    }
 
     Array<Tuple<String, Statement *>> meta_types;
     Array<Tuple<String, Statement *>> attributes;

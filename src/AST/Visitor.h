@@ -92,14 +92,12 @@ template <typename Return, typename... Args> class ExpressionVisitor {
         case NodeTag::function_call: {
             return function_call(static_cast<FunctionCall *>(expr), args...);
         }
-
         case NodeTag::match: {
             return match(static_cast<Match *>(expr), args...);
         }
         case NodeTag::block: {
             return block(static_cast<Block *>(expr), args...);
         }
-
         // Leaves
         case NodeTag::placeholder: {
             return placeholder(static_cast<Placeholder *>(expr), args...);
@@ -107,7 +105,6 @@ template <typename Return, typename... Args> class ExpressionVisitor {
         case NodeTag::value: {
             return value(static_cast<Value *>(expr), args...);
         }
-
         default: { return unhandled_expression(expr, args...); }
         }
     }
@@ -146,7 +143,6 @@ template <typename Return, typename... Args> class DefinitionVisitor {
         case NodeTag::union_def: {
             return union_def(static_cast<UnionDefinition *>(def), args...);
         }
-
         default: { return unhandled_definition(def, args...); }
         }
     }
