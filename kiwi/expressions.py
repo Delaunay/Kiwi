@@ -1,5 +1,6 @@
 from typing import *
 from dataclasses import dataclass
+from dataclasses import field
 
 # Tree Generic
 # ------------------------
@@ -51,14 +52,21 @@ class VariableRef(Expression, TreeLeaf):
 
 @dataclass
 class Function(Expression, TreeBranch):
-    args: List[Variable]
-    return_type: Expression
-    body: Expression
+    args: List[Variable] = field(default_factory=list)
+    return_type: Expression = None
+    body: Expression = None
     is_lambda: bool = False
 
     def visit(self, visitor: 'Visitor'):
         return visitor.function(self)
 
+
+@dataclass
+class Block(Expression, TreeBranch):
+    expressions: List[Expression]
+
+    def visit(self, visitor: 'Visitor'):
+        return visitor.block(self)
 
 @dataclass
 class Match(Expression, TreeBranch):
@@ -131,7 +139,8 @@ class Visitor:
         pass
 
     def visit(self, expr: Expression) -> Any:
-        return expr.visit(self)
+        if expr is not None:
+            return expr.visit(self)
 
     @staticmethod
     def run(expr: Expression):
@@ -147,6 +156,9 @@ class Visitor:
         raise NotImplemented
 
     def function(self, fun: Function) -> Any:
+        raise NotImplemented
+
+    def block(self, block: Block) -> Any:
         raise NotImplemented
 
     def match(self, match: Match) -> Any:

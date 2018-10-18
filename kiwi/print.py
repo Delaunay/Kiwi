@@ -1,69 +1,11 @@
 from kiwi.expressions import *
-
-
-class LocalEnvironment:
-    offset: int
-    env: List[Expression] = []
-    name_index: Dict[str, int] = {}
-
-    def insert_binding(self, name: str, expr: Expression):
-        self.env.append(expr)
-        self.name_index[name] = len(self.env) - 1
-
-    def insert(self, value: Expression):
-        self.env.append(value)
-
-    def find_index(self, name: str) -> int:
-        return self.name_index.get(name)
-
-    def find_expr(self, index: int) -> Expression:
-        # print(self.env)
-        return self.env[index]
-
-
-class Context:
-    env: List[LocalEnvironment] = [LocalEnvironment()]
-    glob: List[Expression] = []
-
-    def insert_binding(self, name: str, expr: Expression):
-        self.env[-1].insert_binding(name, expr)
-        self.glob.append(expr)
-        return VariableRef(len(self.glob) - 1)
-
-    def insert(self, expr: Expression):
-        self.env[-1].insert(expr)
-        self.glob.append(expr)
-
-    def find_index(self, name: str) -> int:
-        for ctx in reversed(self.env):
-            obj = ctx.find_index(name)
-            if obj is not None:
-                return obj
-
-    def reference(self, name):
-        index = self.find_index(name)
-        return VariableRef(index)
-
-    def find_expr(self, index: int) -> Expression:
-        return self.glob[index]
-
-        # for ctx in reversed(self.env):
-        #     obj = ctx.find_expr(index)
-        #     if obj is not None:
-        #         return obj
-
-    def push_env(self):
-        self.env.append(LocalEnvironment())
-        self.env[-1].offset = len(self.env[-2].env)
-
-    def pop_env(self):
-        self.env.pop()
-
+from kiwi.environment import Scope
+from kiwi.builder import AstBuilder
 
 class ToStringV(Visitor):
-    def __init__(self, ctx = Context()):
+    def __init__(self, ctx = Scope()):
         super(ToStringV).__init__()
-        self.env_stack: Context = ctx
+        self.env_stack: Scope = ctx
 
     @staticmethod
     def run(expr: Expression):
@@ -129,11 +71,15 @@ class ToStringV(Visitor):
 def print_expr(expr):
     print(ToStringV().run(expr))
 
-if __name__ == '__main__':
-    ctx = Context()
 
+def print_test():
+    ctx = Scope()
+    builder = AstBuilder()
+
+"""
     type_type = ctx.insert_binding('Type', Builtin('Type', None))
-    float_type = ctx.insert_binding('Float', Builtin('Float', type_type))
+    ctx.insert_binding('Float', Builtin('Float', type_type))
+
     return_op = ctx.insert_binding('return', Builtin('return', Arrow([type_type], type_type)))
 
     add_type = Arrow([float_type, float_type], float_type)
@@ -154,14 +100,19 @@ if __name__ == '__main__':
 
     a = ctx.insert_binding('add2', fun)
     print(a)
-    val = Value('abc', Builtin('String', ctx.reference('Type')))
+    #val = Value('abc', Builtin('String', ctx.reference('Type')))
 
-    print(val)
-    print_expr(val)
+    #print(val)
+    #print_expr(val)
     print_expr(add_type)
 
     print(fun)
     print_expr(fun)
+    """
+
+
+if __name__ == '__main__':
+    print_test()
 
 
 
