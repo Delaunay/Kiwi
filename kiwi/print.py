@@ -74,7 +74,29 @@ def print_expr(expr):
 
 def print_test():
     ctx = Scope()
-    builder = AstBuilder()
+    builder = AstBuilder(ctx)
+    builder.bind('Type', Builtin('Type', None))
+
+    type_type = builder.reference('Type')
+    builder.bind('Float', Builtin('Float', type_type))
+
+    float_type = builder.reference('Float')
+
+    arrow = builder.arrow()
+    arrow.args = [float_type, float_type]
+    arrow.return_type = float_type
+    add_type = arrow.make()
+
+    builder.bind('+', Builtin('+', add_type))
+
+    fun = builder.function()
+    fun.args([('x', float_type), ('x', float_type)])
+    fun.return_type = float_type
+
+    fun = fun.make()
+    builder.bind('add', fun)
+
+    ctx.dump()
 
 """
     type_type = ctx.insert_binding('Type', Builtin('Type', None))

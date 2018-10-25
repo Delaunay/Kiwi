@@ -79,17 +79,22 @@ class FunctionBuilder(AstBuilder):
 
 class BlockBuilder(AstBuilder):
     def __init__(self, context):
-        super(BlockBuilder).__init__(context)
+        super().__init__(context)
 
 
 class MatchBuilder(AstBuilder):
     def __init__(self, context):
-        super(MatchBuilder).__init__(context)
+        super().__init__(context)
 
 
 class ArrowBuilder(AstBuilder):
     def __init__(self, context):
-        super(ArrowBuilder).__init__(context)
+        super().__init__(context)
+        self.args = []
+        self.return_type = None
+
+    def make(self):
+        return Arrow(self.args, self.return_type)
 
 
 def builder_test():
