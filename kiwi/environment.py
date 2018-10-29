@@ -2,7 +2,9 @@ from kiwi.expressions import *
 from dataclasses import dataclass
 from dataclasses import field
 
-
+# FIXME Indices are broken
+# we use explicit reference instead at the moment
+# but this will not hold for the Evaluator
 @dataclass
 class Scope:
     previous: 'Scope' = None
@@ -12,32 +14,51 @@ class Scope:
     offset: int = 0
 
     def insert(self, item: Any):
+        item.ctx_index = len(self)
         self.expressions.append(item)
 
     def insert_binding(self, name: str, item: Any):
-        self.name_index[name] = len(self.expressions)
-        self.index_name[len(self.expressions) + self.offset] = name
+        self.name_index[name] = len(self)
+        self.index_name[len(self)] = name
         self.expressions.append(item)
 
     def __len__(self):
         return self.offset + len(self.expressions)
 
-    def get_index(self, name):
+    def get_index(self, name) -> Tuple[int, Expression]:
         if name in self.name_index:
-            return self.name_index[name] + self.offset
+            idx = self.name_index[name]
+            return idx, self.expressions[idx - self.offset]
+
         elif self.previous is not None:
             return self.previous.get_index(name)
         else:
+            print('get_index: `{}` not found'.format(name))
             # TODO: Warning or raise exception
-            return -1
+            return -1, None
 
-    def get_expression(self, index):
-        if index > self.offset:
-            rindex = len(self) - index
-            return self.expressions[rindex]
+    def get_expression(self, ref: VariableRef, depth=0):
+        index = ref.reverse_index()
+        print(' ' * depth + 'index={} offset={} size={}'.format(index, self.offset, len(self)))
+
+        # Number of element in this context
+        diff = len(self) - self.offset
+
+        # Number of element added int this context after the reference's creation
+        current_size = len(self)
+        size_at_creation = ref.size
+        correction = current_size - size_at_creation
+
+        print('csize={} osize={} diff={} correction={}'.format(current_size, size_at_creation, diff, correction))
+
+        if diff >= index:
+            self.dump()
+            return self.expressions[-(index + correction)]
+
         elif self.previous is not None:
-            return self.previous.get_expression(index)
+            return self.previous.get_expression(ref, depth + 1)
         else:
+            print('get_expression: `{}` not found'.format(index))
             # TODO: Warning or raise exception
             return None
 
@@ -47,6 +68,7 @@ class Scope:
         elif self.previous is not None:
             return self.previous.get_name(index)
         else:
+            print('get_name: `{}` not found'.format(index))
             # TODO: Warning or raise exception
             return None
 
@@ -59,13 +81,25 @@ class Scope:
 
         return self.previous
 
-    def dump(self):
-        if self.previous is not None:
-            self.previous.dump()
+    def dump(self, depth=0):
+        if depth == 0:
+            print('=' * 80)
 
+        if self.previous is not None:
+            self.previous.dump(depth + 1)
+            print('----')
+
+        print('Offset: {}'.format(self.offset))
         l = len(self)
         for i, expr in enumerate(self.expressions):
-            print('{:4d} | {:<20} | {:<20}'.format(i + self.offset, self.get_name(i + self.offset), str(expr)))
+            rep = repr(expr).split('\n')
+            print('{:4d} | {:<20} | {:<20}'.format(i + self.offset, self.get_name(i + self.offset), rep[0]))
+            rep = rep[1:]
+            for line in rep:
+                print('     |                      | {}'.format(line))
+
+        if depth == 0:
+            print('=' * 80)
 
 
 def environment_test():

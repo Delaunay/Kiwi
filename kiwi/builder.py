@@ -5,32 +5,33 @@
 from kiwi.expressions import *
 from kiwi.environment import Scope
 
-class AstBuilder:
-    def __init__(self, scope = Scope()):
-        self.scope: Scope = scope
 
-    @staticmethod
-    def value(val: Any, etype: Expression) -> Value:
-        return Value(val, etype)
+class AstBuilder:
+    def __init__(self, scope=Scope()):
+        self.scope: Scope = scope
+        self.parent = None
+
+    def value(self, val: Any, etype: Expression) -> Value:
+        return Value(val, etype).set_parent(self.parent)
 
     def variable(self, name: str, etype: Expression) -> Variable:
         var = Variable(name, etype)
         self.scope.insert_binding(name, var)
-        return var
+        return var.set_parent(self.parent)
 
     def reference(self, name: str) -> VariableRef:
-        index = self.scope.get_index(name)
-        return VariableRef(index)
+        index, expr = self.scope.get_index(name)
+        size = len(self.scope)
+        return VariableRef(index, size, name, reference=expr).set_parent(self.parent)
 
     def function(self) -> 'FunctionBuilder':
-        return FunctionBuilder(self.scope.enter_scope())
+        return FunctionBuilder(self.scope.enter_scope(), parent=self.parent)
 
     def block(self) -> 'BlockBuilder':
-        return BlockBuilder(self.scope.enter_scope())
+        return BlockBuilder(self.scope.enter_scope(), parent=self.parent)
 
     def match(self) -> 'MatchBuilder':
-        return MatchBuilder(self.scope.enter_scope())
-
+        return MatchBuilder(self.scope.enter_scope(), parent=self.parent)
 
     def bind(self, name: str, expr: Expression):
         self.scope.insert_binding(name, expr)
@@ -41,25 +42,26 @@ class AstBuilder:
     def builtin(self, name: str, etype: Expression) -> Builtin:
         b = Builtin(name, etype)
         self.scope.insert_binding(name, b)
-        return b
+        return b.set_parent(self.parent)
 
     def arrow(self) -> 'ArrowBuilder':
-        return ArrowBuilder(self.scope.enter_scope())
+        return ArrowBuilder(self.scope.enter_scope(), parent=self.parent)
 
     def call(self, fun: Expression, args: List[Expression]) -> Call:
-        return Call(fun, args)
+        return Call(fun, args).set_parent(self.parent)
 
     def binary_operator(self, fun: Expression, lhs: Expression, rhs: Expression) -> BinaryOperator:
-        return BinaryOperator(fun, lhs, rhs)
+        return BinaryOperator(fun, lhs, rhs).set_parent(self.parent)
 
     def unary_operator(self, fun: Expression, expr: Expression) -> UnaryOperator:
-        return UnaryOperator(fun, expr)
+        return UnaryOperator(fun, expr).set_parent(self.parent)
 
 
 class FunctionBuilder(AstBuilder):
-    def __init__(self, context):
+    def __init__(self, context, parent):
         super().__init__(context)
-        self.fun = Function()
+        self.parent = Function().set_parent(parent)
+        self.fun = self.parent
 
     def args(self, args: List[Tuple[str, Expression]]):
         self.fun.args = [self.variable(name, etype) for name, etype in args]
@@ -76,25 +78,32 @@ class FunctionBuilder(AstBuilder):
         return self.fun
 
 
-
 class BlockBuilder(AstBuilder):
-    def __init__(self, context):
+    def __init__(self, context, parent):
         super().__init__(context)
 
 
 class MatchBuilder(AstBuilder):
-    def __init__(self, context):
+    def __init__(self, context, parent):
         super().__init__(context)
 
 
 class ArrowBuilder(AstBuilder):
-    def __init__(self, context):
+    def __init__(self, context, parent):
         super().__init__(context)
-        self.args = []
-        self.return_type = None
+        self.parent = Arrow([], None).set_parent(parent)
+        self.arrow = self.parent
+
+    def args(self, args: List[Expression]):
+        self.arrow.args = args
+        return self
+
+    def return_type(self, expr):
+        self.arrow.return_type = expr
+        return self
 
     def make(self):
-        return Arrow(self.args, self.return_type)
+        return self.arrow
 
 
 def builder_test():

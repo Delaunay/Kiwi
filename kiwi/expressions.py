@@ -2,6 +2,7 @@ from typing import *
 from dataclasses import dataclass
 from dataclasses import field
 
+
 # Tree Generic
 # ------------------------
 class Tree:
@@ -14,23 +15,31 @@ class TreeLeaf(Tree):
 
 class TreeBranch(Tree):
     pass
-#-------------------------
+
+# -------------------------
 
 
 class Expression:
+    parent = None
+
     def __init__(self):
         pass
 
-    def visit(self, visitor: 'Visitor'):
+    def visit(self, visitor: 'Visitor', depth=0):
         raise NotImplemented
+
+    def set_parent(self, parent):
+        self.parent = parent
+        return self
+
 
 @dataclass
 class Value(Expression, TreeLeaf):
     value: Any
     type: Expression
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.value(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.value(self, depth)
 
 
 @dataclass
@@ -38,16 +47,28 @@ class Variable(Expression, TreeLeaf):
     name: str
     type: Expression
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.variable(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.variable(self, depth)
+
+    def __repr__(self):
+        return 'Var(name={}, type={})'.format(self.name, self.type)
 
 
 @dataclass
 class VariableRef(Expression, TreeLeaf):
     index: int
+    size: int
+    name: str
+    reference: Expression
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.reference(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.reference(self, depth)
+
+    def __repr__(self):
+        return 'Ref(index={}, size={}, name={})'.format(self.index, self.size, self.name)
+
+    def reverse_index(self):
+        return self.size - self.index
 
 
 @dataclass
@@ -56,28 +77,35 @@ class Function(Expression, TreeBranch):
     return_type: Expression = None
     body: Expression = None
     is_lambda: bool = False
+    # Not all function can be inlined
+    inline: bool = False
+    # recursive: bool = True
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.function(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.function(self, depth)
+
+    def __repr__(self):
+        return """Fun(args={}) -> {}:\n    {}""".format(self.args, self.return_type, self.body)
 
 
 @dataclass
 class Block(Expression, TreeBranch):
     expressions: List[Expression]
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.block(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.block(self, depth)
 
 @dataclass
 class Match(Expression, TreeBranch):
-    def visit(self, visitor: 'Visitor'):
-        return visitor.match(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.match(self, depth)
 
 
 @dataclass
 class Conditional(Expression, TreeBranch):
-    def visit(self, visitor: 'Visitor'):
-        return visitor.conditional(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.conditional(self, depth)
+
 
 # Types
 class GenericType(Expression):
@@ -89,8 +117,8 @@ class Builtin(Expression, TreeLeaf):
     name: str
     type: Expression
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.builtin(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.builtin(self, depth)
 
 
 @dataclass
@@ -98,8 +126,8 @@ class Arrow(GenericType, TreeBranch):
     args: List[Expression]
     return_type: Expression
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.arrow(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.arrow(self, depth)
 
 
 # Function Calls
@@ -108,8 +136,8 @@ class Call(Expression, TreeBranch):
     function: Expression
     args: List[Expression]
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.call(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.call(self, depth)
 
 
 class BinaryOperator(Call):
@@ -119,8 +147,8 @@ class BinaryOperator(Call):
         self.function = fun
         self.args = [lhs, rhs]
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.binary_operator(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.binary_operator(self, depth)
 
 
 class UnaryOperator(Call):
@@ -130,56 +158,52 @@ class UnaryOperator(Call):
         self.function = fun
         self.args = [expr]
 
-    def visit(self, visitor: 'Visitor'):
-        return visitor.unary_operator(self)
+    def visit(self, visitor: 'Visitor', depth=0):
+        return visitor.unary_operator(self, depth)
 
 
 class Visitor:
     def __init__(self):
         pass
 
-    def visit(self, expr: Expression) -> Any:
+    def visit(self, expr: Expression, depth=0) -> Any:
         if expr is not None:
-            return expr.visit(self)
+            return expr.visit(self, depth)
 
-    @staticmethod
-    def run(expr: Expression):
-        return Visitor().visit(expr)
-
-    def value(self, val: Value) -> Any:
+    def value(self, val: Value, depth=0) -> Any:
         raise NotImplemented
 
-    def variable(self, var: Variable) -> Any:
+    def variable(self, var: Variable, depth=0) -> Any:
         raise NotImplemented
 
-    def reference(self, ref: VariableRef) -> Any:
+    def reference(self, ref: VariableRef, depth=0) -> Any:
         raise NotImplemented
 
-    def function(self, fun: Function) -> Any:
+    def function(self, fun: Function, depth=0) -> Any:
         raise NotImplemented
 
-    def block(self, block: Block) -> Any:
+    def block(self, block: Block, depth=0) -> Any:
         raise NotImplemented
 
-    def match(self, match: Match) -> Any:
+    def match(self, match: Match, depth=0) -> Any:
         raise NotImplemented
 
-    def conditional(self, cond: Conditional) -> Any:
+    def conditional(self, cond: Conditional, depth=0) -> Any:
         raise NotImplemented
 
-    def builtin(self, builtin: Builtin) -> Any:
+    def builtin(self, builtin: Builtin, depth=0) -> Any:
         raise NotImplemented
 
-    def arrow(self, arrow: Arrow) -> Any:
+    def arrow(self, arrow: Arrow, depth=0) -> Any:
         raise NotImplemented
 
-    def call(self, call: Call) -> Any:
+    def call(self, call: Call, depth=0) -> Any:
         raise NotImplemented
 
-    def binary_operator(self, call: BinaryOperator) -> Any:
+    def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         raise NotImplemented
 
-    def unary_operator(self, call: UnaryOperator) -> Any:
+    def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
         raise NotImplemented
 
 
