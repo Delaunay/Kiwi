@@ -2,9 +2,12 @@ from kiwi.expressions import *
 from kiwi.environment import Scope
 from kiwi.builder import AstBuilder
 
+debug_mode = False
+
 
 def trace(depth, message):
-    print(''.join(['|' if i % 2 else ':' for i in range(depth)]) + '-> {}'.format(message))
+    if debug_mode:
+        print(''.join(['|' if i % 2 else ':' for i in range(depth)]) + '-> {}'.format(message))
 
 
 class ToStringV(Visitor):
@@ -27,7 +30,19 @@ class ToStringV(Visitor):
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'Reference {}'.format(ref))
-        return self.visit(ref.reference, depth + 1)
+        refs = self.visit(ref.reference, depth + 1)
+
+        # --------------------------------------------------------------
+        # Sanity Check
+        try:
+            env_ref = self.env_stack.get_expression(ref, depth)
+            if ref.reference is not env_ref:
+                print('Error {} != {}'.format(ref.reference, env_ref))
+        except Exception as e:
+            print(e)
+        # --------------------------------------------------------------
+
+        return refs
 
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function')
@@ -75,15 +90,12 @@ class ToStringV(Visitor):
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         trace(depth, 'binary_call')
-        #self.env_stack.dump()
-        #print('---')
         return '{} {} {}'.format(
             self.visit(call.args[0], depth + 1),
             self.visit(call.function, depth + 1),
             self.visit(call.args[1], depth + 1))
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
-        print(' ' * depth, call)
         return '{}({})'.format(self.visit(call.function), self.visit(call.args[0]))
 
 
@@ -106,16 +118,22 @@ def print_test():
     arrow.return_type(float_type)
     add_type = arrow.make()
 
+    return_op = builder.builtin('return', Arrow([type_type], type_type))
+    #builder.bind('return', return_op)
+
     builder.bind('+', Builtin('+', add_type))
 
     fun = builder.function()
     fun.args([('x', float_type), ('y', float_type)])
     fun.return_type = float_type
 
-    body = fun.binary_operator(
-        fun.reference('+'),
-        fun.reference('x'),
-        fun.reference('y')
+    body = fun.unary_operator(
+        fun.reference('return'),
+        fun.binary_operator(
+            fun.reference('+'),
+            fun.reference('x'),
+            fun.reference('y')
+        )
     )
 
     fun.body(body)
@@ -132,7 +150,8 @@ def print_test():
     print('----')
     print(fun)
     print('----')
-    print_expr(fun)
+    print_expr(fun, ctx)
+
 
 """
     type_type = ctx.insert_binding('Type', Builtin('Type', None))

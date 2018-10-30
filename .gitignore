@@ -2,7 +2,7 @@
 *.slo
 *.lo
 *.o
-*__pycache__/*
+*/__pycache__/*
 
 
 # Compiled Dynamic libraries

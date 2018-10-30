@@ -2,6 +2,7 @@ from kiwi.expressions import *
 from dataclasses import dataclass
 from dataclasses import field
 
+
 # FIXME Indices are broken
 # we use explicit reference instead at the moment
 # but this will not hold for the Evaluator
@@ -38,27 +39,20 @@ class Scope:
             return -1, None
 
     def get_expression(self, ref: VariableRef, depth=0):
-        index = ref.reverse_index()
-        print(' ' * depth + 'index={} offset={} size={}'.format(index, self.offset, len(self)))
+        offset = ref.size - ref.index
 
         # Number of element in this context
-        diff = len(self) - self.offset
+        local_size = len(self) - self.offset
 
-        # Number of element added int this context after the reference's creation
-        current_size = len(self)
-        size_at_creation = ref.size
-        correction = current_size - size_at_creation
-
-        print('csize={} osize={} diff={} correction={}'.format(current_size, size_at_creation, diff, correction))
-
-        if diff >= index:
-            self.dump()
-            return self.expressions[-(index + correction)]
+        # print(' ' * depth + 'size={} original_offset={}'.format(local_size, offset))
+        if offset <= local_size:
+            # print(' ' * depth + str(offset))
+            return self.expressions[-offset]
 
         elif self.previous is not None:
             return self.previous.get_expression(ref, depth + 1)
         else:
-            print('get_expression: `{}` not found'.format(index))
+            print('get_expression: `{}` not found'.format(ref))
             # TODO: Warning or raise exception
             return None
 
