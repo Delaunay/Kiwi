@@ -1,13 +1,12 @@
+import functools
+
 from kiwi.expressions import *
 from kiwi.environment import Scope
 from kiwi.builder import AstBuilder
+from kiwi.debug import trace
 
 debug_mode = False
-
-
-def trace(depth, message):
-    if debug_mode:
-        print(''.join(['|' if i % 2 else ':' for i in range(depth)]) + '-> {}'.format(message))
+trace = functools.partial(trace, mode=debug_mode)
 
 
 class ToStringV(Visitor):
@@ -36,12 +35,13 @@ class ToStringV(Visitor):
         # Sanity Check
         try:
             env_ref = self.env_stack.get_expression(ref, depth)
+            # name = self.env_stack.get_name(ref)
             if ref.reference is not env_ref:
                 print('Error {} != {}'.format(ref.reference, env_ref))
         except Exception as e:
             print(e)
         # --------------------------------------------------------------
-
+        return ref.name
         return refs
 
     def function(self, fun: Function, depth=0) -> Any:
@@ -97,6 +97,10 @@ class ToStringV(Visitor):
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
         return '{}({})'.format(self.visit(call.function), self.visit(call.args[0]))
+
+
+def to_string(expr, ctx=Scope()):
+    return ToStringV.run(expr, ctx)
 
 
 def print_expr(expr, ctx=Scope()):

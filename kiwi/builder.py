@@ -35,6 +35,7 @@ class AstBuilder:
 
     def bind(self, name: str, expr: Expression):
         self.scope.insert_binding(name, expr)
+        return Bind(name, expr)
 
     #def conditional(self, cond: Conditional) -> Conditional:
     #    raise NotImplemented
@@ -55,6 +56,12 @@ class AstBuilder:
 
     def unary_operator(self, fun: Expression, expr: Expression) -> UnaryOperator:
         return UnaryOperator(fun, expr).set_parent(self.parent)
+
+    def union(self):
+        return UnionBuilder(self.scope.enter_scope(), parent=self.parent)
+
+    def struct(self):
+        return StructBuilder(self.scope.enter_scope(), parent=self.parent)
 
 
 class FunctionBuilder(AstBuilder):
@@ -104,6 +111,32 @@ class ArrowBuilder(AstBuilder):
 
     def make(self):
         return self.arrow
+
+
+class UnionBuilder(AstBuilder):
+    def __init__(self, context, parent):
+        super().__init__(context)
+        self.parent = Union([]).set_parent(parent)
+        self.union = self.parent
+
+    def members(self, members: List[Expression]):
+        self.union.members = members
+
+    def make(self):
+        return self.union
+
+
+class StructBuilder(AstBuilder):
+    def __init__(self, context, parent):
+        super().__init__(context)
+        self.parent = Struct([]).set_parent(parent)
+        self.struct = self.parent
+
+    def members(self, members: List[Expression]):
+        self.struct.members = members
+
+    def make(self):
+        return self.struct
 
 
 def builder_test():
