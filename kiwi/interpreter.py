@@ -3,17 +3,14 @@ import functools
 from kiwi.expressions import *
 from kiwi.environment import Scope
 from kiwi.debug import trace
+from kiwi.builtin import builtins_implementation
 
 debug_mode = True
 trace = functools.partial(trace, mode=debug_mode)
 
 
 class Interpreter(Visitor):
-    _builtins = {
-        'Int': (1, lambda args: Value(args[0].value, type=None)),
-        '+': (2, lambda args: Value(args[0].value + args[1].value, type=None)),
-        'return': (1, lambda args: args[0].value)
-    }
+    _builtins = builtins_implementation()
 
     def __init__(self, scope=Scope()):
         super().__init__()
@@ -31,7 +28,9 @@ class Interpreter(Visitor):
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference: {}'.format(ref))
-        return self.scope.get_expression(ref, depth + 1)
+        v = self.scope.get_expression(ref, depth + 1)
+        print(ref.name, v)
+        return v
 
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function: {}'.format(fun.args))
@@ -81,8 +80,11 @@ class Interpreter(Visitor):
 
             # Evaluate function body
             returned_val = self.visit(fun.body, depth + 1)
+
             self.scope = self.scope.exit_scope()
             return returned_val
+
+        raise RuntimeError('Call Type is not handled')
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         return self.call(call, depth)
@@ -125,23 +127,24 @@ if __name__ == '__main__':
 
     from kiwi.print import to_string
     from kiwi.builder import AstBuilder
+    from kiwi.builtin import make_scope
 
-    ctx = Scope()
+    ctx = make_scope()
     builder = AstBuilder(ctx)
-    builder.bind('Type', Builtin('Type', None))
+    #builder.bind('Type', Builtin('Type', None))
 
-    type_type = builder.reference('Type')
-    builder.bind('Float', Builtin('Float', type_type))
+    #type_type = builder.reference('Type')
+    #builder.bind('Float', Builtin('Float', type_type))
 
     float_type = builder.reference('Float')
-    return_op = builder.builtin('return', Arrow([type_type], type_type))
+    #return_op = builder.builtin('return', Arrow([type_type], type_type))
 
-    arrow = builder.arrow()
-    arrow.args([float_type, float_type])
-    arrow.return_type(float_type)
-    add_type = arrow.make()
+    #arrow = builder.arrow()
+    #arrow.args([float_type, float_type])
+    #arrow.return_type(float_type)
+    #add_type = arrow.make()
 
-    builder.bind('+', Builtin('+', add_type))
+    #builder.bind('+', Builtin('+', add_type))
 
     fun = builder.function()
     fun.args([('x', float_type), ('y', float_type)])
@@ -160,7 +163,7 @@ if __name__ == '__main__':
 
     fun = fun.make()
     builder.bind('add', fun)
-    builder.bind('Integer', Builtin('Integer', type_type))
+    #builder.bind('Integer', Builtin('Integer', type_type))
 
     add_fun = builder.reference('add')
     two = builder.call(add_fun, [builder.value(1, float_type), builder.value(2, float_type)])

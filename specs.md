@@ -46,4 +46,10 @@ val match
 
 ```
 
+* I think a VM will be easier to work with for coroutines than the tree interpreter that is implemented
+but the tree interpreter is easier to test out things.
+I might use to to write tests
 
+* most languages rely on their syntax but Kiwi first defined by the AST
+the syntax is only sugar for the eyes to help the programmer visualize the code.
+As such Kiwi should be able to handle multiple syntax 
