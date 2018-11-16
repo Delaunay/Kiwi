@@ -6,7 +6,7 @@ from kiwi.debug import trace
 from kiwi.builtin import builtins_implementation
 
 debug_mode = True
-trace = functools.partial(trace, mode=debug_mode)
+trace = functools.partial(trace, mode=debug_mode, name='[interpreter] ')
 
 
 class Interpreter(Visitor):
@@ -29,7 +29,7 @@ class Interpreter(Visitor):
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference: {}'.format(ref))
         v = self.scope.get_expression(ref, depth + 1)
-        print(ref.name, v)
+        #print(ref.name, v)
         return v
 
     def function(self, fun: Function, depth=0) -> Any:
@@ -71,7 +71,7 @@ class Interpreter(Visitor):
                     call.args))
 
             # Evaluate every args
-            self.scope = self.scope.enter_scope()
+            self.scope = self.scope.enter_scope(name='call_scope')
             for arg_expr, arg_var in zip(call.args, fun.args):
                 val = self.visit(arg_expr, depth + 1)
 
@@ -131,21 +131,9 @@ if __name__ == '__main__':
 
     ctx = make_scope()
     builder = AstBuilder(ctx)
-    #builder.bind('Type', Builtin('Type', None))
-
-    #type_type = builder.reference('Type')
-    #builder.bind('Float', Builtin('Float', type_type))
-
     float_type = builder.reference('Float')
-    #return_op = builder.builtin('return', Arrow([type_type], type_type))
 
-    #arrow = builder.arrow()
-    #arrow.args([float_type, float_type])
-    #arrow.return_type(float_type)
-    #add_type = arrow.make()
-
-    #builder.bind('+', Builtin('+', add_type))
-
+    # Make the Add Function
     fun = builder.function()
     fun.args([('x', float_type), ('y', float_type)])
     fun.return_type = float_type
@@ -163,15 +151,22 @@ if __name__ == '__main__':
 
     fun = fun.make()
     builder.bind('add', fun)
-    #builder.bind('Integer', Builtin('Integer', type_type))
+    # Done
 
+    # Make a Call to `add`
     add_fun = builder.reference('add')
     two = builder.call(add_fun, [builder.value(1, float_type), builder.value(2, float_type)])
+    # Done
 
     ctx.dump()
 
+    print('-' * 80)
     fun_str = to_string(two, ctx)
     print('-' * 80)
-    print(fun_str, '==' , keval(two, ctx))
+    result = keval(two, ctx)
+    print('-' * 80)
+    pretty_result = to_string(result, ctx)
+    print('-' * 80)
+    print(fun_str, '==', pretty_result)
     print('-' * 80)
 

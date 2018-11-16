@@ -11,7 +11,7 @@ def _make_default_scope() -> Scope:
         The Builtin scope should be identical to all scopes
     """
 
-    ctx = Scope()
+    ctx = Scope(name='root')
     builder = AstBuilder(ctx)
     builder.bind('Type',  Builtin('Type',  None))
 
@@ -45,8 +45,8 @@ def _make_default_scope() -> Scope:
 __parent_scope = _make_default_scope()
 
 
-def make_scope() -> Scope():
-    return __parent_scope.enter_scope()
+def make_scope(name='module_scope') -> Scope():
+    return __parent_scope.enter_scope(name)
 
 
 def _builder() -> AstBuilder:

@@ -5,15 +5,15 @@ from kiwi.environment import Scope
 from kiwi.builder import AstBuilder
 from kiwi.debug import trace
 
-debug_mode = False
-trace = functools.partial(trace, mode=debug_mode)
+debug_mode = True
+trace = functools.partial(trace, mode=debug_mode, name='[to_string] ')
 
 
 class ToStringV(Visitor):
     def __init__(self, ctx=Scope()):
         super(ToStringV).__init__()
         # enter a new scope to not affect the original scope
-        self.env_stack: Scope = ctx.enter_scope()
+        self.env_stack: Scope = ctx.enter_scope(name='visitor_scope')
 
     @staticmethod
     def run(expr: Expression, ctx=Scope()):
@@ -29,25 +29,27 @@ class ToStringV(Visitor):
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'Reference {}'.format(ref))
-        refs = self.visit(ref.reference, depth + 1)
-
-        # --------------------------------------------------------------
-        # Sanity Check
-        try:
-            env_ref = self.env_stack.get_expression(ref, depth)
-            # name = self.env_stack.get_name(ref)
-            if ref.reference is not env_ref:
-                print('Error {} != {}'.format(ref.reference, env_ref))
-        except Exception as e:
-            print(e)
-        # --------------------------------------------------------------
         return ref.name
-        return refs
+        # """
+        # refs = self.visit(ref.reference, depth + 1)
+        # # --------------------------------------------------------------
+        # # Sanity Check
+        # try:
+        #     env_ref = self.env_stack.get_expression(ref, depth)
+        #     # name = self.env_stack.get_name(ref)
+        #     if ref.reference is not env_ref:
+        #         print(ref)
+        #         print('Error \n\t{} \n\t\t!=\n\t{}'.format(ref.reference, env_ref))
+        # except Exception as e:
+        #     print(e)
+        # # --------------------------------------------------------------
+        # return refs"""
 
     def function(self, fun: Function, depth=0) -> Any:
-        trace(depth, 'function')
+        trace(depth, 'function {}'.format(''))
 
-        self.env_stack = self.env_stack.enter_scope()
+        self.env_stack = self.env_stack.enter_scope(name='function_scope')
+
         for arg in fun.args:
             self.env_stack.insert_binding(arg.name, arg)
 
@@ -60,6 +62,7 @@ class ToStringV(Visitor):
             self.env_stack = self.env_stack.exit_scope()
             return fun_str
 
+        #self.env_stack.dump()
         fun_str = '({}) -> {} {{ {} }}'.format(
             args,
             self.visit(fun.return_type, depth + 1),
@@ -80,13 +83,14 @@ class ToStringV(Visitor):
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
         trace(depth, 'arrow')
-        args = ', '.join([self.visit(arg) for arg in arrow.args])
-        return '({}) -> {}'.format(args, self.visit(arrow.return_type))
+        args = ', '.join([self.visit(arg, depth + 1) for arg in arrow.args])
+        return '({}) -> {}'.format(args, self.visit(arrow.return_type, depth + 1))
 
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call')
-        args = ','.join([self.visit(arg) for arg in call.args])
-        return '{}({})'.format(self.visit(call.function, depth + 1), args)
+        fun = self.visit(call.function, depth + 1)
+        args = ','.join([self.visit(arg, depth + 1) for arg in call.args])
+        return '{}({})'.format(fun, args)
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         trace(depth, 'binary_call')
@@ -96,7 +100,8 @@ class ToStringV(Visitor):
             self.visit(call.args[1], depth + 1))
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
-        return '{}({})'.format(self.visit(call.function), self.visit(call.args[0]))
+        trace(depth, 'unary_call')
+        return '{}({})'.format(self.visit(call.function, depth + 1), self.visit(call.args[0], depth + 1))
 
 
 def to_string(expr, ctx=Scope()):
@@ -108,25 +113,17 @@ def print_expr(expr, ctx=Scope()):
 
 
 def print_test():
-    ctx = Scope()
+    import sys
+    sys.stderr = sys.stdout
+
+    from kiwi.builder import AstBuilder
+    from kiwi.builtin import make_scope
+
+    ctx = make_scope()
     builder = AstBuilder(ctx)
-    builder.bind('Type', Builtin('Type', None))
-
-    type_type = builder.reference('Type')
-    builder.bind('Float', Builtin('Float', type_type))
-
     float_type = builder.reference('Float')
 
-    arrow = builder.arrow()
-    arrow.args([float_type, float_type])
-    arrow.return_type(float_type)
-    add_type = arrow.make()
-
-    return_op = builder.builtin('return', Arrow([type_type], type_type))
-    #builder.bind('return', return_op)
-
-    builder.bind('+', Builtin('+', add_type))
-
+    # Make the Add Function
     fun = builder.function()
     fun.args([('x', float_type), ('y', float_type)])
     fun.return_type = float_type
@@ -134,7 +131,7 @@ def print_test():
     body = fun.unary_operator(
         fun.reference('return'),
         fun.binary_operator(
-            fun.reference('+'),
+            fun.reference('-'),
             fun.reference('x'),
             fun.reference('y')
         )
@@ -144,17 +141,25 @@ def print_test():
 
     fun = fun.make()
     builder.bind('add', fun)
-    builder.bind('Integer', Builtin('Integer', type_type))
+    # Done
+
+    # Make a Call to `add`
+    add_fun = builder.reference('add')
+    two = builder.call(add_fun, [builder.value(1, float_type), builder.value(2, float_type)])
+    # Done
 
     print('----')
     ctx.dump()
+    print('----')
 
-    print('---')
-    print(ctx)
+    #print(ctx)
     print('----')
     print(fun)
     print('----')
     print_expr(fun, ctx)
+    print('----')
+    #print_expr(two, ctx)
+    print('----')
 
 
 """
