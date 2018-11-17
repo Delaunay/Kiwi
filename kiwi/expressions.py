@@ -192,7 +192,7 @@ class Conditional(Expression, TreeBranch):
 @dataclass
 class Union(Expression, TreeBranch):
     """ Tagged union type, which makes it safe and usable in a match expression"""
-    members: List[Tuple[Name, Expression]]
+    members: List[Variable]
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.union(self, depth)
@@ -204,7 +204,7 @@ class Struct(Expression, TreeBranch):
         Additionally, a Kiwi Struct is not distinguishable from a Tuple, and Tuples must have named members.
         This is so
     """
-    members: List[Tuple[Name, Expression]]
+    members: List[Variable]
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.struct(self, depth)

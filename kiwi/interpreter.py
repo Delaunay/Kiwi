@@ -62,7 +62,6 @@ class Interpreter(Visitor):
 
         # User defined Function
         if isinstance(fun, Function):
-
             if len(call.args) != len(fun.args):
                 raise RuntimeError('Number of argument mismatch {}: {} != {} : {}'.format(
                     fun,
@@ -84,7 +83,7 @@ class Interpreter(Visitor):
             self.scope = self.scope.exit_scope()
             return returned_val
 
-        raise RuntimeError('Call Type is not handled')
+        raise RuntimeError('Call `{}` Type is not handled'.format(fun))
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         return self.call(call, depth)
@@ -106,7 +105,7 @@ class Interpreter(Visitor):
         if fun.name in self._builtins:
             nargs, impl = self._builtins[fun.name]
 
-            if len(call.args) != nargs:
+            if nargs is not None and len(call.args) != nargs:
                 raise RuntimeError('Number of argument mismatch')
 
             # Evaluate every args

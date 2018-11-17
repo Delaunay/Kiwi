@@ -19,10 +19,14 @@ def _make_default_scope() -> Scope:
         return builder.reference(name)
 
     # Default high level types
+    builder.bind('Expression', Builtin('Expression', ref('Type')))
+    builder.bind('Symbol', Builtin('Symbol', ref('Type')))
+    # Symbol, Type Pair
+    builder.bind('Variable', Builtin('Variable', ref('Type')))
+
     builder.bind('Float', Builtin('Float', ref('Type')))
     builder.bind('Int',   Builtin('Int',   ref('Type')))
     builder.bind('Bool', Builtin('Bool', ref('Type')))
-    builder.bind('Argument', Builtin('Argument', ref('Type')))
 
     # return T -> T
     builder.builtin('return', Arrow([ref('Type')], ref('Type')))
@@ -31,9 +35,16 @@ def _make_default_scope() -> Scope:
     # Compile Time Function that makes up the language
     # We are going to need more like match/value/....
     # one function per AST node
-    builder.builtin('union', Arrow([ref('Argument')], ref('Type')))
-    builder.builtin('struct', Arrow([ref('Argument')], ref('Type')))
-    builder.builtin('function', Arrow([ref('Argument')], ref('Type')))
+    # The type should be (List[var] -> Type)
+    # Where Var = struct(name: str, type: Type)
+
+
+
+    builder.bind('variable', Builtin('variable', Arrow([ref('Symbol'), ref('Expression')], ref('Variable'))))
+
+    builder.builtin('union', Builtin('union', Arrow([ref('Variable')], ref('Type'))))
+    builder.builtin('struct', Builtin('struct', Arrow([ref('Variable')], ref('Type'))))
+    builder.builtin('lambda', Builtin('lambda', Arrow([ref('Variable')], ref('Type'))))
     #
 
     # builtin functions
@@ -65,6 +76,8 @@ def _builder() -> AstBuilder:
 type_int = _builder().reference('Int')
 type_float = _builder().reference('Float')
 type_bool = _builder().reference('Bool')
+type_variable = _builder().reference('Variable')
+type_symbol = _builder().reference('Symbol')
 
 
 def make_int(args: List[Value]) -> Value:
@@ -111,6 +124,50 @@ def return_fun(args: List[Expression]) -> Expression:
     return args[0]
 
 
+def make_variable(args: List[Expression]) -> Expression:
+    if len(args) != 2:
+        raise RuntimeError('`Variable` constructor expects 2 arguments `(name: type)`')
+
+    if not isinstance(args[0], Value): # and isinstance(args[0].type, ):
+        raise RuntimeError('`Variable` constructor expects the fist argument to be a Symbol')
+    else:
+        type = args[0].type
+        if type.name != 'Symbol':
+            raise RuntimeError('`Variable` constructor expects the fist argument to be a Symbol')
+
+    return Value(Variable(name=args[0].value, type=args[1]), type=type_variable)
+
+
+def make_union(args: List[Expression]) -> Expression:
+    # arg is a value of Variables
+    for arg in args:
+        if not isinstance(arg, Value):
+            raise RuntimeError('`union` constructor expects a list of variables `Variable(name, type)`')
+
+    return Union([arg.value for arg in args])
+
+
+def make_struct(args: List[Expression]) -> Expression:
+    for arg in args:
+        if not isinstance(arg, Value):
+            raise RuntimeError('`struct` constructor expects a list of variables `Variable(name, type)`')
+
+    return Struct([arg.value for arg in args])
+
+
+def make_lambda(args: List[Expression]) -> Expression:
+    body = args[-1]
+    args = args[:-1]
+
+    for arg in args:
+        if not isinstance(arg, Value):
+            raise RuntimeError('`lambda` constructor expects a list of variables `Variable(name, type)`')
+
+    return Function(args=[arg.value for arg in args], body=body)
+
+
+n = None
+
 # Table for the evaluator
 builtins = {
     '+': (2, add_int),
@@ -118,7 +175,11 @@ builtins = {
     '/': (2, div_int),
     '-': (2, sub_int),
     'return': (1, return_fun),
-    'Int': (1, make_int)
+    'Int': (1, make_int),
+    'variable': (2, make_variable),
+    'lambda': (n, make_lambda),
+    'struct': (n, make_struct),
+    'union': (n, make_union)
 }
 
 

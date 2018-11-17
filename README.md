@@ -5,6 +5,16 @@ Kiwi is an experimental language. At the moment I mainly try stuff.
 This is a repo where I try stuff in C++/python. Do not expect good codes or test
 this is just a bunch of experiment.
 
+The Core of Kiwi is a functional programing language.
+
+* `Type`: type of Types
+* `Arrow`: Function Type (args...) -> return
+* `lambda(args ...) expr`: Create an anonymous function
+* `union(args...)`       : Create a type that can hold different kind of values
+* `struct(args ...)`     : Create type that can hold multiple values at the same time
+
+
+
 ## Compilation Steps
 
     git clone https://Setepenre@bitbucket.org/Setepenre/kiwi.git

@@ -103,6 +103,15 @@ class ToStringV(Visitor):
         trace(depth, 'unary_call')
         return '{}({})'.format(self.visit(call.function, depth + 1), self.visit(call.args[0], depth + 1))
 
+    def union(self, union: Union, depth=0) -> Any:
+        trace(depth, 'union')
+        args = ', '.join(['{}: {}'.format(m.name, self.visit(m.type, depth + 1)) for m in union.members])
+        return 'Union({})'.format(args)
+
+    def struct(self, union: Struct, depth=0) -> Any:
+        trace(depth, 'struct')
+        args = ', '.join(['{}: {}'.format(m.name, self.visit(m.type, depth + 1)) for m in union.members])
+        return 'Struct({})'.format(args)
 
 def to_string(expr, ctx=Scope()):
     return ToStringV.run(expr, ctx)
