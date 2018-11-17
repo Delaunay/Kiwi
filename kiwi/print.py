@@ -89,7 +89,7 @@ class ToStringV(Visitor):
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call')
         fun = self.visit(call.function, depth + 1)
-        args = ','.join([self.visit(arg, depth + 1) for arg in call.args])
+        args = ', '.join([self.visit(arg, depth + 1) for arg in call.args])
         return '{}({})'.format(fun, args)
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:

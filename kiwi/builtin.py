@@ -21,11 +21,20 @@ def _make_default_scope() -> Scope:
     # Default high level types
     builder.bind('Float', Builtin('Float', ref('Type')))
     builder.bind('Int',   Builtin('Int',   ref('Type')))
-    builder.bind('Bool',  Builtin('Bool',  ref('Type')))
+    builder.bind('Bool', Builtin('Bool', ref('Type')))
+    builder.bind('Argument', Builtin('Argument', ref('Type')))
 
     # return T -> T
     builder.builtin('return', Arrow([ref('Type')], ref('Type')))
-    builder.builtin('yield',  Arrow([ref('Type')], ref('Type')))
+    builder.builtin('yield', Arrow([ref('Type')], ref('Type')))
+
+    # Compile Time Function that makes up the language
+    # We are going to need more like match/value/....
+    # one function per AST node
+    builder.builtin('union', Arrow([ref('Argument')], ref('Type')))
+    builder.builtin('struct', Arrow([ref('Argument')], ref('Type')))
+    builder.builtin('function', Arrow([ref('Argument')], ref('Type')))
+    #
 
     # builtin functions
     builder.bind('+', Builtin('+', Arrow([ref('Float'), ref('Float')], ref('Float'))))
@@ -33,7 +42,7 @@ def _make_default_scope() -> Scope:
     builder.bind('/', Builtin('/', Arrow([ref('Float'), ref('Float')], ref('Float'))))
     builder.bind('-', Builtin('-', Arrow([ref('Float'), ref('Float')], ref('Float'))))
 
-    # ATM it will not work because the scope is a dum dictionary
+    # ATM it will not work because the scope is a dumb dictionary
     builder.bind('+', Builtin('+', Arrow([ref('Int'), ref('Int')], ref('Int'))))
     builder.bind('*', Builtin('*', Arrow([ref('Int'), ref('Int')], ref('Int'))))
     builder.bind('/', Builtin('/', Arrow([ref('Int'), ref('Int')], ref('Int'))))
