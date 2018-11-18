@@ -274,49 +274,49 @@ class Visitor:
             return expr.visit(self, depth)
 
     def value(self, val: Value, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def bind(self, bind: Bind, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def variable(self, var: Variable, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def function(self, fun: Function, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def block(self, block: Block, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def call(self, call: Call, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def struct(self, struct: Struct, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def union(self, union: Union, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 

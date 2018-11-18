@@ -72,10 +72,10 @@ class ToStringV(Visitor):
         return fun_str
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'Builtin: {}'.format(builtin))

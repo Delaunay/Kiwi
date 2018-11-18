@@ -42,10 +42,10 @@ class Interpreter(Visitor):
             self.visit(expression, depth + 1)
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplemented
+        raise NotImplementedError
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))
@@ -92,14 +92,14 @@ class Interpreter(Visitor):
         return self.call(call, depth)
 
     def struct(self, struct: Struct, depth=0) -> Any:
-        raise NotImplemented
+        return struct
 
     def union(self, union: Union, depth=0) -> Any:
-        raise NotImplemented
+        return union
 
     # Type Expression are not evaluated
     def arrow(self, arrow: Arrow, depth=0) -> Any:
-        raise NotImplemented
+        return arrow
 
     def builtin_call(self, fun: Builtin, call: Call, depth) -> Any:
         if fun.name in self._builtins:
