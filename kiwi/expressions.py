@@ -2,7 +2,6 @@ from typing import *
 from dataclasses import dataclass
 from dataclasses import field
 
-
 # Tree Generic
 # ------------------------
 class Tree:
@@ -140,6 +139,7 @@ class Function(Expression, TreeBranch):
     # Not all function can be inlined
     inline: bool = False
     # recursive: bool = True
+    type = None
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.function(self, depth)

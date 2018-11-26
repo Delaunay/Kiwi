@@ -10,13 +10,66 @@ from llvmlite import ir
 debug_mode = True
 trace = partial(trace, mode=debug_mode, name='[llvm_codegen] ')
 
+n = None
+
+
+def ir_add_int(builder: ir.IRBuilder, args):
+    return builder.add(args[0], args[1])
+
+
+def ir_mult_int(builder: ir.IRBuilder, args):
+    return builder.mul(args[0], args[1])
+
+
+def ir_div_int(builder: ir.IRBuilder, args):
+    return builder.sdiv(args[0], args[1])
+
+
+def ir_sub_int(builder: ir.IRBuilder, args):
+    return builder.sub(args[0], args[1])
+
+
+def ir_return_fun(builder: ir.IRBuilder, args):
+    return builder.ret(args[0])
+
+
+def ir_make_int(builder: ir.IRBuilder, val):
+    return ir.Constant(val)
+
+def ir_make_variable():
+    pass
+
+def ir_make_lambda():
+    pass
+
+def ir_make_struct():
+    pass
+
+def ir_make_union():
+    pass
+
+
+builtins = {
+    '+': (2, ir_add_int),
+    '*': (2, ir_mult_int),
+    '/': (2, ir_div_int),
+    '-': (2, ir_sub_int),
+    'return': (1, ir_return_fun),
+    'Int': (1, ir_make_int),
+    'variable': (2, ir_make_variable),
+    'lambda': (n, ir_make_lambda),
+    'struct': (n, ir_make_struct),
+    'union': (n, ir_make_union)
+}
 
 
 class LLVMCodeGen(Visitor):
-    def __init__(self, module: ir.Module):
+    def __init__(self, module: ir.Module, builder=ir):
         super().__init__()
         self.module = module
-        self.parents = []
+        self.variables = {}
+        self.builder = builder
+        self.parent = None
 
     def visit(self, a: Expression, depth=0) -> Any:
         if a is not None:
@@ -24,49 +77,72 @@ class LLVMCodeGen(Visitor):
 
     # Typed Expression
     def variable(self, var: Variable, depth=0) -> Any:
-        return ir.NamedValue(parent=None, name=var.name, type=self.visit(var.type, depth + 1))
+        v = self.builder.NamedValue(parent=None, name=var.name, type=self.visit(var.type, depth + 1))
+        self.variables[var.name] = v
+        return v
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         raise NotImplementedError
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
-        return ir.Constant(constant=val.value, typ=self.visit(val.type, depth + 1))
+        return self.builder.Constant(constant=val.value, typ=self.visit(val.type, depth + 1))
 
     def struct(self, struct: Struct, depth=0) -> Any:
-        return ir.LiteralStructType(elems=[self.visit(m, depth + 1) for m in struct.members])
+        return self.builder.LiteralStructType(elems=[self.visit(m, depth + 1) for m in struct.members])
 
     def union(self, union: Union, depth=0) -> Any:
-        return ir.LiteralStructType(elems=[self.visit(m, depth + 1) for m in union.members])
+        return self.builder.LiteralStructType(elems=[self.visit(m, depth + 1) for m in union.members])
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
         trace(depth, 'arrow')
-        return ir.FunctionType(
+        return self.builder.FunctionType(
             self.visit(arrow.return_type, depth + 1),
             [self.visit(arg, depth + 1) for arg in arrow.args])
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference')
-        return get(ref.name)
+        return self.variables[ref.name]
 
     # Those should be resolved at eval
     def bind(self, bind: Bind, depth=0) -> Any:
+        trace(depth, 'bind')
         raise NotImplementedError
 
     def function(self, fun: Function, depth=0) -> Any:
-        fun = ir.Function(
+        trace(depth, 'function')
+        ir_fun = self.builder.Function(
             self.module,
             ftype=None,
             name=None
         )
 
-        block = fun.append_basic_block(name='fun_block')
-        builder = ir.IRBuilder(block)
+        block = ir_fun.append_basic_block(name='fun_block')
+        old = self.builder
+        old_p = self.parent
+        self.parent = ir_fun
 
+        self.builder = ir.IRBuilder(block)
+        self.visit(fun.body, depth + 1)
+
+        self.builder = old
+        self.parent = old_p
         return fun
 
     def block(self, block: Block, depth=0) -> Any:
-        return ir.Block()
+        trace(depth, 'block')
+        blk = ir.Block(self.parent)
+
+        old = self.builder
+        old_p = self.parent
+        self.builder = ir.IRBuilder(block)
+
+        for expr in block.expressions:
+            self.visit(expr, depth + 1)
+
+        self.builder = old
+        self.parent = old_p
+        return blk
 
     def match(self, match: Match, depth=0) -> Any:
         raise NotImplementedError
@@ -75,45 +151,13 @@ class LLVMCodeGen(Visitor):
         raise NotImplementedError
 
     def call(self, call: Call, depth=0) -> Any:
-        return ir.CallInstr()
+        trace(depth, 'call')
+        return self.builder.call(self.visit(call.function, depth + 1), [self.visit(expr, depth + 1) for expr in call.args])
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
-        return ir.CallInstr()
+        trace(depth, 'binary_call')
+        return self.call(call)
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
-        return ir.CallInstr()
-
-
-if __name__ == '__main__':
-    import sys
-    sys.stderr = sys.stdout
-
-    from kiwi.print import to_string
-    from kiwi.builder import AstBuilder
-    from kiwi.builtin import make_scope
-
-    ctx = make_scope()
-    builder = AstBuilder(ctx)
-
-    int_t = builder.reference('Int')
-    float_t = builder.reference('Float')
-
-    print(type_equal(builder.value(2, int_t), builder.value(2, float_t), ctx))
-    print(type_equal(builder.value(2, float_t), builder.value(2, float_t), ctx))
-    arw = builder.arrow()
-    arw.args([int_t, int_t])
-    arw.return_type(int_t)
-    a1 = arw.make()
-
-    arw = builder.arrow()
-    arw.args([int_t, int_t])
-    arw.return_type(int_t)
-    a2 = arw.make()
-
-    arw = builder.arrow()
-    arw.args([int_t, int_t])
-    arw.return_type(float_t)
-    a3 = arw.make()
-
-    print(type_equal(a1, a2, ctx))
-    print(type_equal(a1, a3, ctx))
+        trace(depth, 'unary_call')
+        return self.call(call)

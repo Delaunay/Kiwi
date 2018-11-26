@@ -3,6 +3,7 @@ from kiwi.builder import AstBuilder
 from kiwi.builtin import make_scope
 from kiwi.interpreter import keval
 
+
 # -----------------------------------------------
 def function_test_add_def(builder: AstBuilder):
     float_type = builder.reference('Float')
@@ -23,6 +24,7 @@ def function_test_add_def(builder: AstBuilder):
     fun.body(body)
     fun = fun.make()
     builder.bind('add', fun)
+    return fun
 
 
 def function_test_add_call(builder: AstBuilder, a: int, b: int) -> Call:
@@ -62,8 +64,6 @@ def union_test_make(builder: AstBuilder):
 def struct_test_make(builder: AstBuilder):
     struct_fun = builder.reference('struct')
     return builder.call(struct_fun, [make_var('a', 'Float'), make_var('b', 'Int')])
-
-
 
 
 if __name__ == '__main__':
