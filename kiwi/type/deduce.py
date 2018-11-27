@@ -76,7 +76,7 @@ class TypeDeduce(Visitor):
         if rtype is None:
             rtype = self.type_deduce(fun.body, depth + 1)
 
-        fun.type = Arrow([arg.type for arg in fun.args], rtype)
+        fun.type = Arrow([arg for arg in fun.args], rtype)
         return fun.type
 
     def block(self, block: Block, depth=0) -> Any:
@@ -90,15 +90,33 @@ class TypeDeduce(Visitor):
 
     def call(self, call: Call, depth=0) -> Any:
         fun_type = self.type_deduce(call.function, depth + 1)
+        # Function Type should be something like Arrow([], return_type)
+        # In the case of a function with meta types like Arrow([T: Type], Arrow([a: T, b: T], T))
+        # we first match the last Arrow and move up because meta types are optional arguments and only the actual
+        # arguments are required but we do not know what
+
+        if not isinstance(fun_type, Arrow):
+            raise RuntimeError('Error function type should be an Arrow')
+
+        stack = [fun_type]
+
+        while True:
+            if isinstance(fun_type.return_type, Arrow):
+                # Add Arrow Arguments in the context
+                # The type of the meta arguments get resolved
+                # for arg in
+
+                fun_type = fun_type.return_type
+                stack.append(fun_type)
+            else:
+                break
 
         return fun_type.return_type
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         trace(depth, 'binary')
-        fun_type = self.type_deduce(call.function, depth + 1)
-        return fun_type.return_type
+        return self.call(call, depth)
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
         trace(depth, 'unary')
-        fun_type = self.type_deduce(call.function, depth + 1)
-        return fun_type.return_type
+        return self.call(call, depth)

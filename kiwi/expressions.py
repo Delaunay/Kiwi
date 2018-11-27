@@ -226,7 +226,7 @@ class Builtin(Expression, TreeLeaf):
 
 @dataclass
 class Arrow(GenericType, TreeBranch):
-    args: List[Expression]
+    args: List[Variable]
     return_type: Expression
 
     def visit(self, visitor: 'Visitor', depth=0):

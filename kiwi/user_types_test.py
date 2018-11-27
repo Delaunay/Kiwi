@@ -34,7 +34,7 @@ def function_test_add_call(builder: AstBuilder, a: int, b: int) -> Call:
 
 
 def function_test_add(builder):
-    function_test_add(builder)
+    function_test_add_def(builder)
 
     for i in range(0, 10):
         for j in range(0, 10):
@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
     ctx = make_scope()
     builder = AstBuilder(ctx)
+    function_test_add(builder)
 
     arg = make_var('a', 'Float')
     str = to_string(arg)
@@ -86,3 +87,4 @@ if __name__ == '__main__':
     result_str = to_string(keval(call, ctx))
 
     print('\n IN > {} \nOUT > {}'.format(call_str, result_str))
+

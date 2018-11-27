@@ -28,9 +28,12 @@ def _make_default_scope() -> Scope:
     builder.bind('Int',   Builtin('Int',   ref('Type')))
     builder.bind('Bool', Builtin('Bool', ref('Type')))
 
+    def make_var(name, type):
+        return builder.variable(name, ref(type))
+
     # return T -> T
-    builder.builtin('return', Arrow([ref('Type')], ref('Type')))
-    builder.builtin('yield', Arrow([ref('Type')], ref('Type')))
+    builder.builtin('return', Arrow([make_var('T', 'Type')], Arrow([make_var('r', 'T')], ref('T'))))
+    builder.builtin('yield', Arrow([make_var('T', 'Type')], Arrow([make_var('r', 'T')], ref('T'))))
 
     # Compile Time Function that makes up the language
     # We are going to need more like match/value/....
@@ -38,26 +41,25 @@ def _make_default_scope() -> Scope:
     # The type should be (List[var] -> Type)
     # Where Var = struct(name: str, type: Type)
 
+    builder.bind('variable', Builtin('variable',
+                                     Arrow([make_var('name', 'Symbol'), make_var('type', 'Expression')], ref('Variable'))))
 
-
-    builder.bind('variable', Builtin('variable', Arrow([ref('Symbol'), ref('Expression')], ref('Variable'))))
-
-    builder.builtin('union', Builtin('union', Arrow([ref('Variable')], ref('Type'))))
-    builder.builtin('struct', Builtin('struct', Arrow([ref('Variable')], ref('Type'))))
-    builder.builtin('lambda', Builtin('lambda', Arrow([ref('Variable')], ref('Type'))))
+    builder.builtin('union',  Builtin('union',  Arrow([make_var('args', 'Variable')], ref('Type'))))
+    builder.builtin('struct', Builtin('struct', Arrow([make_var('args', 'Variable')], ref('Type'))))
+    builder.builtin('lambda', Builtin('lambda', Arrow([make_var('args', 'Variable')], ref('Type'))))
     #
 
     # builtin functions
-    builder.bind('+', Builtin('+', Arrow([ref('Float'), ref('Float')], ref('Float'))))
-    builder.bind('*', Builtin('*', Arrow([ref('Float'), ref('Float')], ref('Float'))))
-    builder.bind('/', Builtin('/', Arrow([ref('Float'), ref('Float')], ref('Float'))))
-    builder.bind('-', Builtin('-', Arrow([ref('Float'), ref('Float')], ref('Float'))))
+    builder.bind('+', Builtin('+', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
+    builder.bind('*', Builtin('*', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
+    builder.bind('/', Builtin('/', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
+    builder.bind('-', Builtin('-', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
 
     # ATM it will not work because the scope is a dumb dictionary
-    builder.bind('+', Builtin('+', Arrow([ref('Int'), ref('Int')], ref('Int'))))
-    builder.bind('*', Builtin('*', Arrow([ref('Int'), ref('Int')], ref('Int'))))
-    builder.bind('/', Builtin('/', Arrow([ref('Int'), ref('Int')], ref('Int'))))
-    builder.bind('-', Builtin('-', Arrow([ref('Int'), ref('Int')], ref('Int'))))
+    builder.bind('+', Builtin('+', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
+    builder.bind('*', Builtin('*', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
+    builder.bind('/', Builtin('/', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
+    builder.bind('-', Builtin('-', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
 
     return ctx
 
