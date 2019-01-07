@@ -1,4 +1,5 @@
 from kiwi.codegen.ir import LLVMCodeGen
+from kiwi.type.trace import type_trace
 from llvmlite import ir
 
 
@@ -14,12 +15,25 @@ if __name__ == '__main__':
 
     ctx = make_scope()
     builder = AstBuilder(ctx)
+
+    float_type = builder.reference('Float')
     fun = function_test_add_def(builder)
+    two = builder.call(fun, [builder.value(1, float_type), builder.value(2, float_type)])
+
+    original = to_string(fun)
+
+    print(type_trace(two, ctx))
+
+    new = to_string(fun)
+    ftype = to_string(fun.type)
+
+    print('-' * 80)
+    print(original)
+    print(new)
+    print('Fun Type: {}'.format(ftype))
+    print('-' * 80)
 
     v = LLVMCodeGen(ir.Module(name='test'))
-
-    print(fun)
-    print(type_deduce(fun, ctx))
 
     r = v.visit(fun)
 

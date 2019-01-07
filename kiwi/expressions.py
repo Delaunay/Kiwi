@@ -140,13 +140,17 @@ class Function(Expression, TreeBranch):
     # Not all function can be inlined
     inline: bool = False
     # recursive: bool = True
-    type = None
+    # type = None
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.function(self, depth)
 
     def __repr__(self):
         return """Fun(args={}) -> {}:\n    {}""".format(self.args, self.return_type, self.body)
+
+    @property
+    def type(self):
+        return Arrow(list(map(lambda arg: arg.type, self.args)), self.return_type)
 
 
 @dataclass

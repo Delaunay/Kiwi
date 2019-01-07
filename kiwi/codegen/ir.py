@@ -14,6 +14,7 @@ n = None
 
 
 def ir_add_int(builder: ir.IRBuilder, args):
+    print('HERE')
     return builder.add(args[0], args[1])
 
 
@@ -30,20 +31,25 @@ def ir_sub_int(builder: ir.IRBuilder, args):
 
 
 def ir_return_fun(builder: ir.IRBuilder, args):
+    print('HERE')
     return builder.ret(args[0])
 
 
 def ir_make_int(builder: ir.IRBuilder, val):
     return ir.Constant(val)
 
+
 def ir_make_variable():
     pass
+
 
 def ir_make_lambda():
     pass
 
+
 def ir_make_struct():
     pass
+
 
 def ir_make_union():
     pass
@@ -59,7 +65,8 @@ builtins = {
     'variable': (2, ir_make_variable),
     'lambda': (n, ir_make_lambda),
     'struct': (n, ir_make_struct),
-    'union': (n, ir_make_union)
+    'union': (n, ir_make_union),
+    'Float': (0, ir.FloatType())
 }
 
 
@@ -73,7 +80,8 @@ class LLVMCodeGen(Visitor):
 
     def visit(self, a: Expression, depth=0) -> Any:
         if a is not None:
-            return a.visit(self, depth)
+            r = a.visit(self, depth)
+            return r
 
     # Typed Expression
     def variable(self, var: Variable, depth=0) -> Any:
@@ -82,7 +90,12 @@ class LLVMCodeGen(Visitor):
         return v
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
-        raise NotImplementedError
+        if isinstance(builtin, VariableRef):
+            nargs, impl = builtins[builtin.name]
+            if nargs == 0:
+                return impl
+        else:
+            raise NotImplementedError
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
@@ -96,12 +109,17 @@ class LLVMCodeGen(Visitor):
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
         trace(depth, 'arrow')
+
         return self.builder.FunctionType(
             self.visit(arrow.return_type, depth + 1),
             [self.visit(arg, depth + 1) for arg in arrow.args])
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference')
+
+        if ref.name in builtins:
+            return self.builtin(ref, depth + 1)
+
         return self.variables[ref.name]
 
     # Those should be resolved at eval
@@ -111,11 +129,17 @@ class LLVMCodeGen(Visitor):
 
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function')
+
         ir_fun = self.builder.Function(
             self.module,
-            ftype=None,
+            ftype=self.visit(fun.type, depth + 1),
             name=None
         )
+
+        args = ir_fun.args
+
+        for arg, larg in zip(fun.args, args):
+            self.variables[arg.name] = larg
 
         block = ir_fun.append_basic_block(name='fun_block')
         old = self.builder
@@ -152,12 +176,19 @@ class LLVMCodeGen(Visitor):
 
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call')
-        return self.builder.call(self.visit(call.function, depth + 1), [self.visit(expr, depth + 1) for expr in call.args])
+        lcall = self.visit(call.function, depth + 1)
+
+        return self.builder.call(lcall,
+                                 [self.visit(expr, depth + 1) for expr in call.args])
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         trace(depth, 'binary_call')
-        return self.call(call)
+        return self.call(call, depth + 1)
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
         trace(depth, 'unary_call')
-        return self.call(call)
+        return self.call(call, depth + 1)
+
+
+def llvm_codegen(expr):
+    pass
