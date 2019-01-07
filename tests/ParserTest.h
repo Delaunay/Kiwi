@@ -46,11 +46,11 @@ TEST(Parser, FunctionWithAnnotation) {
     StringBuffer reader(code);
     Parser parser(reader);
 
-    Tuple<String, Definition *> op = parser.parse_function(0);
+    //Tuple<String, Expression *> op = parser.parse_function(0);
 
     std::cout << std::string(80, '-') << std::endl;
     std::stringstream ss;
-    PrintStatement().visit_definition(std::get<1>(op), ss, 0);
+    // PrintStatement().visit_definition(std::get<1>(op), ss, 0);
     std::cout << std::string(80, '-') << std::endl;
     std::cout << ss.str() << std::endl;
 }
@@ -61,13 +61,13 @@ TEST(Parser, FunctionWithoutAnnoation) {
     StringBuffer reader(code);
     Parser parser(reader);
 
-    Tuple<String, Definition *> op = parser.parse_function(0);
+    Tuple<String, Expression *> op = parser.parse_function(0);
 
     std::cout << std::string(80, '-') << std::endl;
+    PrintExpression printer;
     std::stringstream ss;
-    PrintStatement().visit_definition(std::get<1>(op), ss, 0);
-    std::cout << std::string(80, '-') << std::endl;
-    std::cout << ss.str() << std::endl;
+    //printer.visit_expression(std::get<1>(data), ss, 0);
+    //std::cout << std::get<0>(data) << ": " << std::endl << ss.str();
 }
 
 TEST(Parser, StructParsing) {
@@ -78,11 +78,11 @@ TEST(Parser, StructParsing) {
     StringBuffer reader(code);
     Parser parser(reader);
 
-    Tuple<String, Definition *> data = parser.parse_record(0);
+    Tuple<String, Expression *> data = parser.parse_record(0);
 
-    PrintDefinition printer;
+    PrintExpression printer;
     std::stringstream ss;
-    printer.visit_definition(std::get<1>(data), ss, 0);
+    printer.visit_expression(std::get<1>(data), ss, 0);
     std::cout << std::get<0>(data) << ": " << std::endl << ss.str();
 }
 
@@ -94,11 +94,11 @@ TEST(Parser, UnionParsing) {
     StringBuffer reader(code);
     Parser parser(reader);
 
-    Tuple<String, Definition *> data = parser.parse_record(0);
+    Tuple<String, Expression *> data = parser.parse_record(0);
 
-    PrintDefinition printer;
+    PrintExpression printer;
     std::stringstream ss;
-    printer.visit_definition(std::get<1>(data), ss, 0);
+    printer.visit_expression(std::get<1>(data), ss, 0);
     std::cout << std::get<0>(data) << ": " << std::endl << ss.str();
 }
 

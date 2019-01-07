@@ -54,7 +54,7 @@ OPTION(BUILD_UI             "Build UI"           OFF)
 # Binary/pre-compiled Dependencies
 # ====================================
 
-FIND_PACKAGE(Git)
+#FIND_PACKAGE(Git)
 FIND_PACKAGE(gtest QUIET)
 
 #IF(${BUILD_UI})
@@ -93,8 +93,8 @@ FIND_PACKAGE(gtest QUIET)
 # FIND_PACKAGE(SFML 2 COMPONENTS system window graphics audio)
 # FIND_PACKAGE(OpenGL)
 
-#SET(SDL2_PATH ./dependencies/SDL)
-#SET(SDL2_TTF_PATH ./dependencies/SDL_ttf)
+SET(SDL2_PATH ./dependencies/SDL)
+SET(SDL2_TTF_PATH ./dependencies/SDL_ttf)
 
 #SET(SDL2_BUILDING_LIBRARY ON)
 FIND_PACKAGE(SDL2 REQUIRED)
