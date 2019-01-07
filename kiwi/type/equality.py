@@ -5,11 +5,12 @@ from kiwi.expressions import *
 from kiwi.environment import Scope
 from kiwi.debug import trace
 
-debug_mode = True
+debug_mode = False
 trace = partial(trace, mode=debug_mode, name='[type_check] ')
 
 
 def type_equal(a: Expression, b: Expression, scope: Scope, depth=0):
+    # what if we compare a ref to the refereed expr
     if a.__class__ is not b.__class__:
         return False
 
@@ -112,6 +113,10 @@ class TypeEqual(Visitor):
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
         raise NotImplementedError
+
+
+def kequiv(a: Expression, b: Expression, scope: Scope = Scope(), depth=0) -> bool:
+    return type_equal(a, b, scope, depth)
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@ from typing import *
 from dataclasses import dataclass
 from dataclasses import field
 
+
 # Tree Generic
 # ------------------------
 class Tree:
@@ -231,6 +232,16 @@ class Arrow(GenericType, TreeBranch):
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.arrow(self, depth)
+
+    @property
+    def compile_time(self):
+        from kiwi.builtin import type_type
+        from kiwi.type.equality import kequiv
+
+        for arg in self.args:
+            if not kequiv(arg.type, type_type):
+                return False
+        return True
 
 
 # Function Calls

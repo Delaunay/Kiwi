@@ -25,7 +25,7 @@ class ToStringV(Visitor):
 
     def variable(self, var: Variable, depth=0) -> Any:
         trace(depth, 'variable {}'.format(var))
-        return '{}'.format(str(var.name))
+        return '{}: {}'.format(str(var.name), self.visit(var.type), depth + 1)
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'Reference {}'.format(ref))
@@ -112,6 +112,7 @@ class ToStringV(Visitor):
         trace(depth, 'struct')
         args = ', '.join(['{}: {}'.format(m.name, self.visit(m.type, depth + 1)) for m in union.members])
         return 'Struct({})'.format(args)
+
 
 def to_string(expr, ctx=Scope()):
     return ToStringV.run(expr, ctx)

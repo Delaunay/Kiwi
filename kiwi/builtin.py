@@ -49,17 +49,17 @@ def _make_default_scope() -> Scope:
     builder.builtin('lambda', Builtin('lambda', Arrow([make_var('args', 'Variable')], ref('Type'))))
     #
 
-    # builtin functions
-    builder.bind('+', Builtin('+', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
-    builder.bind('*', Builtin('*', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
-    builder.bind('/', Builtin('/', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
-    builder.bind('-', Builtin('-', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
-
     # ATM it will not work because the scope is a dumb dictionary
     builder.bind('+', Builtin('+', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
     builder.bind('*', Builtin('*', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
     builder.bind('/', Builtin('/', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
     builder.bind('-', Builtin('-', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
+
+    # builtin functions
+    builder.bind('+', Builtin('+', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
+    builder.bind('*', Builtin('*', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
+    builder.bind('/', Builtin('/', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
+    builder.bind('-', Builtin('-', Arrow([make_var('a', 'Float'), make_var('b', 'Float')], ref('Float'))))
 
     return ctx
 
@@ -75,6 +75,7 @@ def _builder() -> AstBuilder:
     return AstBuilder(make_scope())
 
 
+type_type = _builder().reference('Type')
 type_int = _builder().reference('Int')
 type_float = _builder().reference('Float')
 type_bool = _builder().reference('Bool')

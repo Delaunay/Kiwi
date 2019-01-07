@@ -10,7 +10,7 @@ if __name__ == '__main__':
     from kiwi.builder import AstBuilder
     from kiwi.builtin import make_scope
     from kiwi.type.deduce import type_deduce
-    from kiwi.user_types_test import function_test_add_def
+    from kiwi.test_user_types import function_test_add_def
 
     ctx = make_scope()
     builder = AstBuilder(ctx)

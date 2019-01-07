@@ -100,6 +100,8 @@ class TypeDeduce(Visitor):
 
         stack = [fun_type]
 
+
+
         while True:
             if isinstance(fun_type.return_type, Arrow):
                 # Add Arrow Arguments in the context
