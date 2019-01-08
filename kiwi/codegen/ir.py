@@ -13,8 +13,18 @@ trace = partial(trace, mode=debug_mode, name='[llvm_codegen] ')
 n = None
 
 
+@dataclass
+class UndefinedBuiltin(Exception):
+    builtin: Builtin
+
+
+@dataclass
+class ArgumentSizeMismatch(Exception):
+    nargs: int
+    args: List[Expression]
+
+
 def ir_add_int(builder: ir.IRBuilder, args):
-    print('HERE')
     return builder.add(args[0], args[1])
 
 
@@ -31,7 +41,6 @@ def ir_sub_int(builder: ir.IRBuilder, args):
 
 
 def ir_return_fun(builder: ir.IRBuilder, args):
-    print('HERE')
     return builder.ret(args[0])
 
 
@@ -71,31 +80,55 @@ builtins = {
 
 
 class LLVMCodeGen(Visitor):
-    def __init__(self, module: ir.Module, builder=ir):
+    def __init__(self, module: ir.Module, scope=Scope(), builder=ir):
         super().__init__()
         self.module = module
-        self.variables = {}
         self.builder = builder
+        self.scope = scope
         self.parent = None
+        self.mode = 'codegen'
+        self.binding_name = None
+        self.count = 0
 
-    def visit(self, a: Expression, depth=0) -> Any:
+    def generate_unique_binding_name(self):
+        # follow scheme generated name format, identifier starting with # cannot be created by the user
+        # which means the name is guaranteed to be unique
+        self.count += 1
+        return '#id{}'.format(self.count)
+
+    def visit(self, a: Expression, depth=0, mode=None) -> Any:
         if a is not None:
+
+            if mode is not None:
+                old = self.mode
+                self.mode = mode
+
             r = a.visit(self, depth)
+
+            if mode is not None:
+                self.mode = old
+
             return r
 
     # Typed Expression
     def variable(self, var: Variable, depth=0) -> Any:
         v = self.builder.NamedValue(parent=None, name=var.name, type=self.visit(var.type, depth + 1))
-        self.variables[var.name] = v
+        self.scope.insert_binding(var.name, v)
+
         return v
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
-        if isinstance(builtin, VariableRef):
-            nargs, impl = builtins[builtin.name]
-            if nargs == 0:
-                return impl
-        else:
-            raise NotImplementedError
+        trace(depth, 'builtin')
+
+        if builtin.name not in builtins:
+            raise UndefinedBuiltin(builtin)
+
+        nargs, impl = builtins[builtin.name]
+
+        if self.mode == 'type':
+            return impl
+
+        return builtin
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
@@ -105,41 +138,65 @@ class LLVMCodeGen(Visitor):
         return self.builder.LiteralStructType(elems=[self.visit(m, depth + 1) for m in struct.members])
 
     def union(self, union: Union, depth=0) -> Any:
+        # FIXME: build n Tagged LiteralStruct
         return self.builder.LiteralStructType(elems=[self.visit(m, depth + 1) for m in union.members])
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
         trace(depth, 'arrow')
+        self.scope = self.scope.enter_scope('arrow')
 
-        return self.builder.FunctionType(
+        ftype = self.builder.FunctionType(
             self.visit(arrow.return_type, depth + 1),
             [self.visit(arg, depth + 1) for arg in arrow.args])
 
+        self.scope = self.scope.exit_scope()
+        return ftype
+
     def reference(self, ref: VariableRef, depth=0) -> Any:
-        trace(depth, 'reference')
+        trace(depth, 'reference `{}`'.format(ref.name))
 
-        if ref.name in builtins:
-            return self.builtin(ref, depth + 1)
+        # Option 1, check if this is a LLVM ref and do not visit
+        v = self.scope.get_expression(ref, depth + 1)
 
-        return self.variables[ref.name]
+        if isinstance(v, Expression):
+            return self.visit(v, depth + 1)
+
+        # print(v)
+        return v
 
     # Those should be resolved at eval
     def bind(self, bind: Bind, depth=0) -> Any:
         trace(depth, 'bind')
-        raise NotImplementedError
+        name = self.binding_name
+        self.binding_name = bind.name
+        expr = self.visit(bind.expr, depth + 1)
+        self.binding_name = name
+        return Bind(bind.name, expr)
 
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function')
 
+        self.scope = self.scope.enter_scope('function')
+        ftype = self.visit(fun.type, depth + 1, mode='type')
+
+        if self.binding_name is None:
+            name = self.generate_unique_binding_name()
+            self.scope.insert_binding(name, fun)
+        else:
+            name = self.binding_name
+
         ir_fun = self.builder.Function(
             self.module,
-            ftype=self.visit(fun.type, depth + 1),
-            name=None
+            ftype=ftype,
+            name=name
         )
 
         args = ir_fun.args
 
         for arg, larg in zip(fun.args, args):
-            self.variables[arg.name] = larg
+            self.scope.insert_binding(arg.name, larg)
+
+        #self.scope.dump()
 
         block = ir_fun.append_basic_block(name='fun_block')
         old = self.builder
@@ -151,7 +208,9 @@ class LLVMCodeGen(Visitor):
 
         self.builder = old
         self.parent = old_p
-        return fun
+
+        self.scope = self.scope.exit_scope()
+        return ir_fun
 
     def block(self, block: Block, depth=0) -> Any:
         trace(depth, 'block')
@@ -176,10 +235,25 @@ class LLVMCodeGen(Visitor):
 
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call')
-        lcall = self.visit(call.function, depth + 1)
 
-        return self.builder.call(lcall,
-                                 [self.visit(expr, depth + 1) for expr in call.args])
+        lcall = self.visit(call.function, depth + 1)
+        args = [self.visit(expr, depth + 1) for expr in call.args]
+
+        if isinstance(lcall, Builtin):
+            if lcall.name not in builtins:
+                raise UndefinedBuiltin(lcall)
+
+            nargs, impl = builtins[lcall.name]
+
+            if nargs != len(call.args):
+                raise ArgumentSizeMismatch(nargs, call.args)
+
+            return impl(self.builder, args)
+
+        print(call.function, ' => ', lcall)
+        print(args)
+
+        return self.builder.call(lcall, args)
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         trace(depth, 'binary_call')

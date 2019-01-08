@@ -4,6 +4,11 @@ from dataclasses import field
 
 
 @dataclass
+class ReferenceNotFound(Exception):
+    ref: VariableRef
+
+
+@dataclass
 class Scope:
     name: str = None
     expressions: Dict[str, Expression] = field(default_factory=dict)
@@ -22,6 +27,10 @@ class Scope:
     def get_expression(self, ref: VariableRef, depth=0):
         if ref.name in self.expressions:
             return self.expressions[ref.name]
+
+        if self.previous is None:
+            raise ReferenceNotFound(ref)
+
         return self.previous.get_expression(ref, depth + 1)
 
     def enter_scope(self, name=None) -> 'Scope':

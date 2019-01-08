@@ -17,25 +17,31 @@ if __name__ == '__main__':
     builder = AstBuilder(ctx)
 
     float_type = builder.reference('Float')
-    fun = function_test_add_def(builder)
-    two = builder.call(fun, [builder.value(1, float_type), builder.value(2, float_type)])
+    bind = function_test_add_def(builder, return_bind=True)
+    two = builder.call(bind.expr, [builder.value(1, float_type), builder.value(2, float_type)])
 
-    original = to_string(fun)
+    original = to_string(bind)
 
     print(type_trace(two, ctx))
 
-    new = to_string(fun)
-    ftype = to_string(fun.type)
+    new = to_string(bind)
+    ftype = to_string(bind.expr.type)
 
     print('-' * 80)
     print(original)
+    print('\nAfter Inference:')
+    print('-----------------')
     print(new)
+    print()
     print('Fun Type: {}'.format(ftype))
     print('-' * 80)
 
-    v = LLVMCodeGen(ir.Module(name='test'))
+    v = LLVMCodeGen(ir.Module(name='test'), scope=ctx)
 
-    r = v.visit(fun)
+    r = v.visit(bind)
 
+    print('-' * 80)
+    print(r)
+    print('-' * 80)
     print(v.module)
-
+    print('-' * 80)

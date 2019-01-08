@@ -5,7 +5,7 @@ from kiwi.interpreter import keval
 
 
 # -----------------------------------------------
-def function_test_add_def(builder: AstBuilder):
+def function_test_add_def(builder: AstBuilder, return_bind=False):
     float_type = builder.reference('Float')
 
     fun = builder.function()
@@ -23,7 +23,11 @@ def function_test_add_def(builder: AstBuilder):
 
     fun.body(body)
     fun = fun.make()
-    builder.bind('add', fun)
+    bind = builder.bind('add', fun)
+
+    if return_bind:
+        return bind
+
     return fun
 
 

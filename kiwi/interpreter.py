@@ -29,7 +29,6 @@ class Interpreter(Visitor):
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference: {}'.format(ref))
         v = self.scope.get_expression(ref, depth + 1)
-        #print(ref.name, v)
         return v
 
     def function(self, fun: Function, depth=0) -> Any:

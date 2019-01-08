@@ -14,6 +14,7 @@ class ToStringV(Visitor):
         super(ToStringV).__init__()
         # enter a new scope to not affect the original scope
         self.env_stack: Scope = ctx.enter_scope(name='visitor_scope')
+        self.bind_name = None
 
     @staticmethod
     def run(expr: Expression, ctx=Scope()):
@@ -48,6 +49,12 @@ class ToStringV(Visitor):
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function {}'.format(''))
 
+        if self.bind_name is None:
+            return self.function_lambda(fun, depth)
+
+        return self.function_bind(self.bind_name, fun, depth)
+
+    def function_lambda(self, fun: Function, depth=0) -> Any:
         self.env_stack = self.env_stack.enter_scope(name='function_scope')
 
         for arg in fun.args:
@@ -62,7 +69,7 @@ class ToStringV(Visitor):
             self.env_stack = self.env_stack.exit_scope()
             return fun_str
 
-        #self.env_stack.dump()
+        # self.env_stack.dump()
         fun_str = '({}) -> {} {{ {} }}'.format(
             args,
             self.visit(fun.return_type, depth + 1),
@@ -71,11 +78,33 @@ class ToStringV(Visitor):
         self.env_stack = self.env_stack.exit_scope()
         return fun_str
 
+    def function_bind(self, name, fun: Function, depth=0) -> str:
+
+        self.env_stack = self.env_stack.enter_scope(name='function_scope')
+
+        for arg in fun.args:
+            self.env_stack.insert_binding(arg.name, arg)
+
+        args = ', '.join([self.visit(arg, depth + 1) for arg in fun.args])
+        return_type = self.visit(fun.return_type, depth + 1)
+
+        body = self.visit(fun.body, depth + 1)
+
+        fun_str = 'def {}({}) -> {}:\n   {}'.format(name, args, return_type, body)
+
+        return fun_str
+
     def match(self, match: Match, depth=0) -> Any:
         raise NotImplementedError
 
     def conditional(self, cond: Conditional, depth=0) -> Any:
         raise NotImplementedError
+
+    def bind(self, bind: Bind, depth=0) -> Any:
+        self.bind_name = bind.name
+        v = self.visit(bind.expr, depth + 1)
+        self.bind_name = None
+        return v
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'Builtin: {}'.format(builtin))
