@@ -95,7 +95,18 @@ class ToStringV(Visitor):
         return fun_str
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplementedError
+
+        def render_pattern(pat):
+            if isinstance(pat, ExpressionPattern):
+                return self.visit(pat.expr, depth + 1)
+
+        target = self.visit(match.target, depth + 1)
+        branches = ['{} => {}'.format(render_pattern(p), self.visit(b, depth + 1)) for p, b in match.patterns]
+
+        if match.default is not None:
+            branches.append('_ => {}'.format(self.visit(match.default, depth + 1)))
+
+        return '{} match\n {}'.format(target, '\n   '.join(branches))
 
     def conditional(self, cond: Conditional, depth=0) -> Any:
         raise NotImplementedError

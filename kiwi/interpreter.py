@@ -1,5 +1,6 @@
 import functools
 
+from kiwi.operations.equality import kequal
 from kiwi.expressions import *
 from kiwi.environment import Scope
 from kiwi.debug import trace
@@ -41,7 +42,17 @@ class Interpreter(Visitor):
             self.visit(expression, depth + 1)
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplementedError
+        target = self.visit(match.target, depth + 1)
+
+        for pattern, branch in match.patterns:
+
+            if isinstance(pattern, ExpressionPattern):
+                val = self.visit(pattern.expr, depth + 1)
+
+                if kequal(val, target):
+                    return self.visit(branch, depth + 1)
+            else:
+                raise NotImplementedError
 
     def conditional(self, cond: Conditional, depth=0) -> Any:
         raise NotImplementedError

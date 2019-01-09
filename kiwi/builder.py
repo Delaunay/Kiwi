@@ -93,6 +93,19 @@ class BlockBuilder(AstBuilder):
 class MatchBuilder(AstBuilder):
     def __init__(self, context, parent):
         super().__init__(context)
+        self.match = Match(None, [], None)
+
+    def target(self, expr):
+        self.match.target = expr
+
+    def add_expr_branch(self, expr, branch):
+        self.match.patterns.append((ExpressionPattern(expr), branch))
+
+    def add_branch(self, pattern, branch):
+        self.match.patterns.append((pattern, branch))
+
+    def make(self):
+        return self.match
 
 
 class ArrowBuilder(AstBuilder):
