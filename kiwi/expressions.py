@@ -209,8 +209,6 @@ class Match(Expression, TreeBranch):
         return visitor.match(self, depth)
 
 
-
-
 @dataclass
 class Conditional(Expression, TreeBranch):
     def visit(self, visitor: 'Visitor', depth=0):

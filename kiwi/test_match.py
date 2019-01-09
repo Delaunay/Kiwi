@@ -39,16 +39,29 @@ if __name__ == '__main__':
     print('-' * 80)
 
     ftype = match.reference('Float')
-    call = builder.call(builder.reference('select_xy'), [
+
+    call1 = builder.call(builder.reference('select_xy'), [
+        builder.value(0, ftype),
+        builder.value(2, ftype),
+        builder.value(3, ftype)])
+
+    call2 = builder.call(builder.reference('select_xy'), [
         builder.value(1, ftype),
         builder.value(2, ftype),
         builder.value(3, ftype)])
 
-    str_call = to_string(call, ctx)
+    str_call = to_string(call1, ctx)
 
     print('-' * 80)
     print(str_call)
     print('-' * 80)
-    v = keval(call, ctx)
+
+    v1 = keval(call1, ctx)
     print('-' * 80)
-    print(v)
+    v2 = keval(call2, ctx)
+
+    print('-' * 80)
+    print(v1)
+
+    assert v1.value == 2
+    assert v2.value == 3

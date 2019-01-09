@@ -30,7 +30,7 @@ class Interpreter(Visitor):
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference: {}'.format(ref))
         v = self.scope.get_expression(ref, depth + 1)
-        return v
+        return v # self.visit(v, depth + 1)
 
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function: {}'.format(fun.args))
@@ -42,6 +42,7 @@ class Interpreter(Visitor):
             self.visit(expression, depth + 1)
 
     def match(self, match: Match, depth=0) -> Any:
+        trace(depth, 'match')
         target = self.visit(match.target, depth + 1)
 
         for pattern, branch in match.patterns:
@@ -53,9 +54,6 @@ class Interpreter(Visitor):
                     return self.visit(branch, depth + 1)
             else:
                 raise NotImplementedError
-
-    def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplementedError
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))
