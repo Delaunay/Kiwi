@@ -5,6 +5,7 @@ from kiwi.environment import Scope
 from kiwi.debug import trace
 from kiwi.builtin import builtins_implementation
 from kiwi.builtin import type_type
+from kiwi.type.equality import kequiv
 
 debug_mode = True
 trace = functools.partial(trace, mode=debug_mode, name='[type_trace] ')
@@ -25,23 +26,37 @@ class TypeTrace(Visitor):
         return val, val.type
 
     def bind(self, bind: Bind, depth=0) -> Any:
-        return bind.expr
+        return bind.expr, None
 
     def variable(self, var: Variable, depth=0) -> Any:
-        pass
+        return var, var.type
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference: {}'.format(ref))
         v = self.scope.get_expression(ref, depth + 1)
-        #print(ref.name, v)
-        return v
+        return self.visit(v, depth + 1)
 
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function: {}'.format(fun.args))
         # function are not evaluated. The evaluation part happens at the call site
+
+        # Fake Call site
+        self.scope = self.scope.enter_scope('function')
+
+        for arg in fun.args:
+            self.scope.insert_binding(arg.name, arg)
+
+        # Arg types need to be decuced from the body
+        print(fun.body)
+        a, type = self.visit(fun.body, depth + 1)
+        print(a)
+
+        self.scope = self.scope.exit_scope()
+        fun.return_type = type
         return fun
 
     def block(self, block: Block, depth=0) -> Any:
+        trace(depth, 'block')
         for expression in block.expressions:
             self.visit(expression, depth + 1)
 
@@ -80,17 +95,20 @@ class TypeTrace(Visitor):
                 expr, type = self.visit(arg_expr, depth + 1)
 
                 # deduce type from call site
-                arg_var.type = type
+                if arg_var.type is None:
+                    arg_var.type = type
+
 
                 # insert the arg to the function scope
                 self.scope.insert_binding(arg_var.name, expr)
 
+            print('wuuuut')
             # Evaluate function body
             expr, type = self.visit(fun.body, depth + 1)
             fun.return_type = type
 
             self.scope = self.scope.exit_scope()
-            return expr
+            return expr, type
 
         raise RuntimeError('Call `{}` Type is not handled'.format(fun))
 
@@ -120,18 +138,26 @@ class TypeTrace(Visitor):
             if isinstance(fun.type, Arrow):
                 arrow = resolve_arrow(fun.type, call.args, self.scope, depth)
 
-                #for val, var in zip(call.args, fun.type.args):
-                #    print("--", val, var)
+                # fun.type.args will have all the information necessary for inference
+                # call.args can be references in which case we need to add the type of not available
+                for bargs, cargs in zip(fun.type.args, call.args):
+
+                    if isinstance(cargs, VariableRef):
+                        var = self.scope.get_expression(cargs)
+
+                        if var.type is None:
+                            var.type = bargs.type
+                        else:
+                            assert kequiv(var.type, bargs.type)
 
                 # Evaluate every args
                 args = [self.visit(arg_expr, depth + 1) for arg_expr in call.args]
 
                 # Evaluate function body
                 # return impl(args)
-                return None, arrow.return_type
+                return fun, arrow.return_type
 
-            print(fun.type)
-            return None, fun.type
+            return fun, fun.type
 
 
 def type_trace(expr, scope=Scope(), depth=0):

@@ -166,7 +166,7 @@ class LLVMCodeGen(Visitor):
 
     # Those should be resolved at eval
     def bind(self, bind: Bind, depth=0) -> Any:
-        trace(depth, 'bind')
+        trace(depth, 'bind `{}`'.format(bind.name))
         name = self.binding_name
         self.binding_name = bind.name
         expr = self.visit(bind.expr, depth + 1)
@@ -198,7 +198,7 @@ class LLVMCodeGen(Visitor):
 
         #self.scope.dump()
 
-        block = ir_fun.append_basic_block(name='fun_block')
+        block = ir_fun.append_basic_block(name='{}_block'.format(name))
         old = self.builder
         old_p = self.parent
         self.parent = ir_fun
@@ -264,5 +264,6 @@ class LLVMCodeGen(Visitor):
         return self.call(call, depth + 1)
 
 
-def llvm_codegen(expr):
-    pass
+def llvm_codegen(module, scope, expr):
+    generator = LLVMCodeGen(module, scope)
+    return generator.visit(expr)

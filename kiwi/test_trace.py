@@ -38,13 +38,14 @@ if __name__ == '__main__':
     two = builder.call(add_fun, [builder.value(1, float_type), builder.value(2, float_type)])
     # Done
 
-    ctx.dump()
+    # ctx.dump()
 
     print('-' * 80)
     no_types = to_string(fun, ctx)
 
     print('-' * 80)
-    result = type_trace(two, ctx)
+    #result = type_trace(two, ctx)
+    result = type_trace(fun, ctx)
 
     print('-' * 80)
     fun_str = to_string(fun, ctx)

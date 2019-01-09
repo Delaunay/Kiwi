@@ -14,7 +14,7 @@ class ToStringV(Visitor):
         super(ToStringV).__init__()
         # enter a new scope to not affect the original scope
         self.env_stack: Scope = ctx.enter_scope(name='visitor_scope')
-        self.bind_name = None
+        self.bind_name = []
 
     @staticmethod
     def run(expr: Expression, ctx=Scope()):
@@ -26,10 +26,10 @@ class ToStringV(Visitor):
 
     def variable(self, var: Variable, depth=0) -> Any:
         trace(depth, 'variable {}'.format(var))
-        return '{}: {}'.format(str(var.name), self.visit(var.type), depth + 1)
+        return '{}: {}'.format(str(var.name), self.visit(var.type, depth + 1))
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
-        trace(depth, 'Reference {}'.format(ref))
+        trace(depth, 'reference {}'.format(ref))
         return ref.name
         # """
         # refs = self.visit(ref.reference, depth + 1)
@@ -49,10 +49,10 @@ class ToStringV(Visitor):
     def function(self, fun: Function, depth=0) -> Any:
         trace(depth, 'function {}'.format(''))
 
-        if self.bind_name is None:
+        if len(self.bind_name) == 0:
             return self.function_lambda(fun, depth)
 
-        return self.function_bind(self.bind_name, fun, depth)
+        return self.function_bind(self.bind_name[-1], fun, depth)
 
     def function_lambda(self, fun: Function, depth=0) -> Any:
         self.env_stack = self.env_stack.enter_scope(name='function_scope')
@@ -101,9 +101,10 @@ class ToStringV(Visitor):
         raise NotImplementedError
 
     def bind(self, bind: Bind, depth=0) -> Any:
-        self.bind_name = bind.name
+        # FIXME nested bind
+        self.bind_name.append(bind.name)
         v = self.visit(bind.expr, depth + 1)
-        self.bind_name = None
+        self.bind_name.pop()
         return v
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
