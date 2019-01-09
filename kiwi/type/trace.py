@@ -17,18 +17,28 @@ class TypeTrace(Visitor):
     """
     _builtins = builtins_implementation()
 
-    def __init__(self, scope=Scope()):
+    def __init__(self, scope=Scope(), type_hint=None):
         super().__init__()
         self.scope = scope
+        self.type_hint = type_hint
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value: {}'.format(val))
         return val, val.type
 
     def bind(self, bind: Bind, depth=0) -> Any:
-        return bind.expr, None
+        expr, type = self.visit(bind.expr, depth + 1)
+        return bind, type
 
     def variable(self, var: Variable, depth=0) -> Any:
+        trace(depth, 'variable: {}'.format(var.name))
+
+        if var.type is None:
+            var.type = self.type_hint
+
+        elif self.type_hint is not None:
+            kequiv(var.type, self.type_hint)
+
         return var, var.type
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
@@ -46,17 +56,16 @@ class TypeTrace(Visitor):
         for arg in fun.args:
             self.scope.insert_binding(arg.name, arg)
 
-        # Arg types need to be decuced from the body
-        print(fun.body)
-        a, type = self.visit(fun.body, depth + 1)
-        print(a)
+        # Arg types need to be deduced from the body
+        _, type = self.visit(fun.body, depth + 1)
 
         self.scope = self.scope.exit_scope()
         fun.return_type = type
-        return fun
+        return fun, fun.type
 
     def block(self, block: Block, depth=0) -> Any:
         trace(depth, 'block')
+
         for expression in block.expressions:
             self.visit(expression, depth + 1)
 
@@ -68,12 +77,14 @@ class TypeTrace(Visitor):
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))
+
         # builtin are not evaluated. The evaluation part happens at the call site
-        return builtin
+        return builtin, builtin.type
 
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call {}'.format(call))
-        fun = self.visit(call.function, depth + 1)
+
+        fun, fun_type = self.visit(call.function, depth + 1)
 
         # Builtin Call
         if isinstance(fun, Builtin):
@@ -81,6 +92,7 @@ class TypeTrace(Visitor):
 
         # User defined Function
         if isinstance(fun, Function):
+
             if len(call.args) != len(fun.args):
                 raise RuntimeError('Number of argument mismatch {}: {} != {} : {}'.format(
                     fun,
@@ -92,20 +104,22 @@ class TypeTrace(Visitor):
             self.scope = self.scope.enter_scope(name='call_scope')
 
             for arg_expr, arg_var in zip(call.args, fun.args):
+
+                self.type_hint = arg_var.type
+
                 expr, type = self.visit(arg_expr, depth + 1)
 
                 # deduce type from call site
                 if arg_var.type is None:
                     arg_var.type = type
 
-
                 # insert the arg to the function scope
                 self.scope.insert_binding(arg_var.name, expr)
 
-            print('wuuuut')
+            # Skip body eval since it was done when the function call was resolved during the fake call
             # Evaluate function body
-            expr, type = self.visit(fun.body, depth + 1)
-            fun.return_type = type
+            # expr, type = self.visit(fun.body, depth + 1)
+            fun.return_type = fun_type.return_type
 
             self.scope = self.scope.exit_scope()
             return expr, type
@@ -138,34 +152,19 @@ class TypeTrace(Visitor):
             if isinstance(fun.type, Arrow):
                 arrow = resolve_arrow(fun.type, call.args, self.scope, depth)
 
-                # fun.type.args will have all the information necessary for inference
-                # call.args can be references in which case we need to add the type of not available
-                for bargs, cargs in zip(fun.type.args, call.args):
-
-                    if isinstance(cargs, VariableRef):
-                        var = self.scope.get_expression(cargs)
-
-                        if var.type is None:
-                            var.type = bargs.type
-                        else:
-                            assert kequiv(var.type, bargs.type)
-
-                # Evaluate every args
-                args = [self.visit(arg_expr, depth + 1) for arg_expr in call.args]
-
                 # Evaluate function body
-                # return impl(args)
                 return fun, arrow.return_type
 
             return fun, fun.type
 
 
-def type_trace(expr, scope=Scope(), depth=0):
-    tracer = TypeTrace(scope)
+def type_trace(expr, scope=Scope(), depth=0, hint=None):
+    tracer = TypeTrace(scope, hint)
     return tracer.visit(expr, depth)
 
 
 def resolve_arrow(arrow, args, scope=Scope(), depth=0):
+
     from kiwi.operations.replace import kreplace
 
     # builder.builtin('return', Arrow([make_var('T', 'Type')], Arrow([make_var('r', 'T')], ref('T'))))
@@ -179,11 +178,16 @@ def resolve_arrow(arrow, args, scope=Scope(), depth=0):
             meta_args[meta_arg.name] = meta_arg.type
 
         for targ, varg in zip(arrow.args, args):
-            expr, type = type_trace(varg, scope, depth)
+            expr, type = type_trace(varg, scope, depth + 1, hint=targ.type)
             meta_args[targ.type.name] = type
 
             # /!\ Awful complexity
             arrow = kreplace(targ.type, type, arrow)
+    else:
+        for targ, varg in zip(arrow.args, args):
+            expr, type = type_trace(varg, scope, depth + 1, hint=targ.type)
+
+            assert kequiv(type, targ.type)
 
     return arrow
 

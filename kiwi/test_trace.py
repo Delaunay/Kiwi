@@ -44,11 +44,12 @@ if __name__ == '__main__':
     no_types = to_string(fun, ctx)
 
     print('-' * 80)
-    #result = type_trace(two, ctx)
-    result = type_trace(fun, ctx)
+    result = type_trace(two, ctx)
+    #result = type_trace(fun, ctx)
 
     print('-' * 80)
     fun_str = to_string(fun, ctx)
     print('-' * 80)
     print('   User Input: ', no_types)
     print('Deduced Types: ', fun_str)
+    print('       Result: ', result[1])

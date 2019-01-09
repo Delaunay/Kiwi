@@ -178,10 +178,37 @@ class Block(Expression, TreeBranch):
         return visitor.block(self, depth)
 
 
+class Pattern:
+    pass
+
+
+@dataclass
+class ExpressionPattern(Pattern):
+    """
+        Match expression using the == operator
+    """
+    expr: Expression
+
+
+@dataclass
+class ConstructorPattern(Pattern):
+    """
+        Match tagged Union
+    """
+    name: str
+    args: List[str]
+
+
 @dataclass
 class Match(Expression, TreeBranch):
+    target: Expression
+    patterns: [(Pattern, Expression)]
+    default: Expression = None
+
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.match(self, depth)
+
+
 
 
 @dataclass
