@@ -1,18 +1,23 @@
 from kiwi.interpreter import keval
 from kiwi.type.trace import *
+from kiwi.print import to_string
+from kiwi.builder import AstBuilder
+from kiwi.builtin import make_scope
 
 
-if __name__ == '__main__':
-    import sys
-    sys.stderr = sys.stdout
+def is_error(should_work, error):
+    if should_work:
+        raise error
+    else:
+        pass
 
-    from kiwi.print import to_string
-    from kiwi.builder import AstBuilder
-    from kiwi.builtin import make_scope
 
-    ctx = make_scope()
-    builder = AstBuilder(ctx)
-    float_type = builder.reference('Float')
+def return_val(builder, expr):
+    return builder.unary_operator(builder.reference('return'), expr)
+
+
+def make_branching_call(builder: AstBuilder):
+    ftype = builder.reference('Float')
 
     # Make the Add Function
     fun = builder.function()
@@ -24,44 +29,65 @@ if __name__ == '__main__':
 
     match = fun.match()
     match.target(match.reference('pred'))
-    match.add_expr_branch(match.value(0, match.reference('Float')), return_val(match, match.reference('x')))
-    match.add_expr_branch(match.value(1, match.reference('Float')), return_val(match, match.reference('y')))
+    match.add_expr_branch(match.value(0, ftype), return_val(match, match.reference('x')))
+    match.add_expr_branch(match.value(1, ftype), return_val(match, match.reference('y')))
 
     fun.body(match.make())
     fun = fun.make()
 
     fun = builder.bind('branch_xy', fun)
+    return fun
 
-    str_match = to_string(fun, ctx)
 
-    print('-' * 80)
-    print(str_match)
-    print('-' * 80)
+def test_branching(builder: AstBuilder, ctx):
+    ftype = builder.reference('Float')
+    cases = [
+        (1, 2, 3, True, 3),
+        (0, 2, 3, True, 2),
+        (1, 5, 6, True, 6),
+        (0, 5, 6, True, 5),
+        (2, 2, 3, False, None),
+    ]
 
-    ftype = match.reference('Float')
+    for (a1, a2, a3, should_work, result) in cases:
+        try:
+            call = builder.call(builder.reference('branch_xy'), [
+                builder.value(a1, ftype),
+                builder.value(a2, ftype),
+                builder.value(a3, ftype)])
 
-    call1 = builder.call(builder.reference('branch_xy'), [
-        builder.value(0, ftype),
-        builder.value(2, ftype),
-        builder.value(3, ftype)])
+            str_call = to_string(call, ctx)
+            print()
+            v = keval(call, ctx)
+            print()
+            v_str = to_string(v)
+            print()
 
-    call2 = builder.call(builder.reference('branch_xy'), [
-        builder.value(1, ftype),
-        builder.value(2, ftype),
-        builder.value(3, ftype)])
+            print(' IN > {}'.format(str_call))
+            print('OUT > {}'.format(v_str))
+            print('-' * 80)
 
-    str_call = to_string(call1, ctx)
+            assert v.value == result
 
-    print('-' * 80)
-    print(str_call)
-    print('-' * 80)
+            if not should_work:
+                print('error')
 
-    v1 = keval(call1, ctx)
-    print('-' * 80)
-    v2 = keval(call2, ctx)
+        except Exception as e:
+            is_error(should_work, e)
 
-    print('-' * 80)
-    print(v1)
 
-    assert v1.value == 2
-    assert v2.value == 3
+def main():
+    import sys
+    sys.stderr = sys.stdout
+
+    ctx = make_scope()
+    builder = AstBuilder(ctx)
+    float_type = builder.reference('Float')
+
+    make_branching_call(builder)
+
+    test_branching(builder, ctx)
+
+
+if __name__ == '__main__':
+    main()

@@ -5,7 +5,7 @@ from kiwi.environment import Scope
 from kiwi.builder import AstBuilder
 from kiwi.debug import trace
 
-debug_mode = True
+debug_mode = False
 trace = functools.partial(trace, mode=debug_mode, name='[to_string] ')
 
 
@@ -181,95 +181,5 @@ def to_string(expr, ctx=Scope()):
 
 def print_expr(expr, ctx=Scope()):
     print(ToStringV.run(expr, ctx))
-
-
-def print_test():
-    import sys
-    sys.stderr = sys.stdout
-
-    from kiwi.builder import AstBuilder
-    from kiwi.builtin import make_scope
-
-    ctx = make_scope()
-    builder = AstBuilder(ctx)
-    float_type = builder.reference('Float')
-
-    # Make the Add Function
-    fun = builder.function()
-    fun.args([('x', float_type), ('y', float_type)])
-    fun.return_type = float_type
-
-    body = fun.unary_operator(
-        fun.reference('return'),
-        fun.binary_operator(
-            fun.reference('-'),
-            fun.reference('x'),
-            fun.reference('y')
-        )
-    )
-
-    fun.body(body)
-
-    fun = fun.make()
-    builder.bind('add', fun)
-    # Done
-
-    # Make a Call to `add`
-    add_fun = builder.reference('add')
-    two = builder.call(add_fun, [builder.value(1, float_type), builder.value(2, float_type)])
-    # Done
-
-    print('----')
-    ctx.dump()
-    print('----')
-
-    #print(ctx)
-    print('----')
-    print(fun)
-    print('----')
-    print_expr(fun, ctx)
-    print('----')
-    #print_expr(two, ctx)
-    print('----')
-
-
-"""
-    type_type = ctx.insert_binding('Type', Builtin('Type', None))
-    ctx.insert_binding('Float', Builtin('Float', type_type))
-
-    return_op = ctx.insert_binding('return', Builtin('return', Arrow([type_type], type_type)))
-
-    add_type = Arrow([float_type, float_type], float_type)
-    add_fun = ctx.insert_binding('+', Builtin('+', add_type))
-
-    fun = Function(
-        [Variable('x', float_type), Variable('y', float_type)], float_type,
-        UnaryOperator(
-            return_op,
-            BinaryOperator(
-                add_fun,
-                # Todo remove hardcoded ref
-                VariableRef(5),
-                VariableRef(6)
-            )
-        ), is_lambda=True
-    )
-
-    a = ctx.insert_binding('add2', fun)
-    print(a)
-    #val = Value('abc', Builtin('String', ctx.reference('Type')))
-
-    #print(val)
-    #print_expr(val)
-    print_expr(add_type)
-
-    print(fun)
-    print_expr(fun)
-    """
-
-
-if __name__ == '__main__':
-    print_test()
-
 
 

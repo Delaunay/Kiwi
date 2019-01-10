@@ -27,7 +27,7 @@ def function_test_add_def(builder: AstBuilder):
     return fun
 
 
-def test():
+def main():
     import sys
     sys.stderr = sys.stdout
     from kiwi.print import to_string
@@ -45,4 +45,4 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    main()

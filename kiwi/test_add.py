@@ -37,7 +37,7 @@ def function_test_add_call(builder: AstBuilder, a: int, b: int) -> Call:
     return builder.call(add_fun, [builder.value(a, float_type), builder.value(b, float_type)])
 
 
-def function_test_add(builder):
+def function_test_add(builder, ctx):
     function_test_add_def(builder)
 
     for i in range(0, 10):
@@ -52,11 +52,15 @@ def function_test_add(builder):
 # -----------------------------------------------
 
 
-if __name__ == '__main__':
+def main():
     import sys
     sys.stderr = sys.stdout
 
     ctx = make_scope()
     builder = AstBuilder(ctx)
 
-    function_test_add(builder)
+    function_test_add(builder, ctx)
+
+
+if __name__ == '__main__':
+    main()

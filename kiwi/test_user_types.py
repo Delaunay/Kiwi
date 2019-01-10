@@ -4,8 +4,16 @@ from kiwi.builtin import make_scope
 from kiwi.interpreter import keval
 from kiwi.type.trace import type_trace
 
+from kiwi.print import to_string
 
-def make_var(name, type_name) -> Expression:
+ctx = make_scope()
+builder = AstBuilder(ctx)
+
+ftype = builder.reference('Float')
+itype = builder.reference('Int')
+
+
+def make_var(builder, name, type_name) -> Expression:
     variable_fun = builder.reference('variable')
     symbol_type = builder.reference('Symbol')
 
@@ -17,12 +25,16 @@ def make_var(name, type_name) -> Expression:
 
 def union_test_make(builder: AstBuilder):
     union_fun = builder.reference('union')
-    return builder.call(union_fun, [make_var('float', 'Float'), make_var('int', 'Int')])
+    return builder.call(union_fun, [
+        make_var(builder, 'float', 'Float'),
+        make_var(builder, 'int', 'Int')])
 
 
 def struct_test_make(builder: AstBuilder):
     struct_fun = builder.reference('struct')
-    return builder.call(struct_fun, [make_var('float', 'Float'), make_var('int', 'Int')])
+    return builder.call(struct_fun, [
+        make_var(builder, 'float', 'Float'),
+        make_var(builder, 'int', 'Int')])
 
 
 def make_struct_constructor(builder: AstBuilder):
@@ -56,7 +68,7 @@ def is_error(should_work, error):
         pass
 
 
-def show_result(expr):
+def show_result(expr, ctx):
     type_trace(expr, ctx)
     print()
     val = keval(expr, ctx)
@@ -84,7 +96,7 @@ def test_union(builder: AstBuilder):
                 [builder.named_arg(name, builder.value(3, type))]
             )
 
-            show_result(union_obj)
+            show_result(union_obj, ctx)
 
         except Exception as e:
             is_error(should_work, e)
@@ -105,22 +117,15 @@ def test_struct(builder: AstBuilder):
                 [builder.value(2, t1), builder.value(3, t2)]
             )
 
-            show_result(struct_obj)
+            show_result(struct_obj, ctx)
 
         except Exception as e:
             is_error(should_work, e)
 
 
-if __name__ == '__main__':
+def main():
     import sys
     sys.stderr = sys.stdout
-    from kiwi.print import to_string
-
-    ctx = make_scope()
-    builder = AstBuilder(ctx)
-
-    ftype = builder.reference('Float')
-    itype = builder.reference('Int')
 
     uctor = make_union_constructor(builder)
     print()
@@ -137,3 +142,7 @@ if __name__ == '__main__':
 
     test_struct(builder)
     test_union(builder)
+
+
+if __name__ == '__main__':
+    main()

@@ -288,10 +288,10 @@ class Arrow(GenericType, TreeBranch):
     @property
     def compile_time(self):
         from kiwi.builtin import type_type
-        from kiwi.type.equality import kequiv
+        from kiwi.operations.equality import kequal
 
         for arg in self.args:
-            if not kequiv(arg.type, type_type):
+            if not kequal(arg.type, type_type):
                 return False
         return True
 

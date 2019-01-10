@@ -1,7 +1,7 @@
 from kiwi.type.trace import *
 
 
-if __name__ == '__main__':
+def main():
     import sys
     sys.stderr = sys.stdout
 
@@ -53,3 +53,7 @@ if __name__ == '__main__':
     print('   User Input: ', no_types)
     print('Deduced Types: ', fun_str)
     print('       Result: ', result[1])
+
+
+if __name__ == '__main__':
+    main()

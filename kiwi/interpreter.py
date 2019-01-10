@@ -10,6 +10,11 @@ debug_mode = True
 trace = functools.partial(trace, mode=debug_mode, name='[interpreter] ')
 
 
+def trace_raise(depth, error):
+    trace(depth, '/!\\ {}'.format(error))
+    raise RuntimeError(error)
+
+
 class Interpreter(Visitor):
     _builtins = builtins_implementation()
 
@@ -22,7 +27,10 @@ class Interpreter(Visitor):
         return val
 
     def bind(self, bind: Bind, depth=0) -> Any:
-        return bind.expr
+        expr = self.visit(bind.expr, depth + 1)
+        self.scope.insert_binding(bind.name, expr)
+        var = VariableRef(len(self.scope), -1, bind.name, expr)
+        return var
 
     def variable(self, var: Variable, depth=0) -> Any:
         pass
@@ -53,7 +61,9 @@ class Interpreter(Visitor):
                 if kequal(val, target):
                     return self.visit(branch, depth + 1)
             else:
-                raise NotImplementedError
+                trace_raise(depth, 'NotImplementedError')
+
+        trace_raise(depth, 'Error No Matching Branch')
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))
@@ -74,7 +84,7 @@ class Interpreter(Visitor):
         # User defined Function
         if isinstance(fun, Function):
             if len(call.args) != len(fun.args):
-                raise RuntimeError('Number of argument mismatch {}: {} != {} : {}'.format(
+                trace_raise('Number of argument mismatch {}: {} != {} : {}'.format(
                     fun,
                     len(call.args),
                     len(fun.args),
@@ -107,7 +117,7 @@ class Interpreter(Visitor):
             value = self.visit(call.args[0], depth + 1)
             return UnionValue(name=call.args[0].name, value=value, type=call.function)
 
-        raise RuntimeError('Call `{}` Type is not handled'.format(fun))
+        trace_raise('Call `{}` Type is not handled'.format(fun))
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         return self.call(call, depth)
@@ -130,7 +140,7 @@ class Interpreter(Visitor):
             nargs, impl = self._builtins[fun.name]
 
             if nargs is not None and len(call.args) != nargs:
-                raise RuntimeError('Number of argument mismatch')
+                trace_raise('Number of argument mismatch')
 
             # Evaluate every args
             args = [self.visit(arg_expr, depth + 1) for arg_expr in call.args]
@@ -142,54 +152,3 @@ class Interpreter(Visitor):
 def keval(expr, scope=Scope()):
     interpreter = Interpreter(scope)
     return interpreter.visit(expr)
-
-
-if __name__ == '__main__':
-    import sys
-    sys.stderr = sys.stdout
-
-    from kiwi.print import to_string
-    from kiwi.builder import AstBuilder
-    from kiwi.builtin import make_scope
-
-    ctx = make_scope()
-    builder = AstBuilder(ctx)
-    float_type = builder.reference('Float')
-
-    # Make the Add Function
-    fun = builder.function()
-    fun.args([('x', float_type), ('y', float_type)])
-    fun.return_type = float_type
-
-    body = fun.unary_operator(
-        fun.reference('return'),
-        fun.binary_operator(
-            fun.reference('+'),
-            fun.reference('x'),
-            fun.reference('y')
-        )
-    )
-
-    fun.body(body)
-
-    fun = fun.make()
-    builder.bind('add', fun)
-    # Done
-
-    # Make a Call to `add`
-    add_fun = builder.reference('add')
-    two = builder.call(add_fun, [builder.value(1, float_type), builder.value(2, float_type)])
-    # Done
-
-    ctx.dump()
-
-    print('-' * 80)
-    fun_str = to_string(two, ctx)
-    print('-' * 80)
-    result = keval(two, ctx)
-    print('-' * 80)
-    pretty_result = to_string(result, ctx)
-    print('-' * 80)
-    print(fun_str, '==', pretty_result)
-    print('-' * 80)
-

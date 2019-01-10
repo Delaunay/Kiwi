@@ -3,15 +3,14 @@ from kiwi.type.trace import type_trace
 from llvmlite import ir
 
 
-if __name__ == '__main__':
+def main():
     import sys
     sys.stderr = sys.stdout
 
     from kiwi.print import to_string
     from kiwi.builder import AstBuilder
     from kiwi.builtin import make_scope
-    from kiwi.type.deduce import type_deduce
-    from kiwi.test_user_types import function_test_add_def
+    from kiwi.test_add import function_test_add_def
 
     ctx = make_scope()
     builder = AstBuilder(ctx)
@@ -40,9 +39,6 @@ if __name__ == '__main__':
     print('Fun Type: {}'.format(ftype))
     print('-' * 80)
 
-    #v = LLVMCodeGen(ir.Module(name='test'), scope=ctx)
-    #r = v.visit(bind)
-
     module = ir.Module(name='test')
     r = llvm_codegen(module, ctx, bind)
 
@@ -51,3 +47,7 @@ if __name__ == '__main__':
     print('-' * 80)
     print(module)
     print('-' * 80)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,5 @@
 from kiwi.expressions import *
-from kiwi.type.equality import kequiv
+from kiwi.operations.equality import kequal
 
 
 class Replace(Visitor):
@@ -12,7 +12,7 @@ class Replace(Visitor):
         self.replace_expr = replace
 
     def replace(self, expr):
-        if kequiv(expr, self.target):
+        if kequal(expr, self.target):
             return self.replace_expr
         return expr
 
@@ -21,53 +21,48 @@ class Replace(Visitor):
             return expr.visit(self, depth)
 
     def value(self, val: Value, depth=0) -> Any:
-        if kequiv(val, self.target):
+        if kequal(val, self.target):
             return self.replace_expr
         return val
 
     def bind(self, bind: Bind, depth=0) -> Any:
-        if kequiv(bind, self.target):
+        if kequal(bind, self.target):
             return self.replace_expr
         return bind
 
     def variable(self, var: Variable, depth=0) -> Any:
-        if kequiv(var, self.target):
+        if kequal(var, self.target):
             return self.replace_expr
 
         return Variable(var.name, self.visit(var.type, depth + 1))
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
-        if kequiv(ref, self.target):
+        if kequal(ref, self.target):
             return self.replace_expr
         return ref
 
     def function(self, fun: Function, depth=0) -> Any:
-        if kequiv(fun, self.target):
+        if kequal(fun, self.target):
             return self.replace_expr
         return fun
     
     def block(self, block: Block, depth=0) -> Any:
-        if kequiv(block, self.target):
+        if kequal(block, self.target):
             return self.replace_expr
         return block
 
     def match(self, match: Match, depth=0) -> Any:
-        if kequiv(match, self.target):
+        if kequal(match, self.target):
             return self.replace_expr
         return match
 
-    def conditional(self, cond: Conditional, depth=0) -> Any:
-        if kequiv(cond, self.target):
-            return self.replace_expr
-        return cond
-
     def builtin(self, builtin: Builtin, depth=0) -> Any:
-        if kequiv(builtin, self.target):
+        if kequal(builtin, self.target):
             return self.replace_expr
         return builtin
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
-        if kequiv(arrow, self.target):
+        if kequal(arrow, self.target):
             return self.replace_expr
 
         return Arrow(
@@ -76,7 +71,7 @@ class Replace(Visitor):
         )
 
     def call(self, call: Call, depth=0) -> Any:
-        if kequiv(call, self.target):
+        if kequal(call, self.target):
             return self.replace_expr
 
         return Call(
@@ -85,7 +80,7 @@ class Replace(Visitor):
         )
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
-        if kequiv(call, self.target):
+        if kequal(call, self.target):
             return self.replace_expr
 
         return BinaryOperator(
@@ -95,7 +90,7 @@ class Replace(Visitor):
         )
 
     def unary_operator(self, call: UnaryOperator, depth=0) -> Any:
-        if kequiv(call, self.target):
+        if kequal(call, self.target):
             return self.replace_expr
 
         return UnaryOperator(
@@ -104,7 +99,7 @@ class Replace(Visitor):
         )
 
     def struct(self, struct: Struct, depth=0) -> Any:
-        if kequiv(struct, self.target):
+        if kequal(struct, self.target):
             return self.replace_expr
         new_members = [] * len(struct.members)
 
@@ -114,7 +109,7 @@ class Replace(Visitor):
         return Struct(new_members)
 
     def union(self, union: Union, depth=0) -> Any:
-        if kequiv(union, self.target):
+        if kequal(union, self.target):
             return self.replace_expr
 
         new_members = [] * len(union.members)

@@ -85,9 +85,6 @@ class TypeDeduce(Visitor):
     def match(self, match: Match, depth=0) -> Any:
         raise NotImplementedError
 
-    def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplementedError
-
     def call(self, call: Call, depth=0) -> Any:
         fun_type = self.type_deduce(call.function, depth + 1)
         # Function Type should be something like Arrow([], return_type)

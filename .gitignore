@@ -35,3 +35,6 @@ Makefile*
 dependencies/SDL/
 dependencies/SDL_ttf/
 .idea/
+
+htmlcov/
+.coverage

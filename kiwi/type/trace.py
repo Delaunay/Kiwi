@@ -37,7 +37,7 @@ class TypeTrace(Visitor):
             var.type = self.type_hint
 
         elif self.type_hint is not None:
-            assert ktype_equiv(var.type, self.type_hint)
+            assert ktype_equiv(var.type, self.type_hint, self.scope)
 
         return var, var.type
 
@@ -214,7 +214,7 @@ def resolve_arrow(arrow, args, scope=Scope(), depth=0):
         for targ, varg in zip(arrow.args, args):
             expr, type = type_trace(varg, scope, depth + 1, hint=targ.type)
 
-            assert ktype_equiv(type, targ.type)
+            assert ktype_equiv(type, targ.type, scope)
 
     return arrow
 

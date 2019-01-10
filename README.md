@@ -14,6 +14,12 @@ The Core of Kiwi is a functional programing language.
 * `struct(args ...)`     : Create type that can hold multiple values at the same time
 
 
+## Coverage
+
+
+    913  coverage run kiwi/test_all.py
+    914  coverage html
+
 
 ## Compilation Steps
 
