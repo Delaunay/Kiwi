@@ -6,11 +6,18 @@ from kiwi.environment import Scope
 from kiwi.debug import trace
 
 from llvmlite import ir
+from llvmlite import binding
+
 
 debug_mode = True
 trace = partial(trace, mode=debug_mode, name='[llvm_codegen] ')
 
 n = None
+
+
+def trace_raise(depth, error):
+    trace(depth, '/!\\ {}'.format(error))
+    raise RuntimeError(error)
 
 
 @dataclass
@@ -70,7 +77,7 @@ builtins = {
     '/': (2, ir_div_int),
     '-': (2, ir_sub_int),
     'return': (1, ir_return_fun),
-    'Int': (1, ir_make_int),
+    'Int': (0, ir.IntType(32)),
     'variable': (2, ir_make_variable),
     'lambda': (n, ir_make_lambda),
     'struct': (n, ir_make_struct),
@@ -82,6 +89,13 @@ builtins = {
 class LLVMCodeGen(Visitor):
     def __init__(self, module: ir.Module, scope=Scope(), builder=ir):
         super().__init__()
+
+        # binding.initialize_all_targets()
+        # default_target = binding.get_default_triple()
+        # target = binding.Target.from_triple('x86_64-pc-linux-gnu')
+        # binding.Target.from_triple('nvptx64-nvidia-cuda')
+        # nvptx64-nvidia-cuda
+
         self.module = module
         self.builder = builder
         self.scope = scope
@@ -132,14 +146,23 @@ class LLVMCodeGen(Visitor):
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
-        return self.builder.Constant(constant=val.value, typ=self.visit(val.type, depth + 1))
+        return ir.Constant(constant=val.value, typ=self.visit(val.type, depth + 1, mode='type'))
 
     def struct(self, struct: Struct, depth=0) -> Any:
-        return self.builder.LiteralStructType(elems=[self.visit(m, depth + 1) for m in struct.members])
+        members = [self.visit(m.type, depth + 1, mode='type') for m in struct.members]
+        return ir.LiteralStructType(elems=members)
 
     def union(self, union: Union, depth=0) -> Any:
-        # FIXME: build n Tagged LiteralStruct
-        return self.builder.LiteralStructType(elems=[self.visit(m, depth + 1) for m in union.members])
+        types = {}
+
+        for i, m in enumerate(union.members):
+            members = [
+                ir.IntType(32),
+                self.visit(m.type, depth + 1, mode='type')
+            ]
+            types[m.name] = (i, ir.LiteralStructType(elems=members))
+
+        return types
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
         trace(depth, 'arrow')
@@ -196,8 +219,6 @@ class LLVMCodeGen(Visitor):
         for arg, larg in zip(fun.args, args):
             self.scope.insert_binding(arg.name, larg)
 
-        #self.scope.dump()
-
         block = ir_fun.append_basic_block(name='{}_block'.format(name))
         old = self.builder
         old_p = self.parent
@@ -247,6 +268,16 @@ class LLVMCodeGen(Visitor):
 
             return impl(self.builder, args)
 
+        # FIXME
+        if isinstance(lcall, ir.LiteralStructType):
+            return lcall(args)
+
+        if isinstance(lcall, dict):
+            oargs = call.args[0]
+            tag, ncall = lcall[oargs.name]
+
+            return ncall([ir.Constant(ir.IntType(32), tag)] + args)
+
         print(call.function, ' => ', lcall)
         print(args)
 
@@ -261,6 +292,6 @@ class LLVMCodeGen(Visitor):
         return self.call(call, depth + 1)
 
 
-def llvm_codegen(module, scope, expr):
-    generator = LLVMCodeGen(module, scope)
+def llvm_codegen(module, scope, expr, builder=ir):
+    generator = LLVMCodeGen(module=module, scope=scope, builder=builder)
     return generator.visit(expr)

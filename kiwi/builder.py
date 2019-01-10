@@ -37,9 +37,6 @@ class AstBuilder:
         self.scope.insert_binding(name, expr)
         return Bind(name, expr)
 
-    #def conditional(self, cond: Conditional) -> Conditional:
-    #    raise NotImplemented
-
     def builtin(self, name: str, etype: Expression) -> Builtin:
         b = Builtin(name, etype)
         self.scope.insert_binding(name, b)

@@ -3,8 +3,10 @@ from kiwi.builder import AstBuilder
 from kiwi.builtin import make_scope
 from kiwi.interpreter import keval
 from kiwi.type.trace import type_trace
+from kiwi.codegen.ir import llvm_codegen
 
 from kiwi.print import to_string
+from llvmlite import ir
 
 ctx = make_scope()
 builder = AstBuilder(ctx)
@@ -96,7 +98,23 @@ def test_union(builder: AstBuilder):
                 [builder.named_arg(name, builder.value(3, type))]
             )
 
+            type_trace(union_obj, ctx)
             show_result(union_obj, ctx)
+
+            bind = builder.bind('val', union_obj)
+
+            module = ir.Module(name='test')
+
+            # -- dummy main function
+            fun = ir.Function(module, ftype=ir.FunctionType(ir.VoidType(), []), name='main')
+            block = fun.append_basic_block('main_block')
+            irbuilder = ir.IRBuilder(block)
+            # ----
+
+            llvm_union = llvm_codegen(module=module, scope=ctx, expr=bind, builder=irbuilder)
+            print()
+            print(llvm_union.expr)
+            print()
 
         except Exception as e:
             is_error(should_work, e)
@@ -112,12 +130,29 @@ def test_struct(builder: AstBuilder):
 
     for (t1, t2, should_work) in cases:
         try:
+
             struct_obj = builder.call(
                 builder.reference('FloatAndInt'),
                 [builder.value(2, t1), builder.value(3, t2)]
             )
 
+            type_trace(struct_obj, ctx)
             show_result(struct_obj, ctx)
+
+            bind = builder.bind('val', struct_obj)
+
+            module = ir.Module(name='test')
+
+            # -- dummy main function
+            fun = ir.Function(module, ftype=ir.FunctionType(ir.VoidType(), []), name='main')
+            block = fun.append_basic_block('main_block')
+            irbuilder = ir.IRBuilder(block)
+            # ----
+
+            llvm_struct = llvm_codegen(module=module, scope=ctx, expr=bind, builder=irbuilder)
+            print()
+            print(llvm_struct.expr)
+            print()
 
         except Exception as e:
             is_error(should_work, e)
@@ -134,11 +169,6 @@ def main():
 
     builder.bind('FloatAndInt', sctor)
     builder.bind('FloatOrInt', uctor)
-
-    struct_obj = builder.call(
-        builder.reference('FloatAndInt'),
-        [builder.value(2, ftype), builder.value(3, itype)]
-    )
 
     test_struct(builder)
     test_union(builder)

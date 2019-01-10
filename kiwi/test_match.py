@@ -21,7 +21,7 @@ def make_branching_call(builder: AstBuilder):
 
     # Make the Add Function
     fun = builder.function()
-    fun.args([('pred', None), ('x', None), ('y', None)])
+    fun.args([('pred', ftype), ('x', None), ('y', None)])
     fun.return_type = None
 
     def return_val(builder, expr):
@@ -56,6 +56,7 @@ def test_branching(builder: AstBuilder, ctx):
                 builder.value(a2, ftype),
                 builder.value(a3, ftype)])
 
+            type_trace(call, ctx)
             str_call = to_string(call, ctx)
             print()
             v = keval(call, ctx)

@@ -63,7 +63,10 @@ class Interpreter(Visitor):
             else:
                 trace_raise(depth, 'NotImplementedError')
 
-        trace_raise(depth, 'Error No Matching Branch')
+        if match.default is None:
+            trace_raise(depth, 'Error No Matching Branch')
+
+        return self.visit(match.default, depth + 1)
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))

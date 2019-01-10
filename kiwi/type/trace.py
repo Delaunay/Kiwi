@@ -6,9 +6,21 @@ from kiwi.debug import trace
 from kiwi.builtin import builtins_implementation
 from kiwi.builtin import type_type
 from kiwi.type.equality import ktype_equiv
+from kiwi.print import to_string
 
 debug_mode = True
 trace = functools.partial(trace, mode=debug_mode, name='[type_trace] ')
+
+
+def trace_raise(depth, val):
+    trace(depth, val)
+    raise RuntimeError(val)
+
+
+def trace_assert(depth, pred, msg):
+    if not pred:
+        trace(depth, msg)
+        raise RuntimeError(msg)
 
 
 class TypeTrace(Visitor):
@@ -37,7 +49,7 @@ class TypeTrace(Visitor):
             var.type = self.type_hint
 
         elif self.type_hint is not None:
-            assert ktype_equiv(var.type, self.type_hint, self.scope)
+            trace_assert(depth, ktype_equiv(var.type, self.type_hint, self.scope), 'type mismatch')
 
         return var, var.type
 
@@ -70,7 +82,43 @@ class TypeTrace(Visitor):
             self.visit(expression, depth + 1)
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplementedError
+        trace(depth, 'match')
+        target, ttype = self.visit(match.target, depth + 1)
+
+        return_type = None
+        for pattern, branch in match.patterns:
+
+            if isinstance(pattern, ExpressionPattern):
+                self.type_hint = ttype
+                pat, pat_type = self.visit(pattern.expr, depth + 1)
+
+                self.type_hint = None
+
+                trace_assert(
+                    depth,
+                    ktype_equiv(pat_type, ttype, self.scope),
+                    'Pattern must have the same type as the target {} != {}'.format(
+                        to_string(pat_type),
+                        to_string(ttype)
+                    )
+                )
+
+            self.type_hint = return_type
+            rbranch, new_return = self.visit(branch, depth + 1)
+
+            if return_type is not None:
+                trace_assert(depth, ktype_equiv(new_return, return_type, self.scope), 'type mismatch')
+
+            return_type = new_return
+
+        if match.default is not None:
+            self.type_hint = return_type
+
+            dbranch, dtype = self.visit(match.default, depth + 1)
+
+            trace_assert(depth, ktype_equiv(dtype, return_type, self.scope), 'type mismatch')
+
+        return match, return_type
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))
@@ -91,7 +139,7 @@ class TypeTrace(Visitor):
         if isinstance(fun, Function):
 
             if len(call.args) != len(fun.args):
-                raise RuntimeError('Number of argument mismatch {}: {} != {} : {}'.format(
+                trace_raise(depth, 'Number of argument mismatch {}: {} != {} : {}'.format(
                     fun,
                     len(call.args),
                     len(fun.args),
@@ -126,15 +174,16 @@ class TypeTrace(Visitor):
 
             for sargs, cargs in zip(fun.members, call.args):
                 expr, type = self.visit(cargs, depth + 1)
-                assert ktype_equiv(sargs.type, type, self.scope)
+
+                trace_assert(depth, ktype_equiv(sargs.type, type, self.scope), "type mismatch")
 
             return call, fun_type.return_type
 
         if isinstance(fun, Union):
-            assert len(call.args) == 1
+            trace_assert(depth, len(call.args) == 1, 'Union instantiation takes a single argument')
 
             arg = call.args[0]
-            assert isinstance(arg, NamedArgument)
+            trace_assert(depth, isinstance(arg, NamedArgument), 'Union takes a single NamedArgument')
 
             # No need for crazy lookups here the number of members should be low
             union_member = None
@@ -144,14 +193,15 @@ class TypeTrace(Visitor):
                     union_member = sargs
 
             if union_member is None:
-                raise RuntimeError('Union Member `{}` does not exist'.format(arg.name))
+                trace_raise(depth, 'Union Member `{}` does not exist'.format(arg.name))
 
             expr, type = self.visit(arg, depth + 1)
-            assert ktype_equiv(type, union_member.type, self.scope)
+
+            trace_assert(depth, ktype_equiv(type, union_member.type, self.scope), 'Type mismatch')
 
             return call, fun_type.return_type
 
-        raise RuntimeError('Call `{}` Type is not handled'.format(fun))
+        trace_raise(depth, 'Call `{}` Type is not handled'.format(fun))
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:
         return self.call(call, depth)
@@ -173,7 +223,7 @@ class TypeTrace(Visitor):
             nargs, impl = self._builtins[fun.name]
 
             if nargs is not None and len(call.args) != nargs:
-                raise RuntimeError('Number of argument mismatch')
+                trace_raise(depth, 'Number of argument mismatch')
 
             # Builtin function call
             if isinstance(fun.type, Arrow):
