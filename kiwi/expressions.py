@@ -242,6 +242,10 @@ class Union(Expression, TreeBranch):
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.union(self, depth)
 
+    @property
+    def type(self):
+        return Arrow(self.members, self)
+
 
 @dataclass
 class Struct(Expression, TreeBranch):
@@ -253,6 +257,10 @@ class Struct(Expression, TreeBranch):
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.struct(self, depth)
+
+    @property
+    def type(self):
+        return Arrow(self.members, self)
 
 
 # Types

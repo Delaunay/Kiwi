@@ -5,7 +5,7 @@ from kiwi.environment import Scope
 from kiwi.debug import trace
 from kiwi.builtin import builtins_implementation
 from kiwi.builtin import type_type
-from kiwi.type.equality import kequiv
+from kiwi.type.equality import ktype_equiv
 
 debug_mode = True
 trace = functools.partial(trace, mode=debug_mode, name='[type_trace] ')
@@ -37,7 +37,7 @@ class TypeTrace(Visitor):
             var.type = self.type_hint
 
         elif self.type_hint is not None:
-            kequiv(var.type, self.type_hint)
+            assert ktype_equiv(var.type, self.type_hint)
 
         return var, var.type
 
@@ -119,7 +119,37 @@ class TypeTrace(Visitor):
             fun.return_type = fun_type.return_type
 
             self.scope = self.scope.exit_scope()
-            return expr, type
+            return call, fun_type.return_type
+
+        # Constructors
+        if isinstance(fun, Struct):
+
+            for sargs, cargs in zip(fun.members, call.args):
+                expr, type = self.visit(cargs, depth + 1)
+                assert ktype_equiv(sargs.type, type, self.scope)
+
+            return call, fun_type.return_type
+
+        if isinstance(fun, Union):
+            assert len(call.args) == 1
+
+            arg = call.args[0]
+            assert isinstance(arg, NamedArgument)
+
+            # No need for crazy lookups here the number of members should be low
+            union_member = None
+            for sargs in fun.members:
+
+                if sargs.name == arg.name:
+                    union_member = sargs
+
+            if union_member is None:
+                raise RuntimeError('Union Member `{}` does not exist'.format(arg.name))
+
+            expr, type = self.visit(arg, depth + 1)
+            assert ktype_equiv(type, union_member.type, self.scope)
+
+            return call, fun_type.return_type
 
         raise RuntimeError('Call `{}` Type is not handled'.format(fun))
 
@@ -130,10 +160,10 @@ class TypeTrace(Visitor):
         return self.call(call, depth)
 
     def struct(self, struct: Struct, depth=0) -> Any:
-        return struct, type_type
+        return struct, struct.type
 
     def union(self, union: Union, depth=0) -> Any:
-        return union, type_type
+        return union, union.type
 
     def arrow(self, arrow: Arrow, depth=0) -> Any:
         return arrow, type_type
@@ -184,7 +214,7 @@ def resolve_arrow(arrow, args, scope=Scope(), depth=0):
         for targ, varg in zip(arrow.args, args):
             expr, type = type_trace(varg, scope, depth + 1, hint=targ.type)
 
-            assert kequiv(type, targ.type)
+            assert ktype_equiv(type, targ.type)
 
     return arrow
 

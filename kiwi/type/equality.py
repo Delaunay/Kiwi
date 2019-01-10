@@ -10,6 +10,15 @@ trace = partial(trace, mode=debug_mode, name='[type_check] ')
 
 
 def type_equal(a: Expression, b: Expression, scope: Scope, depth=0):
+
+    def resolve_ref(ref):
+        if isinstance(ref, VariableRef):
+            return scope.get_expression(ref)
+        return ref
+
+    a = resolve_ref(a)
+    b = resolve_ref(b)
+
     # what if we compare a ref to the refereed expr
     if a.__class__ is not b.__class__:
         return False
@@ -39,6 +48,11 @@ class TypeEqual(Visitor):
         self.structural_check = structural_check
         self.b = b
 
+    def resolve_ref(self, ref):
+        if isinstance(ref, VariableRef):
+            return self.scope.get_expression(ref)
+        return ref
+
     def visit(self, a: Expression, depth=0) -> Any:
         if a is not None:
             return a.visit(self, depth)
@@ -53,7 +67,7 @@ class TypeEqual(Visitor):
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin')
-        return self.type_check(builtin.type, self.b.type, depth + 1)
+        return builtin.name == self.b.name
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
@@ -112,7 +126,7 @@ class TypeEqual(Visitor):
         raise NotImplementedError
 
 
-def kequiv(a: Expression, b: Expression, scope: Scope = Scope(), depth=0) -> bool:
+def ktype_equiv(a: Expression, b: Expression, scope: Scope = Scope(), depth=0) -> bool:
     return type_equal(a, b, scope, depth)
 
 
