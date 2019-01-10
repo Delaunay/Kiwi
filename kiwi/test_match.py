@@ -30,7 +30,7 @@ if __name__ == '__main__':
     fun.body(match.make())
     fun = fun.make()
 
-    fun = builder.bind('select_xy', fun)
+    fun = builder.bind('branch_xy', fun)
 
     str_match = to_string(fun, ctx)
 
@@ -40,12 +40,12 @@ if __name__ == '__main__':
 
     ftype = match.reference('Float')
 
-    call1 = builder.call(builder.reference('select_xy'), [
+    call1 = builder.call(builder.reference('branch_xy'), [
         builder.value(0, ftype),
         builder.value(2, ftype),
         builder.value(3, ftype)])
 
-    call2 = builder.call(builder.reference('select_xy'), [
+    call2 = builder.call(builder.reference('branch_xy'), [
         builder.value(1, ftype),
         builder.value(2, ftype),
         builder.value(3, ftype)])

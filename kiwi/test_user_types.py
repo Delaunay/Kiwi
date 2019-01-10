@@ -4,52 +4,6 @@ from kiwi.builtin import make_scope
 from kiwi.interpreter import keval
 
 
-# -----------------------------------------------
-def function_test_add_def(builder: AstBuilder, return_bind=False):
-    float_type = builder.reference('Float')
-
-    fun = builder.function()
-    fun.args([('x', float_type), ('y', float_type)])
-    fun.return_type = float_type
-
-    body = fun.unary_operator(
-        fun.reference('return'),
-        fun.binary_operator(
-            fun.reference('+'),
-            fun.reference('x'),
-            fun.reference('y')
-        )
-    )
-
-    fun.body(body)
-    fun = fun.make()
-    bind = builder.bind('add', fun)
-
-    if return_bind:
-        return bind
-
-    return fun
-
-
-def function_test_add_call(builder: AstBuilder, a: int, b: int) -> Call:
-    float_type = builder.reference('Float')
-    add_fun = builder.reference('add')
-    return builder.call(add_fun, [builder.value(a, float_type), builder.value(b, float_type)])
-
-
-def function_test_add(builder):
-    function_test_add_def(builder)
-
-    for i in range(0, 10):
-        for j in range(0, 10):
-            call = function_test_add_call(builder, i, j)
-            result = keval(call, ctx)
-
-            if result.value != i + j:
-                raise RuntimeError('{} + {} != {}'.format(i, j, result.value))
-# -----------------------------------------------
-
-
 def make_var(name, type_name) -> Expression:
     variable_fun = builder.reference('variable')
     symbol_type = builder.reference('Symbol')
@@ -67,7 +21,31 @@ def union_test_make(builder: AstBuilder):
 
 def struct_test_make(builder: AstBuilder):
     struct_fun = builder.reference('struct')
-    return builder.call(struct_fun, [make_var('a', 'Float'), make_var('b', 'Int')])
+    return builder.call(struct_fun, [make_var('float', 'Float'), make_var('int', 'Int')])
+
+
+def make_struct_constructor(builder: AstBuilder):
+    struct_call = struct_test_make(builder)
+    struct_str = to_string(struct_call)
+    print('-' * 80)
+    struct_constructor = keval(struct_call, ctx)
+    print('-' * 80)
+    result_str = to_string(struct_constructor)
+
+    print('\n IN > {} \nOUT > {}'.format(struct_str, result_str))
+    return struct_constructor
+
+
+def make_union_constructor(builder: AstBuilder):
+    union_call = union_test_make(builder)
+    union_str = to_string(union_call)
+    print('-' * 80)
+    union_constructor = keval(union_call, ctx)
+    print('-' * 80)
+    result_str = to_string(union_constructor)
+
+    print('\n IN > {} \nOUT > {}'.format(union_str, result_str))
+    return union_constructor
 
 
 if __name__ == '__main__':
@@ -77,18 +55,39 @@ if __name__ == '__main__':
 
     ctx = make_scope()
     builder = AstBuilder(ctx)
-    function_test_add(builder)
 
-    arg = make_var('a', 'Float')
-    str = to_string(arg)
-    print(str)
-    print(to_string(keval(arg, ctx)))
+    ftype = builder.reference('Float')
 
+    uctor = make_union_constructor(builder)
+    print()
+    sctor = make_struct_constructor(builder)
+
+    builder.bind('sctor', sctor)
+    builder.bind('FloatOrInt', uctor)
+
+    struct_obj = builder.call(
+        builder.reference('sctor'),
+        [builder.value(2, ftype), builder.value(3, ftype)]
+    )
+
+    union_obj = builder.call(
+        builder.reference('FloatOrInt'),
+        [builder.named_arg('float', builder.value(3, ftype))]
+    )
+
+    print()
+    val = keval(struct_obj, ctx)
     print('-' * 80)
+    val_str = to_string(val, ctx)
 
-    call = struct_test_make(builder)
-    call_str = to_string(call)
-    result_str = to_string(keval(call, ctx))
+    print()
+    print(val_str)
 
-    print('\n IN > {} \nOUT > {}'.format(call_str, result_str))
+    print()
+    val = keval(union_obj, ctx)
+    print('-' * 80)
+    val_str = to_string(val, ctx)
+
+    print()
+    print(val_str)
 

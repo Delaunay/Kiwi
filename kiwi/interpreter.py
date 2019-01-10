@@ -60,6 +60,9 @@ class Interpreter(Visitor):
         # builtin are not evaluated. The evaluation part happens at the call site
         return builtin
 
+    def is_type(self, obj):
+        return isinstance(obj, (Struct, Union))
+
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call {}'.format(call))
         fun = self.visit(call.function, depth + 1)
@@ -90,6 +93,19 @@ class Interpreter(Visitor):
 
             self.scope = self.scope.exit_scope()
             return returned_val
+
+        # This is a constructor call
+        if isinstance(fun, Struct):
+            # could it be useful to have an option to delay eval here ?
+            values = list(map(lambda x: self.visit(x, depth + 1), call.args))
+            return StructValue(values, call.function)
+
+        if isinstance(fun, Union):
+            assert len(call.args) == 1
+            assert isinstance(call.args[0], NamedArgument)
+
+            value = self.visit(call.args[0], depth + 1)
+            return UnionValue(name=call.args[0].name, value=value, type=call.function)
 
         raise RuntimeError('Call `{}` Type is not handled'.format(fun))
 

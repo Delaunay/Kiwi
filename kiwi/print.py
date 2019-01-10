@@ -20,8 +20,31 @@ class ToStringV(Visitor):
     def run(expr: Expression, ctx=Scope()):
         return ToStringV(ctx).visit(expr, depth=0)
 
+    def resolve_reference(self, ref):
+        try:
+            if isinstance(ref, VariableRef):
+                return self.env_stack.get_expression(ref)
+        except:
+            pass
+
+        return ref
+
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
+
+        type = self.resolve_reference(val.type)
+
+        if isinstance(val, StructValue):  # isinstance(type, Struct):
+            values = map(lambda x: self.visit(x, depth + 1), val.value)
+            return '{}({})'.format(self.visit(val.type, depth + 1), ', '.join(values))
+
+        if isinstance(val, UnionValue):  # isinstance(type, Union):
+            return '{}.{}({})'.format(
+                self.visit(val.type, depth + 1),
+                val.name,
+                self.visit(val.value, depth + 1)
+            )
+
         return '{}: {}'.format(str(val.value), self.visit(val.type, depth + 1))
 
     def variable(self, var: Variable, depth=0) -> Any:
@@ -107,9 +130,6 @@ class ToStringV(Visitor):
             branches.append('_ => {}'.format(self.visit(match.default, depth + 1)))
 
         return '{} match\n {}'.format(target, '\n   '.join(branches))
-
-    def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplementedError
 
     def bind(self, bind: Bind, depth=0) -> Any:
         # FIXME nested bind

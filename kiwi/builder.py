@@ -63,6 +63,9 @@ class AstBuilder:
     def struct(self):
         return StructBuilder(self.scope.enter_scope(), parent=self.parent)
 
+    def named_arg(self, name:str, expr: Expression) -> NamedArgument:
+        return NamedArgument(name, expr)
+
 
 class FunctionBuilder(AstBuilder):
     def __init__(self, context, parent):

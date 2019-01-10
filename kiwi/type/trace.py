@@ -72,9 +72,6 @@ class TypeTrace(Visitor):
     def match(self, match: Match, depth=0) -> Any:
         raise NotImplementedError
 
-    def conditional(self, cond: Conditional, depth=0) -> Any:
-        raise NotImplementedError
-
     def builtin(self, builtin: Builtin, depth=0) -> Any:
         trace(depth, 'builtin: {}'.format(builtin.name))
 

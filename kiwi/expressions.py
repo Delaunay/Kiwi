@@ -92,6 +92,19 @@ class Value(Expression, TreeLeaf):
 
 
 @dataclass
+class StructValue(Value, TreeLeaf):
+    value: List[Value]
+    type: Expression
+
+
+@dataclass
+class UnionValue(Value, TreeLeaf):
+    name: str
+    value: Value
+    type: Expression
+
+
+@dataclass
 class Variable(Expression, TreeLeaf):
     """ Placeholder """
     name: Name
@@ -196,23 +209,25 @@ class ConstructorPattern(Pattern):
         Match tagged Union
     """
     name: str
-    args: List[str]
+    args: List[Pattern]
+
+
+@dataclass
+class NamePattern(Pattern):
+    name: str
 
 
 @dataclass
 class Match(Expression, TreeBranch):
+    """
+        Used for branching (if elif), dispatch (tagged union), unpacking (extract values from struct)
+    """
     target: Expression
     patterns: [(Pattern, Expression)]
     default: Expression = None
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.match(self, depth)
-
-
-@dataclass
-class Conditional(Expression, TreeBranch):
-    def visit(self, visitor: 'Visitor', depth=0):
-        return visitor.conditional(self, depth)
 
 
 # Attributes
@@ -273,6 +288,15 @@ class Arrow(GenericType, TreeBranch):
         return True
 
 
+@dataclass
+class NamedArgument(Expression, TreeBranch):
+    name: str
+    expr: Expression
+
+    def visit(self, visitor: 'Visitor', depth=0):
+        # pass through
+        return self.expr.visit(visitor, depth)
+
 # Function Calls
 @dataclass
 class Call(Expression, TreeBranch):
@@ -332,9 +356,6 @@ class Visitor:
         raise NotImplementedError
 
     def match(self, match: Match, depth=0) -> Any:
-        raise NotImplementedError
-
-    def conditional(self, cond: Conditional, depth=0) -> Any:
         raise NotImplementedError
 
     def builtin(self, builtin: Builtin, depth=0) -> Any:
