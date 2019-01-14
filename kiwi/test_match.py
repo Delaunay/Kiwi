@@ -243,7 +243,7 @@ def test_dispatch(builder: AstBuilder, ctx):
     itype = builder.reference('Int')
     cases = [
         ('float', 1, 'Float', 1.0, 2, 2),
-        # ('int'  , 1, 'Int'  , 1.0, 2, 3),
+        ('int'  , 1, 'Int'  , 1.0, 2, 3),
     ]
 
     ctor = builder.reference('FloatOrInt')

@@ -77,11 +77,17 @@ class Interpreter(Visitor):
                     if isinstance(pat, NamePattern):
                         self.scope.insert_binding(pat.name, arg)
 
-                result = self.visit(branch, depth + 1)
-                self.scope = self.scope.exit_scope()
-                return result
+                result = None
+                if isinstance(target, UnionValue) and target.name == pattern.name:
+                    result = self.visit(branch, depth + 1)
 
-                trace_raise(depth, 'NotImplementedError')
+                elif isinstance(target, StructValue):
+                    result = self.visit(branch, depth + 1)
+
+                self.scope = self.scope.exit_scope()
+
+                if result is not None:
+                    return result
 
         if match.default is None:
             trace_raise(depth, 'Error No Matching Branch')
