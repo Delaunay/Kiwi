@@ -50,7 +50,7 @@ def _make_default_scope() -> Scope:
     #
 
     # ATM it will not work because the scope is a dumb dictionary
-    builder.bind('+', Builtin('+', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
+    builder.bind('int_add', Builtin('int_add', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
     builder.bind('*', Builtin('*', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
     builder.bind('/', Builtin('/', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
     builder.bind('-', Builtin('-', Arrow([make_var('a', 'Int'), make_var('b', 'Int')], ref('Int'))))
@@ -92,11 +92,11 @@ def make_float(args: List[Value]) -> Value:
 
 
 def add_float(args: List[Value]) -> Value:
-    return Value(args[0].value + args[1].value, type_float)
+    return Value(float(args[0].value + args[1].value), type_float)
 
 
 def add_int(args: List[Value]) -> Value:
-    return Value(args[0].value + args[1].value, type_int)
+    return Value(int(args[0].value + args[1].value), type_int)
 
 
 def mult_float(args: List[Value]) -> Value:
@@ -173,7 +173,7 @@ n = None
 
 # Table for the evaluator
 builtins = {
-    '+': (2, add_int),
+    '+': (2, add_float),
     '*': (2, mult_int),
     '/': (2, div_int),
     '-': (2, sub_int),
@@ -182,7 +182,8 @@ builtins = {
     'variable': (2, make_variable),
     'lambda': (n, make_lambda),
     'struct': (n, make_struct),
-    'union': (n, make_union)
+    'union': (n, make_union),
+    'int_add': (2, add_int)
 }
 
 

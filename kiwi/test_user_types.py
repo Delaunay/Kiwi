@@ -76,9 +76,8 @@ def show_result(expr, ctx):
     val = keval(expr, ctx)
     print()
     val_str = to_string(val, ctx)
-    print()
     print(val_str)
-    print('-' * 80)
+    print()
 
 
 def test_union(builder: AstBuilder):
@@ -114,10 +113,11 @@ def test_union(builder: AstBuilder):
             llvm_union = llvm_codegen(module=module, scope=ctx, expr=bind, builder=irbuilder)
             print()
             print(llvm_union.expr)
-            print()
 
         except Exception as e:
             is_error(should_work, e)
+
+        print('-' * 80)
 
 
 def test_struct(builder: AstBuilder):
@@ -152,10 +152,11 @@ def test_struct(builder: AstBuilder):
             llvm_struct = llvm_codegen(module=module, scope=ctx, expr=bind, builder=irbuilder)
             print()
             print(llvm_struct.expr)
-            print()
 
         except Exception as e:
             is_error(should_work, e)
+
+        print('-' * 80)
 
 
 def main():

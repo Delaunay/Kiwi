@@ -99,10 +99,14 @@ class MatchBuilder(AstBuilder):
         self.match.target = expr
 
     def add_expr_branch(self, expr, branch):
-        self.match.patterns.append((ExpressionPattern(expr), branch))
+        self.match.branches.append((ExpressionPattern(expr), branch))
 
     def add_branch(self, pattern, branch):
-        self.match.patterns.append((pattern, branch))
+        self.match.branches.append((pattern, branch))
+
+    def add_unpacking(self, ctor: Expression, args: List[str], branch):
+        pattern = ConstructorPattern(ctor, list(map(lambda x: NamePattern(x), args)))
+        self.match.branches.append((pattern, branch))
 
     def make(self):
         return self.match

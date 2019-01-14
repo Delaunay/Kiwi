@@ -223,7 +223,7 @@ class Match(Expression, TreeBranch):
         Used for branching (if elif), dispatch (tagged union), unpacking (extract values from struct)
     """
     target: Expression
-    patterns: [(Pattern, Expression)]
+    branches: [(Pattern, Expression)]
     default: Expression = None
 
     def visit(self, visitor: 'Visitor', depth=0):
@@ -238,6 +238,16 @@ class Match(Expression, TreeBranch):
 class Union(Expression, TreeBranch):
     """ Tagged union type, which makes it safe and usable in a match expression"""
     members: List[Variable]
+    # TODO
+    # Make each union value capable of holding every single type without re allocation
+    # byte size = max(byte_size(members)) + tag_size
+    padded: bool = False
+
+    # Add a Tag to every Union types
+    tagged: bool = True
+    # How the struct is tagged (str = unique)
+    # tag mode (str,  i8, i16, i32, i64)
+    tag_mode: str = 'i32'
 
     def visit(self, visitor: 'Visitor', depth=0):
         return visitor.union(self, depth)

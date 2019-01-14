@@ -53,14 +53,34 @@ class Interpreter(Visitor):
         trace(depth, 'match')
         target = self.visit(match.target, depth + 1)
 
-        for pattern, branch in match.patterns:
+        for pattern, branch in match.branches:
 
             if isinstance(pattern, ExpressionPattern):
                 val = self.visit(pattern.expr, depth + 1)
 
                 if kequal(val, target):
                     return self.visit(branch, depth + 1)
-            else:
+
+            elif isinstance(pattern, ConstructorPattern):
+                self.scope = self.scope.enter_scope('match_unpacking')
+
+                # type = self.visit(pattern.name, depth + 1)
+
+                assert isinstance(target, (StructValue, UnionValue))
+
+                tvalue = target.value
+                if isinstance(target.value, Expression):
+                    tvalue = [target.value]
+
+                for pat, arg in zip(pattern.args, tvalue):
+
+                    if isinstance(pat, NamePattern):
+                        self.scope.insert_binding(pat.name, arg)
+
+                result = self.visit(branch, depth + 1)
+                self.scope = self.scope.exit_scope()
+                return result
+
                 trace_raise(depth, 'NotImplementedError')
 
         if match.default is None:
