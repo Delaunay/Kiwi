@@ -61,7 +61,7 @@ class MatrixNaiveOpenCL {
     }
 
     MatrixNaiveOpenCL operator*(MatrixNaiveOpenCL &v) {
-        assert(u.cols() == v.rows());
+        assert(cols() == v.rows());
         DEBUG("Matrix Mult \n");
 
         // Make OpenCL use Host Memory

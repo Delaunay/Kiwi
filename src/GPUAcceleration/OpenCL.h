@@ -5,6 +5,7 @@
 //#include <CL/cl.hpp>
 
 #include <vector>
+#include <cstdio>
 
 class OpenCL {
   private:

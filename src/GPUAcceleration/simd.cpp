@@ -7,8 +7,11 @@
 #include <cstdio>
 #include <functional>
 
-#if defined(__GNUC__) && !defined(__AVX__) /* sanity check */
+#if defined(__GNUC__)  /* sanity check */
+#if !defined(__AVX__)
 #error "compiling simd-avx.h without -mavx"
+#endif
+#define __forceinline inline
 #endif
 
 struct GenericVectorAdd {

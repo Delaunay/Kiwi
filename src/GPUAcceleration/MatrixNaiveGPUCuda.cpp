@@ -6,7 +6,7 @@
 #ifdef __CUDACC__
 #else
 MatrixNaiveCUDA MatrixNaiveCUDA::operator*(MatrixNaiveCUDA &v) {
-    assert(u.cols() == v.rows());
+    assert(cols() == v.rows());
     MatrixNaiveCUDA r(rows(), v.cols());
     printf("No CUDA Code\n");fflush(stdout);
     return r;

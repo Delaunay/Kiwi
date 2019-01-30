@@ -37,7 +37,7 @@ enum class LogLevel {
 class Log {
   public:
     template <typename... Args>
-    void log(LogLevel level, std::string file, std::string function, i64 line,
+    void log(std::string file, std::string function, i64 line, LogLevel level,
              const Args &... args) {
         if(log_level <= level)
             print(out, date(), get_string(level), pretty_file(file), FILE_SEPARATOR,
@@ -46,7 +46,7 @@ class Log {
     }
 
     template <typename... Args>
-    void log_call_trace(LogLevel level, std::string file, std::string function, i64 line, i64 depth,
+    void log_call_trace(std::string file, std::string function, i64 line, LogLevel level, i64 depth,
                         const Args &... args) {
         if(log_level <= level)
             print(out, get_string(level), pretty_depth(depth), pretty_file(file), " ",
@@ -167,24 +167,32 @@ class Log {
 
 #define GET_FUN_NAME GET_FUN_NAME_SHORT
 
-#define LOG_INTERNAL(level, ...)                                                                   \
-    kiwi::Log::instance().log(kiwi::level, __FILE__, GET_FUN_NAME, __LINE__, __VA_ARGS__)
+#define LOG_INTERNAL(...)                                                                   \
+    kiwi::Log::instance().log(__FILE__, GET_FUN_NAME, __LINE__, __VA_ARGS__)
 
-#define log_warn(...) LOG_INTERNAL(LogLevel::warn, __VA_ARGS__)
-#define log_info(...) LOG_INTERNAL(LogLevel::info, __VA_ARGS__)
-#define log_error(...) LOG_INTERNAL(LogLevel::error, __VA_ARGS__)
-#define log_debug(...) LOG_INTERNAL(LogLevel::debug, __VA_ARGS__)
-#define log_trace(...) LOG_INTERNAL(LogLevel::trace, __VA_ARGS__)
+#define LOG_INTERNAL_CALL(...)                                                       \
+    kiwi::Log::instance().log_call_trace(__FILE__, GET_FUN_NAME, __LINE__, __VA_ARGS__)
 
-#define LOG_INTERNAL_CALL(level, depth, ...)                                                       \
-    kiwi::Log::instance().log_call_trace(level, __FILE__, GET_FUN_NAME, __LINE__, depth,           \
-                                         __VA_ARGS__)
+#define LWARN kiwi::LogLevel::warn
+#define LINFO kiwi::LogLevel::info
+#define LERROR kiwi::LogLevel::error
+#define LDEBUG kiwi::LogLevel::debug
+#define LTRACE kiwi::LogLevel::trace
 
-#define log_cwarn(depth, ...) LOG_INTERNAL_CALL(LogLevel::warn, depth, __VA_ARGS__)
-#define log_cinfo(depth, ...) LOG_INTERNAL_CALL(LogLevel::info, depth, __VA_ARGS__)
-#define log_cerror(depth, ...) LOG_INTERNAL_CALL(LogLevel::error, depth, __VA_ARGS__)
-#define log_cdebug(depth, ...) LOG_INTERNAL_CALL(LogLevel::debug, depth, __VA_ARGS__)
-#define log_ctrace(depth, ...) LOG_INTERNAL_CALL(LogLevel::trace, depth, __VA_ARGS__)
+#define LOG(...) LOG_INTERNAL(__VA_ARGS__)
+#define TRACE(...) LOG_INTERNAL_CALL(__VA_ARGS__)
+
+#define log_warn(...) LOG(LWARN, __VA_ARGS__)
+#define log_info(...) LOG(LINFO, __VA_ARGS__)
+#define log_error(...) LOG(LERROR, __VA_ARGS__)
+#define log_debug(...) LOG(LDEBUG, __VA_ARGS__)
+#define log_trace(...) LOG(LTRACE, __VA_ARGS__)
+
+#define log_cwarn(...) TRACE(LWARN, __VA_ARGS__)
+#define log_cinfo(...) TRACE(LINFO, __VA_ARGS__)
+#define log_cerror(...) TRACE(LERROR, __VA_ARGS__)
+#define log_cdebug(...) TRACE(LDEBUG, __VA_ARGS__)
+#define log_ctrace(...) TRACE(LTRACE, __VA_ARGS__)
 
 #define debug_if(pred, ...)                                                                        \
     {                                                                                              \

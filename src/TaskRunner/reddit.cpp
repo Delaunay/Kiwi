@@ -14,10 +14,12 @@ T print_value(T v) {
     return v;
 }
 
+#define __FUNCSIG__ __FUNCTION__
+
 template <typename T, typename Impl> struct Expr {
-    std::future<T> run() const {
+    std::future<T> run() {
         DEBUG("Calling run: ") << __FUNCSIG__  << std::endl;
-        return static_cast<Impl const&>(*this).run();
+        return static_cast<Impl&>(*this).run();
     }
 
     operator Impl& () { return static_cast<Impl&>(*this); }
@@ -36,11 +38,11 @@ template <typename T>
 struct DataProvider : public Expr<T, DataProvider<T>> {
     DataProvider(T v) : value(v) {}
 
-    std::future<T> run() const {
+    std::future<T> run() {
         DEBUG("Providing data") << std::endl;
         std::promise<T> p;
         p.set_value(value);
-        return  p.get_future();
+        return p.get_future();
     }
 
     T value;
@@ -50,47 +52,51 @@ struct DataProvider : public Expr<T, DataProvider<T>> {
 // Combinator, takes 2 inputs and return 1 output both of type T
 template <typename T, typename Expr1, typename Expr2>
 struct Add : public Expr<T, Add<T, Expr1, Expr2>>{
-    Add(Expr<T, Expr1> const& a, Expr<T, Expr2> const& b):
+    Add(Expr<T, Expr1>const & a, Expr<T, Expr2>const & b):
         lhs(a), rhs(b)
     {}
 
-    std::future<T> run() const {
-        DEBUG("Adding Numbers") << std::endl;
-        return std::async([](std::future<T>& a, std::future<T>& b) {
-            return wait_and_get(a) + wait_and_get(b);
-        }, lhs.run(), rhs.run());
+    static T eval(std::future<T> a, std::future<T> b){
+        return wait_and_get(a) + wait_and_get(b);
     }
 
-    Expr<T, Expr1> const& lhs;
-    Expr<T, Expr2> const& rhs;
+    std::future<T> run() {
+        DEBUG("Adding Numbers") << std::endl;
+        return std::async(Add::eval, lhs.run(), rhs.run());
+    }
+
+    Expr<T, Expr1> lhs;
+    Expr<T, Expr2> rhs;
 };
 
 
 template <typename I, typename O, typename Uexpr>
 struct StaticCast : public Expr<O, StaticCast<I, O, Uexpr>> {
-    StaticCast(Expr<I, Uexpr> const& a) :
+    StaticCast(Expr<I, Uexpr>const& a) :
         expr(a)
     {}
 
-    std::future<O> run() const {
-        DEBUG("Casting Result") << std::endl;
-        return std::async([](std::future<I>& a) {
-            return static_cast<O>(wait_and_get(a));
-        }, expr.run());
+    using EvalFunctionType = std::function<O(std::future<I>)>;
+
+    static O eval(std::future<I>  a){
+        return static_cast<O>(wait_and_get(a));
     }
 
-    Expr<I, Uexpr> const& expr;
+    std::future<O> run() {
+        DEBUG("Casting Result") << std::endl;
+        return std::async(std::launch::async, StaticCast::eval, expr.run());
+    }
+
+    Expr<I, Uexpr> expr;
 };
 
 template<typename T, typename Expr1, typename Expr2>
-Add<T, Expr1, Expr2> const add(Expr<T, Expr1> const& lhs, Expr<T, Expr2> const& rhs) {
-    //DEBUG(__PRETTY_FUNCTION__) << std::endl;
+Add<T, Expr1, Expr2> add(Expr<T, Expr1>const& lhs, Expr<T, Expr2>const& rhs) {
     return Add<T, Expr1, Expr2>(lhs, rhs);
 }
 
 template<typename T, typename Uexpr>
-StaticCast<T, int, Uexpr> const to_int(Expr<T, Uexpr> const& expr) {
-    //DEBUG(__PRETTY_FUNCTION__) << std::endl;
+StaticCast<T, int, Uexpr> to_int(Expr<T, Uexpr>const& expr) {
     return StaticCast<T, int, Uexpr>(expr);
 }
 
@@ -101,7 +107,7 @@ DataProvider<double> provide_double(double a) {
 
 int main() {
 
-    auto job = to_int(add(provide_double(2), provide_double(3)));
+    StaticCast<double, int, Add<double, DataProvider<double>, DataProvider<double>>> job = to_int(add(provide_double(2), provide_double(3)));
 
     std::future<int> result = job.run();
 

@@ -38,8 +38,12 @@ namespace kiwi {
         {}
 
         Option(const Option<T>& v) :
-            _is_defined(v._is_defined), _data(v._is_defined ? v._data: T())
-        {}
+            _is_defined(v._is_defined)
+        {
+            if (v._is_defined){
+                _data = v._data;
+            }
+        }
 
         ~Option() {
             if (_is_defined) {

@@ -1,5 +1,7 @@
 ﻿#include "Operators.h"
 
+#include <cmath>
+
 namespace kiwi {
 
     BinaryOperatorTable& binary_table() {

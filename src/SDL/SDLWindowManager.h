@@ -8,7 +8,7 @@
 
 #include "SDLHelper.h"
 #include "SDLWindow.h"
-#include "String.h"
+#include "Drawable/StringDrawable.h"
 
 #include <list>
 #include <unordered_map>

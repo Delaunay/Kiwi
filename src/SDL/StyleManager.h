@@ -77,13 +77,13 @@ struct StyleManager {
     uint32 font_size() const { return _font_size; }
 
     static SDL_Font *default_font() {
-        log_trace();
+        LOG(LTRACE);
         static SDL_Font *font = CHECK(TTF_OpenFont(HOME "DejaVuSansMonoPowerline.ttf", 24));
         return font;
     }
 
     static SDL_Color default_color() {
-        log_trace();
+        LOG(LTRACE);
         return SDL_Color{255, 255, 255, 0};
     }
 

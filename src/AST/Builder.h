@@ -415,7 +415,7 @@ struct Builder {
 
     template <typename T> Value *make_value(String const &name, T val) {
         auto v = new PrimitiveValue(val);
-        context()->insert(name, v);
+        ctx->insert(name, v);
         return v;
     }
 

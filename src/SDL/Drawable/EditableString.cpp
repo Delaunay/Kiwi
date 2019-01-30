@@ -130,12 +130,12 @@ void EditableString::handle_text_input(SDL_TextInputEvent event) {
 }
 
 void EditableString::insert_text(char const *text) {
-    log_info();
+    LOG(LINFO);
     String str = string();
     set_string(str.insert(get_byte_loc(string(), _cursor_position_char + 1), text));
     _cursor_position_char += utf8_strlen(text);
     _cursor_drawn = false;
-    log_info();
+    LOG(LINFO);
 }
 
 void EditableString::remove_char() {

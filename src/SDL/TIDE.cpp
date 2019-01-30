@@ -23,7 +23,7 @@ using namespace kiwi;
 #include "Drawable/EditableString.h"
 #include "Drawable/StringDrawable.h"
 
-#define log_trace(...) LOG_INTERNAL(LogLevel::trace, __VA_ARGS__)
+//#define log_trace(...) LOG_INTERNAL(LogLevel::trace, __VA_ARGS__)
 
 class MyDrawableExpression : public kiwi::Drawable {
   public:
@@ -123,7 +123,7 @@ class MyDrawableExpression : public kiwi::Drawable {
 };
 
 class MyWindow : public SDLWindow {
-  private:
+  public:
     friend class WindowManager;
 
     MyWindow(SDL_Window *handle) : SDLWindow(handle) {}
@@ -220,16 +220,16 @@ int main() {
 
     // m    w->insert_entity<MyDrawableExpression>();
 
-    log_trace();
+    LOG(LTRACE);
     mw->insert_entity(new StringDrawable(u8"Приве́т"));
 
-    log_trace();
+    LOG(LTRACE);
     mw->insert_entity(new EditableString(u8"Hellow"));
 
-    log_trace();
+    LOG(LTRACE);
     mw->insert_entity(new EditableString(u8"Hellow"));
 
-    log_trace();
+    LOG(LTRACE);
     mw->insert_entity(new MyDrawableExpression());
 
     log_debug("Launching event loop");

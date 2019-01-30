@@ -51,14 +51,14 @@ template <typename T, size_t alignment> class AlignedAllocator {
     typedef std::size_t size_type;
     typedef std::ptrdiff_t difference_type;
 
-    template <typename T> struct rebind { typedef AlignedAllocator<T, alignment> other; };
+    template <typename T2> struct rebind { typedef AlignedAllocator<T2, alignment> other; };
 
     pointer address(reference value) const { return &value; }
     const_pointer address(const_reference value) const { return &value; }
 
     AlignedAllocator() noexcept {}
     AlignedAllocator(const AlignedAllocator &) noexcept {}
-    template <typename T, size_t A> AlignedAllocator(const AlignedAllocator<T, A> &) noexcept {}
+    template <typename T2, size_t A> AlignedAllocator(const AlignedAllocator<T2, A> &) noexcept {}
     ~AlignedAllocator() noexcept {}
 
     size_type max_size() const noexcept {
