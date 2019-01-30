@@ -6,7 +6,7 @@ from kiwi.environment import Scope
 from kiwi.debug import trace
 
 debug_mode = False
-trace = partial(trace, mode=debug_mode, name='[type_check] ')
+trace = partial(trace, mode=debug_mode, name='[equality_check] ')
 
 
 def value_equal(a: Expression, b: Expression, scope: Scope, depth=0):
@@ -57,6 +57,12 @@ class ValueEqual(Visitor):
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
+        # print(val.value, self.b.value)
+
+        if isinstance(val.value, Expression):
+            self.b = self.b.value
+            return self.visit(val.value, depth + 1)
+
         return val.value == self.b.value
 
     def struct(self, struct: Struct, depth=0) -> Any:
@@ -113,4 +119,9 @@ class ValueEqual(Visitor):
 
 
 def kequal(a: Expression, b: Expression, scope: Scope = Scope(), depth=0) -> bool:
-    return value_equal(a, b, scope, depth)
+    r = value_equal(a, b, scope, depth)
+
+    #if not r:
+    #    print(a)
+    #    print(b)
+    return r

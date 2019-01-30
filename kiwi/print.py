@@ -15,6 +15,33 @@ class ToStringV(Visitor):
         # enter a new scope to not affect the original scope
         self.env_stack: Scope = ctx.enter_scope(name='visitor_scope')
         self.bind_name = []
+        self._i = 0
+        self.line = 0
+        self.indent_size = 2
+        self.indent_char = ' '
+
+    def indent(self):
+        self._i += self.indent_size
+        return self._i
+
+    def deindent(self):
+        self._i = max(0, self._i - self.indent_size)
+        return self._i
+
+    def newline(self):
+        self.line += 1
+        return '\n'
+
+    def get_indent(self):
+        return self.indent_char * self.indentation
+
+    def get_next_indent(self):
+        self.indent()
+        return self.get_indent()
+
+    @property
+    def indentation(self):
+        return self._i
 
     @staticmethod
     def run(expr: Expression, ctx=Scope()):
@@ -28,6 +55,14 @@ class ToStringV(Visitor):
             pass
 
         return ref
+
+    def block(self, block: Block, depth=0) -> str:
+        rep = []
+
+        for expr in block.expressions:
+            rep.append(self.visit(expr, depth + 1) + self.newline())
+
+        return (' ' * self.indentation).join(rep)
 
     def value(self, val: Value, depth=0) -> Any:
         trace(depth, 'value')
@@ -111,25 +146,59 @@ class ToStringV(Visitor):
         args = ', '.join([self.visit(arg, depth + 1) for arg in fun.args])
         return_type = self.visit(fun.return_type, depth + 1)
 
-        body = self.visit(fun.body, depth + 1)
-
-        fun_str = 'def {}({}) -> {}:\n   {}'.format(name, args, return_type, body)
+        self.indent()
+        fun_str = 'def {}({}) -> {}:{}{}{}'.format(
+            name,
+            args,
+            return_type,
+            self.newline(),
+            self.get_indent(),
+            self.visit(fun.body, depth + 1))
+        self.deindent()
 
         return fun_str
 
     def match(self, match: Match, depth=0) -> Any:
 
         def render_pattern(pat):
+            if isinstance(pat, NamePattern):
+                return pat.name
+
             if isinstance(pat, ExpressionPattern):
                 return self.visit(pat.expr, depth + 1)
 
-        target = self.visit(match.target, depth + 1)
-        branches = ['{} => {}'.format(render_pattern(p), self.visit(b, depth + 1)) for p, b in match.patterns]
+            if isinstance(pat, ConstructorPattern):
+                name = ''
+                if isinstance(pat.name, Expression):
+                    name = self.visit(pat.name, depth + 1)
+                elif pat.name is not None:
+                    name = pat.name
+
+                return '{}({})'.format(name, ', '.join(list(map(lambda x: render_pattern(x), pat.args))))
+
+        target = 'switch {}:{}'.format(self.visit(match.target, depth + 1), self.newline())
+        self.indent()
+
+        branches = []
+        for pattern, result in match.branches:
+            branches.append(
+                '{}case {}:{}{}{}{}'.format(
+                    self.get_indent(), render_pattern(pattern), self.newline(),
+                    self.get_next_indent(), self.visit(result, depth + 1), self.newline())
+            )
+            self.deindent()
 
         if match.default is not None:
-            branches.append('_ => {}'.format(self.visit(match.default, depth + 1)))
+            branches.append(
+                '{}case {}:{}{}{}{}'.format(
+                     self.get_indent(), '_', self.newline(),
+                     self.get_next_indent(), self.visit(match.default, depth + 1), self.newline())
+            )
+            self.deindent()
 
-        return '{} match\n {}'.format(target, '\n   '.join(branches))
+        self.deindent()
+
+        return '{}{}'.format(target, ''.join(branches))
 
     def bind(self, bind: Bind, depth=0) -> Any:
         # FIXME nested bind
@@ -150,7 +219,16 @@ class ToStringV(Visitor):
     def call(self, call: Call, depth=0) -> Any:
         trace(depth, 'call')
         fun = self.visit(call.function, depth + 1)
-        args = ', '.join([self.visit(arg, depth + 1) for arg in call.args])
+
+        args = []
+        for arg in call.args:
+            arg_val = self.visit(arg, depth + 1)
+            if isinstance(arg, NamedArgument):
+                args.append('{} = {}'.format(arg.name, arg_val))
+            else:
+                args.append(arg_val)
+
+        args = ', '.join(args)
         return '{}({})'.format(fun, args)
 
     def binary_operator(self, call: BinaryOperator, depth=0) -> Any:

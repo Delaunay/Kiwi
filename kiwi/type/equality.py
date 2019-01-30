@@ -127,7 +127,13 @@ class TypeEqual(Visitor):
 
 
 def ktype_equiv(a: Expression, b: Expression, scope: Scope = Scope(), depth=0) -> bool:
-    return type_equal(a, b, scope, depth)
+    result = type_equal(a, b, scope, depth)
+
+    if not result:
+        print(a)
+        print(b)
+
+    return result
 
 
 if __name__ == '__main__':

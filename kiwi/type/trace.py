@@ -43,7 +43,7 @@ class TypeTrace(Visitor):
         return bind, type
 
     def variable(self, var: Variable, depth=0) -> Any:
-        trace(depth, 'variable: {}'.format(var.name))
+        trace(depth, 'variable: {}: {}'.format(var.name, var.type))
 
         if var.type is None:
             var.type = self.type_hint
@@ -51,7 +51,7 @@ class TypeTrace(Visitor):
         elif self.type_hint is not None:
             trace_assert(depth, ktype_equiv(var.type, self.type_hint, self.scope), 'type mismatch')
 
-        return var, var.type
+        return var, var.type    # self.visit(var.type, depth + 1)[0]
 
     def reference(self, ref: VariableRef, depth=0) -> Any:
         trace(depth, 'reference: {}'.format(ref))
@@ -86,12 +86,12 @@ class TypeTrace(Visitor):
         target, ttype = self.visit(match.target, depth + 1)
 
         return_type = None
-        for pattern, branch in match.patterns:
+        for pattern, branch in match.branches:
+            self.scope = self.scope.enter_scope('match_branch_scope')
 
             if isinstance(pattern, ExpressionPattern):
                 self.type_hint = ttype
                 pat, pat_type = self.visit(pattern.expr, depth + 1)
-
                 self.type_hint = None
 
                 trace_assert(
@@ -103,18 +103,47 @@ class TypeTrace(Visitor):
                     )
                 )
 
+            elif isinstance(pattern, ConstructorPattern):
+                target_type, type = self.visit(ttype, depth + 1)
+                assert isinstance(target_type, (Union, Struct))
+
+                if pattern.name is not None:
+                    # Name should match the struct type
+                    if isinstance(pattern.name, Expression):
+                        type, type_type = self.visit(pattern.name, depth + 1)
+
+                        #print('HERE1', pattern.name)
+
+                    # Or a member of the union
+                    elif isinstance(pattern.name, str):
+
+                        union_member = None
+                        for member in target_type.members:
+                            if member.name == pattern.name:
+                                union_member = member
+
+                        for pat in pattern.args:
+                            if isinstance(pat, NamePattern):
+                                self.scope.insert_binding(pat.name, Variable(pat.name, union_member.type))
+
             self.type_hint = return_type
             rbranch, new_return = self.visit(branch, depth + 1)
+            self.type_hint = None
 
             if return_type is not None:
-                trace_assert(depth, ktype_equiv(new_return, return_type, self.scope), 'type mismatch')
+                trace_assert(depth, ktype_equiv(new_return, return_type, self.scope),
+                             '/!\\ [TYPE MISMATCH]: Function cannot return two different types `{}` and `{}`'.format(
+                                 to_string(new_return, self.scope),
+                                 to_string(return_type, self.scope)
+                             ))
 
             return_type = new_return
+            self.scope = self.scope.exit_scope()
 
         if match.default is not None:
             self.type_hint = return_type
-
             dbranch, dtype = self.visit(match.default, depth + 1)
+            self.type_hint = None
 
             trace_assert(depth, ktype_equiv(dtype, return_type, self.scope), 'type mismatch')
 
@@ -255,7 +284,9 @@ def resolve_arrow(arrow, args, scope=Scope(), depth=0):
             meta_args[meta_arg.name] = meta_arg.type
 
         for targ, varg in zip(arrow.args, args):
-            expr, type = type_trace(varg, scope, depth + 1, hint=targ.type)
+            v = type_trace(varg, scope, depth + 1, hint=targ.type)
+            # print(varg, v)
+            expr, type = v
             meta_args[targ.type.name] = type
 
             # /!\ Awful complexity
